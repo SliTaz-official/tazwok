@@ -1,0 +1,701 @@
+#!/bin/sh
+# Tazwok - SliTaz source compiler and binary packages generator/cooker.
+#
+# Tazwok can compile source package and creat binary packages suitable for
+# Tazpkg (Tiny Autonomus zone package manager). You can build individuals
+# package or a list a packages with one command, rebuild the full distro,
+# generate a packages repository and also list and get info about packages.
+#
+# (C) 2007 SliTaz - GNU General Public License.
+# Author : <pankso@slitaz.org>
+#
+VERSION=1.2
+
+####################
+# Tazwok variables #
+####################
+
+# Packages categories.
+CATEGORIES="base-system base-apps x-window extra"
+
+# Use words rater than numbers in the code.
+COMMAND=$1
+PACKAGE=$2
+LIST=$2
+
+# Include config file or exit if any file found.
+if [ -f "/etc/tazwok.conf" ]; then
+	. /etc/tazwok.conf
+else
+	echo -e "\nUnable to find the configuration file : /etc/tazwok.conf"
+	echo -e "Please read the Tazwok documentation.\n"
+	exit 0
+fi
+
+# Creat Taz wok needed directories if user is root.
+if test $(id -u) = 0 ; then
+	# Check for the wok directory.
+	if [ ! -d "$WOK" ]; then
+		echo "Creating the wok directory..."
+		mkdir -p $WOK
+		chmod 777 $WOK
+	fi
+	# Check for the packages repository.
+	if [ ! -d "$PACKAGES_REPOSITORY" ]; then
+		echo "Creating the packages repository..."
+		mkdir -p $PACKAGES_REPOSITORY
+	fi
+	# Check for the sources repository.
+	if [ ! -d "$SOURCES_REPOSITORY" ]; then
+		echo "Creating the sources repository..."
+		mkdir -p $PACKAGES_REPOSITORY
+	fi
+fi
+
+# The path to the most important file used by Tazwok.
+# The receipt is used to compile the source code and
+# gen suitables packages for Tazpkg.
+RECEIPT="$WOK/$PACKAGE/receipt"
+
+# The path to the process log file.
+LOG="$WOK/$PACKAGE/process.log"
+
+####################
+# Tazwok functions #
+####################
+
+# Print the usage (English).
+usage ()
+{
+	echo -e "\nSliTaz sources compiler and packages generator - Version: $VERSION\n
+\033[1mUsage: \033[0m `basename $0` [command] [package|list|category|dir] [--option]
+\033[1mCommands: \033[0m\n
+  usage          Print this short usage.
+  stats          Print Tazwok statistics from the config file and the wok.
+  list           List all packages in the wok tree or by category.
+  info           Get informations about a package in the wok.
+  check-log      Check the process log file of a package.
+  search         Search for a package in the wok by pattern or name.
+  compile        Configure and build the package using the receipt rules.
+  genpkg         Generate a suitable package for Tazpkg with the rules.
+  cook           Compile and generate a package directly.
+  cook-list      Cook all packages specified in the list by order.
+  clean          Clean all generated files in the package tree.
+  new-tree       Prepare a new package tree and receipt (--interactive).
+  gen-list       Generate a packages.list and md5sum for a repository.
+  gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
+  remove         Remove a package from the wok.\n"
+}
+
+# Status function.
+status()
+{
+	local CHECK=$?
+	echo -en "\\033[70G[ "
+	if [ $CHECK = 0 ]; then
+		echo -en "\\033[1;33mOK"
+	else
+		echo -en "\\033[1;31mFailed"
+	fi
+	echo -e "\\033[0;39m ]"
+}
+
+# Check if user is root.
+check_root()
+{
+	if test $(id -u) != 0 ; then
+	   echo -e "\nYou must be root to run `basename $0` with this option."
+	   echo -e "Please type 'su' and root password to become super-user.\n"
+	   exit 0
+	fi
+}
+
+# Check for a package name on cmdline.
+check_for_package_on_cmdline()
+{
+	if [ -z "$PACKAGE" ]; then
+		echo -e "\nYou must specify a package name on the command line."
+		echo -e "Example : tazwok $COMMAND package\n"
+		exit 0
+	fi
+}
+
+# Check for the receipt of a package used to cook.
+check_for_receipt()
+{
+	if [ ! -f "$RECEIPT" ]; then
+		echo -e "\nUnable to find the receipt : $RECEIPT\n"
+		exit 0
+	fi
+}
+
+# Check for a specified file list on cmdline.
+check_for_list()
+{
+	if [ -z "$LIST" ]; then
+		echo -e "\nPlease specify the path to the list of packages to cook.\n"
+		exit 0
+	fi
+	# Check if the list of packages exist.
+	if [ -f "$LIST" ]; then
+		LIST=`cat $LIST`
+	else
+		echo -e "\nUnable to find $LIST packages list.\n"
+		exit 0
+	fi
+}
+
+# Check for the wanted package if specified in WANTED
+# receipt variable. Set the $src/$_pkg variable to help compiling
+# and generating packages.
+check_for_wanted()
+{
+	if [ ! "$WANTED" = "" ]; then
+		echo -n "Checking for the wanted package..."
+		if [ ! -d "$WOK/$WANTED" ]; then
+			echo -e "\nWanted package is missing in the work directory.\n"
+			exit 0
+		fi
+		status
+		# Set wanted src path.
+		src=$WOK/$WANTED/$WANTED-$VERSION
+		_pkg=$src/_pkg
+	fi
+}
+
+# Configure and make a package with the receipt.
+compile_package()
+{
+	check_for_package_on_cmdline
+	# Include the receipt to get all needed variables and functions
+	# and cd into the work directory to start the work.
+	check_for_receipt
+	. $RECEIPT
+	# Log the package name and date.
+	echo "date `date +%Y%m%d\ \%H:%M:%S`" >> $LOG
+	echo "package $PACKAGE (compile)" >> $LOG
+	# Set wanted $src variable to help compiling.
+	if [ ! "$SOURCE" = "" ]; then
+		src=$WOK/$PACKAGE/$SOURCE-$VERSION
+	else
+		src=$WOK/$PACKAGE/$PACKAGE-$VERSION
+	fi
+	check_for_wanted
+	echo ""
+	echo "Starting to cook $PACKAGE..."
+	echo "================================================================================"
+	# Check for src tarball and wget if needed.
+	if [ ! "$TARBALL" = "" ]; then
+		echo "Checking for source tarball... "
+		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
+			cd $SOURCES_REPOSITORY
+			wget $WGET_URL
+			# Exit if download failed to avoid errors.
+			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
+				echo -e "\nDownload failed, exiting. Please check WGET_URL variable.\n"
+				exit 1
+			fi
+		else
+			echo -n "Source tarball exit... "
+			status
+		fi
+		# Untaring source if necessary. We dont need to extract source if
+		# the package is build with a wanted source package.
+		if [ "$WANTED" = "" ]; then
+			if [ ! -d $src ]; then
+				# Log process.
+				echo "untaring $TARBALL" >> $LOG
+				echo -n "Untaring $TARBALL... "
+				if [ "`basename $TARBALL | grep tar.bz2`" ]; then
+					tar xjf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE
+				else
+					tar xzf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE
+				fi
+				status
+			else
+				echo -n "Source direcory exit... " && status
+			fi
+		fi
+	fi
+	cd $WOK/$PACKAGE
+	# Log and execute compile_rules function if it exist, to configure and
+	# make the package if it exist.
+	if [ `cat $RECEIPT | grep compile_rules` ]; then
+		echo "executing compile_rules" >> $LOG
+		compile_rules
+		# Exit if compilation failed so the binary package
+		# is not generated when using the cook comand.
+		local CHECK=$?
+		if [ $CHECK = 0 ]; then
+			echo "================================================================================"
+			echo "$PACKAGE compiled on : `date +%Y%m%d\ \%H:%M:%S`"
+			echo ""
+			echo "compilation done : `date +%Y%m%d\ \%H:%M:%S`" >> $LOG
+		else
+			echo "================================================================================"
+			echo "Compilation failed. Please read the compilator output."
+			echo "" && exit 1
+		fi
+	else
+		echo "no compile_rules" >> $LOG
+		echo -e "No compile rules for $PACKAGE...\n"
+	fi
+}
+
+# Creat a package tree and build the gziped cpio archive
+# to make a SliTaz (.tazpkg) package.
+gen_package()
+{
+	check_root
+	check_for_package_on_cmdline
+	check_for_receipt
+	. $RECEIPT
+	check_for_wanted
+	cd $WOK/$PACKAGE
+	# Remove old Tazwok package files.
+	if [ -d "taz" ]; then
+		rm -rf taz
+		rm -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
+	fi
+	# Creat the package tree and set usful variables.
+	mkdir -p taz/$PACKAGE-$VERSION/fs
+	fs=taz/$PACKAGE-$VERSION/fs
+	# Set $src for standards package and $_pkg variables.
+	if [ "$WANTED" = "" ]; then
+		src=$WOK/$PACKAGE/$PACKAGE-$VERSION
+		_pkg=$src/_pkg
+	fi
+	if [ ! "$SOURCE" = "" ]; then
+		src=$WOK/$PACKAGE/$SOURCE-$VERSION
+		_pkg=$src/_pkg
+	fi
+	cd $WOK/$PACKAGE
+	# Execute genpkg_rules to build the package.
+	echo ""
+	echo "Bulding $PACKAGE with the receipt..."
+	echo "================================================================================"
+	if [ `cat $RECEIPT | grep genpkg_rules` ]; then
+		# Log process.
+		echo "executing genpkg_rules" >> $LOG
+		genpkg_rules
+	else
+		echo "No package rules to gen $PACKAGE..."
+	fi
+	# Copy the receipt and description (if exist) in
+	# the binary package tree.
+	cd $WOK/$PACKAGE
+	echo -n "Copying the receipt..."
+	cp receipt taz/$PACKAGE-$VERSION
+	status
+	if [ -f "description.txt" ]; then
+		echo -n "Copying the description file..."
+		cp description.txt taz/$PACKAGE-$VERSION
+		status
+	fi
+	# Creat the files.list by redirecting find outpout.
+	echo -n "Creating the list of files..."
+	cd taz/$PACKAGE-$VERSION/fs
+	find . -type f -print > ../files.list
+	find . -type l -print >> ../files.list
+	cd .. && sed -i s/'^.'/''/ files.list
+	status
+	# Build cpio archives. Find, cpio and gzip the fs, finish by
+	# removing the fs tree.
+	echo -n "Compressing the fs... "
+	find fs -print | cpio -o -H newc > fs.cpio
+	gzip fs.cpio && rm -rf fs
+	echo -n "Creating full cpio archive... "
+	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
+	# Restore package tree in case we want to browse it.
+	echo -n "Restoring original package tree... "
+	gzip -d fs.cpio.gz && cpio -id < fs.cpio
+	rm fs.cpio && cd ..
+	# Log process.
+	echo "$PACKAGE-$VERSION.tazpkg (done)" >> $LOG
+	echo "================================================================================"
+	echo "Package $PACKAGE ($VERSION) generated."
+	echo "Size : `du -sh $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg`"
+	echo ""
+}
+
+###################
+# Tazwok commands #
+###################
+
+case "$COMMAND" in
+	stats)
+		# Tazwok general statistics from the config file the wok.
+		#
+		echo ""
+		echo -e "\033[1mTazwok configuration statistics\033[0m
+================================================================================
+Wok directory        : $WOK
+Packages repository  : $PACKAGES_REPOSITORY
+Sources repository   : $SOURCES_REPOSITORY
+Packages in the wok  : `ls -1 $WOK | wc -l`
+Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg | wc -l`
+================================================================================"
+		echo ""
+		;;
+	list)
+		# List packages in wok directory. User can specifiy a category
+		#
+		if [ "$2" = "category" ]; then
+			echo -e "\033[1m\nPackages categories :\033[0m $CATEGORIES\n"
+			exit 0
+		fi
+		# Check for an asked category.
+		if [ -n "$2" ]; then
+			ASKED_CATEGORY=$2
+			echo ""
+			echo -e "\033[1mPackages in category :\033[0m $ASKED_CATEGORY"
+			echo "================================================================================"
+			for pkg in $WOK/*
+			do
+				. $pkg/receipt
+				if [ "$CATEGORY" == "$ASKED_CATEGORY" ]; then
+					echo -n "$PACKAGE"
+					echo -e "\033[24G $VERSION"
+					packages=$(($packages+1))
+				fi
+			done
+			echo "================================================================================"
+			echo -e "$packages packages in category $ASKED_CATEGORY.\n"
+		else
+			# By default list all packages and version.
+			echo ""
+			echo -e "\033[1mList of packages in the wok\033[0m"
+			echo "================================================================================"
+			for pkg in $WOK/*
+			do
+				. $pkg/receipt
+				echo -n "$PACKAGE"
+				echo -en "\033[24G $VERSION"
+				echo -e "\033[42G $CATEGORY"
+				packages=$(($packages+1))
+			done
+			echo "================================================================================"
+			echo -e "$packages packages avalaible in the wok.\n"
+		fi
+		;;
+	info)
+		# Informations about package.
+		#
+		check_for_package_on_cmdline
+		check_for_receipt
+		. $WOK/$PACKAGE/receipt
+		echo ""
+		echo -e "\033[1mTazwok package informations\033[0m
+================================================================================
+Package	   : $PACKAGE
+Version	   : $VERSION
+Category   : $CATEGORY
+Short desc : $SHORT_DESC
+Maintainer : $MAINTAINER"
+		if [ ! "$WEB_SITE" = "" ]; then
+			echo "Web site   : $WEB_SITE"
+		fi
+		if [ ! "$DEPENDS" = "" ]; then
+			echo "Depends    : $DEPENDS"
+		fi
+		if [ ! "$WANTED" = "" ]; then
+			echo "Wanted src : $WANTED"
+		fi
+		echo "================================================================================"
+		echo ""
+		
+		;;
+	check-log)
+		# We just cat the file log to view process info.
+		#
+		if [ ! -f "$LOG" ]; then
+			echo -e "\nNo process log found. The package is probably not cook.\n"
+			exit 0
+		else
+			echo ""
+			echo -e "\033[1mPackage process log for :\033[0m $PACKAGE"
+			echo "================================================================================"
+			cat $LOG
+			echo "================================================================================"
+			echo ""
+		fi
+		;;
+	search)
+		# Search for a package by pattern or name.
+		#
+		if [ -z "$2" ]; then
+			echo -e "\nPlease specify a pattern or a package name to search."
+			echo -e "Example : 'tazwok search gcc'.\n"
+			exit 0
+		fi
+		echo ""
+		echo -e "\033[1mSearch result for :\033[0m $2"
+		echo "================================================================================"
+		list=`ls -1 $WOK | grep $2`
+		for pkg in $list
+		do
+			. $WOK/$pkg/receipt
+			echo -n "$PACKAGE "
+			echo -en "\033[24G $VERSION"
+			echo -e "\033[42G $CATEGORY"
+			packages=$(($packages+1))
+		done
+		echo "================================================================================"
+		echo "$packages packages found for : $2"
+		echo ""
+		;;
+	compile)
+		# Configure and make a package with the receipt.
+		#
+		compile_package
+		;;
+	genpkg)
+		# Generate a package
+		#
+		gen_package
+		;;
+	cook)
+		# Compile and generate a package. Just execute tazwok with
+		# the good commands.
+		#
+		check_root
+		compile_package
+		gen_package
+		;;
+	cook-list)
+		# Cook all packages listed in a file. The path to the cooklist must
+		# be specified on the cmdline.
+		#
+		check_root
+		check_for_list
+		for pkg in $LIST
+		do
+			tazwok compile $pkg
+			tazwok genpkg $pkg
+		done
+		;;
+	clean)
+		# Clean up a package work directory.
+		#
+		check_for_package_on_cmdline
+		check_for_receipt
+		. $RECEIPT
+		cd $WOK/$PACKAGE
+		echo ""
+		echo "Cleaning $PACKAGE..."
+		echo "================================================================================"
+		if [ -d "taz" ]; then
+			echo -n "Removing taz files..."
+			rm -rf taz && status
+		fi
+		# Remove source tree if exist.
+		if [ -d "$PACKAGE-$VERSION" ]; then
+			echo -n "Removing source files..."
+			rm -rf $PACKAGE-$VERSION && status
+		fi
+		if [ -d "$SOURCE-$VERSION" ]; then
+			echo -n "Removing source files..."
+			rm -rf $SOURCE-$VERSION && status
+		fi
+		# Remove an envental $PACKAGE-build directory.
+		if [ -d "$PACKAGE-build" ]; then
+			echo -n "Removing build tree..."
+			rm -rf $PACKAGE-build && status
+		fi
+		# Remove process log file.
+		if [ -f "process.log" ]; then
+			echo -n "Removing process log file..."
+			rm process.log && status
+		fi
+		echo "$PACKAGE is clean. You can cook it again..."
+		echo ""
+		;;
+	gen-clean-wok)
+		# Generate a clean wok from the current wok by copying all receipt
+		# and stuff directory.
+		#
+		if [ -z "$2" ]; then
+			echo -e "\nPlease specify the destination for the new clean wok.\n"
+			exit 0
+		else
+			dest=$2
+			mkdir -p $dest
+		fi
+		echo "New wok is going to : $dest"
+		for pkg in `ls -1 $WOK`
+		do
+			echo "----"
+			echo -n "Preparing $pkg..."
+			mkdir -p $dest/$pkg
+			status
+			echo -n "Copying the receipt..."
+			cp -a $WOK/$pkg/receipt $dest/$pkg
+			status
+			if [ -d "$WOK/$pkg/stuff" ]; then
+				echo -n "Copying all the stuff directory..."
+				cp -a $WOK/$pkg/stuff $dest/$pkg
+				status
+			fi
+		done
+		echo "================================================================================"
+		echo "Clean wok generated in : $dest"
+		echo "Packages cleaned       : `ls -1 $dest | wc -l`"
+		echo ""
+		;;
+	clean-wok)
+		# Clean all packages in the work directory
+		#
+		for pkg in `ls -1 $WOK`
+		do
+			tazwok clean $pkg
+		done
+		echo "================================================================================"
+		echo "`ls -1 $WOK | wc -l` packages cleaned."
+		echo ""
+		;;
+	gen-list)
+		# cd in the directory to creat a packages.list and the md5sum file.
+		# Sed is used to remove all the .tazpkg extensions from the
+		# packages.list. The directory to move in by default is the repository
+		# if $3 is not empty cd into $3.
+		#
+		if [ -z "$2" ]; then
+			PACKAGES_REPOSITORY=$PACKAGES_REPOSITORY
+		else
+			if [ -d "$2" ]; then
+				PACKAGES_REPOSITORY=$2
+			else
+				echo -e "\nUnable to find directory : $2\n"
+				exit 0
+			fi
+		fi
+		cd $PACKAGES_REPOSITORY
+		# Remove old packages.list and md5sum, it well be soon rebuild.
+		rm -f packages.list packages.md5
+		echo ""
+		echo "Repository path : $PACKAGES_REPOSITORY"
+		echo -n "Creating the packages list... "
+		ls -1 > /tmp/packages.list
+		sed -i s/'.tazpkg'/''/ /tmp/packages.list
+		status
+		echo -n "Building the md5sum for all packages... "
+		md5sum * > packages.md5
+		status
+		mv /tmp/packages.list $PACKAGES_REPOSITORY
+		echo "================================================================================"
+		pkgs=`cat $PACKAGES_REPOSITORY/packages.list | wc -l`
+		echo "$pkgs packages in the repository."
+		echo ""
+		;;
+	new-tree)
+		# Just creat a few directories and gen a empty receipt to prepare
+		# the creation of a new package.
+		#
+		check_for_package_on_cmdline
+		if [ -d $WOK/$PACKAGE ]; then
+			echo -e "\n$PACKAGE package tree already exist.\n"
+			exit 0
+		fi
+		echo "Creating : $WOK/$PACKAGE"
+		mkdir $WOK/$PACKAGE
+		cd $WOK/$PACKAGE
+		echo -n "Preparing the receipt..."
+		#
+		# Default receipt begin.
+		#
+		echo "# SliTaz package receipt." > receipt
+		echo "" >> receipt
+		echo "PACKAGE=\"$PACKAGE\"" >> receipt
+# Finish the empty receipt.
+cat >> receipt << "EOF"
+VERSION=""
+CATEGORY=""
+SHORT_DESC=""
+MAINTAINER=""
+DEPENDS=""
+TARBALL="$PACKAGE-$VERSION.tar.gz"
+WEB_SITE=""
+WGET_URL=""
+
+# Rules to configure and make the package.
+compile_rules()
+{
+	cd $src
+	./configure --prefix=/usr --infodir=/usr/share/info \
+	--mandir=/usr/share/man $CONFIGURE_ARGS
+	make
+	make DESTDIR=$PWD/_pkg install
+}
+
+# Rules to gen a SliTaz package suitable for Tazpkg.
+genpkg_rules()
+{
+	mkdir -p $fs/usr
+	cp -a $_pkg/usr/bin $fs/usr
+	strip -s $fs/usr/bin/*
+}
+
+EOF
+#
+# Default receipt end.
+#
+		status
+		# Interactive mode, asking and seding.
+		if [ "$3" = "--interactive" ]; then
+			echo "Entering in interactive mode..."
+			echo "================================================================================"
+			echo "Package       : $PACKAGE"
+			# Version.
+			echo -n "Version       : " ; read anser
+			sed -i s/'VERSION=\"\"'/"VERSION=\"$anser\""/ receipt
+			# Category.
+			echo -n "Category      : " ; read anser
+			sed -i s/'CATEGORY=\"\"'/"CATEGORY=\"$anser\""/ receipt
+			# Short description.
+			echo -n "Short desc    : " ; read anser
+			sed -i s/'SHORT_DESC=\"\"'/"SHORT_DESC=\"$anser\""/ receipt
+			# Maintainer.
+			echo -n "Maintainer    : " ; read anser
+			sed -i s/'MAINTAINER=\"\"'/"MAINTAINER=\"$anser\""/ receipt
+			# Web site.
+			echo -n "Web site      : " ; read anser
+			sed -i s#'WEB_SITE=\"\"'#"WEB_SITE=\"$anser\""# receipt	
+			echo ""
+			# Wget URL.
+			echo "Wget URL to download source tarball."
+			echo "Example  : \$GNU_MIRROR/\$PACKAGE/\$TARBALL"
+			echo -n "Wget url : " ; read anser
+			sed -i s#'WGET_URL=\"\"'#"WGET_URL=\"$anser\""# receipt
+			# Ask for a stuff dir.
+			echo -n "Do you need a stuff directory ? (y/N) : " ; read anser
+			if [ "$anser" = "y" ]; then
+				echo -n "Creating the stuff directory..."
+				mkdir stuff && status
+			fi
+			# Ask for a description file.
+			echo -n "Are you going to write a description ? (y/N) : " ; read anser
+			if [ "$anser" = "y" ]; then
+				echo -n "Creating the description.txt file..."
+				echo "" > description.txt && status
+			fi
+			echo "================================================================================"
+			echo ""
+		fi
+		;;
+	remove)
+		# Remove a package from the wok.
+		#
+		check_for_package_on_cmdline
+		echo ""
+		echo -n "Removing $PACKAGE..."
+		rm -rf $WOK/$PACKAGE && status
+		echo ""
+		;;
+	usage|*)
+		# Print usage also for all unknow commands.
+		#
+		usage
+		;;
+esac
+
+exit 0
