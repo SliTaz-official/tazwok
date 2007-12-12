@@ -1,0 +1,57 @@
+2007-11-03  Christophe Lincoln  <pankso@slitaz.org>
+
+ * Release - Tazwok 1.2
+
+ * tazwok :
+   Ajout des couleurs dans la fonction status [ OK ]. Correction de la commande
+   compile/cook pour qu'elle exit en cas de téléchargement impossible.
+
+2007-10-24  Christophe Lincoln  <pankso@slitaz.org>
+
+ * Release - Tazwok 1.1
+ 
+ * tazwok :
+   Amélioration () des messages affichées dans la console en tentant de rendre
+   les données le plus lisible possible. La commande list, affiche le nom,
+   la version et la categorie sur des colonne prédéfinies (1, 24 et 42). La
+   a été aussi améliorée, elle commence par trouver la liste de paquets
+   contenant le nom/terme, charge la recette et affiche nom, version et
+   catégories.
+   
+ * doc/tazwok.html :
+   Documentation de la commande 'get-clean-wok'.
+   
+
+2007-10-22  Christophe Lincoln  <pankso@slitaz.org>
+
+ * tazwok :
+   Ajout d'une commande permet de générer un wok propre depuis le wok courant.
+   Modification d la commande stats, elle donne maintenant le nombres de
+   paquets dans le repositoire. La commande compile, genpkg et cook utilisent
+   les 2 fonctions compile_package et gen_packages. La fonction compile exit 1
+   et affiche un message d'erreur, ça évite que la commande cook gen un paquet
+   vide.
+
+
+2007-10-12  Christophe Lincoln  <pankso@slitaz.org>
+
+ * tazwok :
+   Modification de la commande gen-list pour qu'elle rm l'ancienne list et
+   sommes des paquets avant de la reconstruire (ça faussait les stats).
+
+
+2007-10-11  Christophe Lincoln  <pankso@slitaz.org>
+
+ * tazwok :
+   Modification des commandes de créations des répertoires utilisés. Tazwok
+   crée automatiquement les rép si ils n'existent pas, avec un message
+   sans 'echo -n' qui affichait les premiers messages sur une seule ligne.
+
+
+2007-10-09  Christophe Lincoln  <pankso@slitaz.org>
+
+ * First release - Tazwok 1.0
+
+
+===============================================================================
+Tazwok ChangeLog
