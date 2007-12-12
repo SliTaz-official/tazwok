@@ -1,0 +1,86 @@
+README for Tazwok - SliTaz sources and packages cooker                     2007
+===============================================================================
+
+
+English
+-------
+Tazwok can compile source package and creat binary packages suitable for
+Tazpkg (Tiny autonomus zone package manager). You can build individuals
+package or a list a packages with one command, rebuild the full distro,
+generate a packages repository and also list and get info about packages.
+Please check 'tazwok usgae' to get a list of commands with a short
+description in English.
+
+Tazwok is a SHell script written from scratch, work with Bash, and Ash from
+the Busybox. Tazwok is licensed under free GNU gpl v3. See INSTALL at the
+bottom of this file for installation instructions.
+
+
+Français
+--------
+Tazwok est un outils en ligne de commande permettant de configurer et de
+compiler un paquet depuis les sources. Tazwok permet aussi de créer des
+paquets prêts à être utilisé par Tazpkg, le gestionnaire de paquets créer
+pour SliTaz. Pour fonctionner Tazwok utilise un fichier contenant la recette
+et toutes les informations nécessaires à la construction du paquet, cette
+recette est aussi utilisée par Tazpkg et se compose de différentes variables
+et fonctions. Tazwok utilise un fichier de configuration (/etc/tazwok.conf)
+pour connaître le chemin vers le wok, les paquets sources et les paquets
+(.tazpkg) générés. Il est aussi capable de générer une liste paquets avec
+leurs sommes md5, des créer un nouveau paquet de manière interactive, de faire
+une recherche, de nettoyer les fichiers générés ou encore de cuire plusieurs
+paquets en une seule fois (Voir les commandes disponibles).
+
+Tazwok est écript en script shell depuis rien (from scratch), compatible Bash,
+et fonctionnant avec Ash du projet Busybox. Tazwok est distribué sous license
+libre GNU gpl v3. Les recettes avec leures commades sont basée sur le livre
+de cuisine de SliTaz, le Cookbook fournit aussi de la documentation au sujet
+de Tazwok et du dévellopement de SliTaz.
+
+
+Documentation et wok
+--------------------
+La doc au sujet de Tazwok est contenue dans le répertoire doc de cette archive
+ou dans /usr/share/doc/tazwok si Tazwok est installé. Pour obtenir un wok sous
+forme d'archive et developper, il suffit de lire le document developer.txt et
+consulter le livre de cuisine de SliTaz (Cookbook) :
+
+ http://www.slitaz.org/doc/cookbook/
+
+
+Contenu de l'archive source
+---------------------------
+
+ * doc/ : La documentation contenant le manuel au format HTML et TEXT. Le
+   répertoire doc/ contient aussi un document déstinées principalement aux
+   développeurs (developer.txt).
+ * examples/ : Ce répertoire contient un exemple de fichier de config et
+   un script (build-world.sh) permettant de reconstruire le système depuis une
+   liste et d'installer directement les paquets générés.
+ * examples/cooklists/ : Des listes de paquet à cuire, classés par catégorire
+   de paquets. La liste base-system.cooklist contient les paquet utilisés pour
+   créer la base du système racine de SliTaz.
+ * tazwok : Le script permettant de compiler des paquets source et de
+   générer des paquets *.tazpkg.
+ * Les fichiers AUTHORS, ChangeLog, COPYING, gpl.txt et ce README.
+
+
+INSTALL/UNINSTALL Tazwok
+------------------------
+Vous pouvez utiliser PREFIX= pour installer Tazwok dans un autre répertoire
+que /usr/bin.
+
+ # cd into/tazwok-version
+ # make install
+
+Utilisation/Usage :
+
+ # tazwok usage
+
+Désinstallation avec :
+
+ # make uninstall
+
+
+===============================================================================
+                                                         http://www.slitaz.org/
