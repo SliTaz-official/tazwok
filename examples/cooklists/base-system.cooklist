@@ -1,0 +1,5 @@
+base-files
+busybox
+glibc-base
+linux
+syslinux
