@@ -1,0 +1,100 @@
+Tazwok - Documentation développeur.                                        2007
+===============================================================================
+
+
+Ce document décrit le fonctionnement général de Tazwok, il est principalement
+déstiné aux personnes désirant devenir développeur SliTaz/Tazwok. Ce documents
+réunit aussi divers notes utiles, des idées et des astuces. Les discussions
+au sujet de Tazwok peuvent se faire sur la Mailing list de SliTaz, toutes les
+informations d'inscription sont sur le site Web : http://www.slitaz.org/
+
+
+Intoduction
+-----------
+L'idée est d'utiliser un répertoire (wok) contenant tous les paquets
+disponibles, chaque paquet contient au minimum une recette (receipt) servant
+à télécharger, désarchiver, compiler et générer le paquet binaire. Pour
+fonctionner, Tazwok a aussi besoin d'un répertoire pour stocker les sources
+téléchargées ($SOURCES_REPOSITORY) et d'un répertoire pour les paquets générés
+($PACKAGES_REPOSITORY). Taz utilise un fichier de configuration (tazwok.conf),
+ce fichier peut se trouver dans /etc ou dans le répertoire courant.
+
+
+Coding style
+------------
+Tazwok est écrit en script SHell, compatible avec ash du projet Busybox qui
+est le SHell par défaut sur SliTaz. Le code est identé avec des tabulations,
+cela donne un script plus léger (en terme de octect). Les commentaires se
+mettent en English et devraient aider a s'y retouver. On peut créer de
+nouvelles fonctions si nécessaire et ajouter des commandes qu'il faut tout
+de suite documenter (voir même avant pour en discuter sur la liste).
+
+
+BUGS et améliorations
+---------------------
+Si vous découvez un bug dans le code, ou des commandes qui pourraient être
+plus courtes et mieux pensées, n'hésitez pas à vous inscrire sur la liste de
+SliTaz ou à envoyer directemnt un mail au mainteneur actuel de Tazwok (voir
+le fichier AUTHORS contenu dans les sources).
+
+
+Cookbook et Tazwok
+------------------
+Tazwok a été inspiré des techniques utilisées dans le Cookbook de SliTaz, les
+régles de compilation et celles pour généer le paquet sont largement décrites
+dans le livre. Pour plus d'infos : http://www.slitaz.org/doc/cookbook/
+
+
+Wok
+---
+Le wok est téléchargeable depuis le miroir de SliTaz, c'est une archive
+contenant toutes les recettes et fichiers nécessaire à la compilation et
+génération des paquets. Le wok principalement utilisé est celui de la version
+Cooking (en cuisson), il contient les dernières recettes et fichiers. Pour
+installer un wok, on peut télécharger l'archive, désarchiver et configurer
+Tazwok pour qu'il trouve les fichiers du wok. Exemple :
+
+ # cd /home/slitaz
+ # wget http://download.tuxfamily.org/slitaz/wok/cooking-wok.tar.gz
+ # tar xzf cooking-wok.tar.gz
+
+Configurer Tazwok pour lister les paquet disponibles :
+
+ # tazwok list
+
+
+Cooklists - Liste de cuisson
+----------------------------
+Pour compiler une plusieurs paquets en une seule commande, on peut utiliser
+des liste de paquets. Il y a des listes exemples dans le répertoire examples/
+de cette archive et dans le répertoire /usr/share/examples/tazwok/cooklists
+sur SliTaz.
+
+
+Structure d'un paquet dans le wok - $WOK/$PACKAGE/*
+---------------------------------------------------
+La structure des paquets dans le wok devraient être respectée si l'on veut que
+Tazwok trouve les bons fichiers et répertoires. Contenu possible d'un paquet :
+
+ * stuff/ : Le matériel utilisé pour configurer, compiler et générer
+   le paquet (patche(s), Makefile, pseudo fs, etc).
+ * taz/ : Répertoire contenant l'arbre du paquet Tazpkg généré, le paquet
+   compressé est stocké dans le répertoire spécifié par $PACKAGES_REPOSITORY.
+ * receipt : La recette de cuisine (voir receipt.txt).
+ * description.txt : La description du paquet (en option) est copiée
+   à la racine du paquet Tazpkg. Une fois installé, 'tazpkg' sait
+   traiter ce fichier via la commande 'tazpkg desc pkgname'.
+
+
+Structure d'un paquet tazpkg - $WOK/$PACKAGE/taz/$PACKAGE-$VERSION/*
+----------------------------
+
+ * fs/ : Pseudo système de fichiers contenant tous les fichiers
+   à installer.
+ * receipt : La recette de cuisine (voir receipt.txt).
+ * files.list : Liste des fichiers contenus dans le paquet.
+ * description.txt : La description du paquet (en option).
+
+
+===============================================================================
+                                                         http://www.slitaz.org/
