@@ -323,7 +323,8 @@ gen_package()
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
 	# Restore package tree in case we want to browse it.
 	echo -n "Restoring original package tree... "
-	zcat fs.cpio.gz | cpio -id && cd ..
+	zcat fs.cpio.gz | cpio -id
+	rm fs.cpio.gz && cd ..
 	# Log process.
 	echo "$PACKAGE-$VERSION.tazpkg (done)" >> $LOG
 	echo "================================================================================"
