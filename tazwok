@@ -295,21 +295,35 @@ gen_package()
 	# Creat the files.list by redirecting find outpout.
 	echo -n "Creating the list of files..."
 	cd taz/$PACKAGE-$VERSION/fs
-	find . -type f -print > ../files.list
-	find . -type l -print >> ../files.list
-	cd .. && sed -i s/'^.'/''/ files.list
+	ALL_FILES="$(find . -print)"
+  	LAST_FILE=""
+  	FILES_LIST=""
+  	for i in $FILES_LIST; do
+		if [ "$LAST_FILE" != "" ]; then
+			case "$i" in
+			$LAST_FILE/*)
+				case "$(ls -ld \"$LAST_FILE\")" in 
+				drwxr-xr-x\ *\ root\ root\ *);;
+				*) FILES_LIST="$FILES_LIST '${LAST_FILE#fs}'";;
+				esac;;
+			*) FILES_LIST="$FILES_LIST '${LAST_FILE#fs}'";;
+			esac
+		fi
+		LAST_FILE=$i
+	done
+	FILES_LIST="$FILES_LIST '${LAST_FILE#fs}'"
+	cd .. 
+	eval 'for i in' $FILES_LIST '; do echo $i; done' > ../files.list
 	status
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
 	echo -n "Compressing the fs... "
-	find fs -print | cpio -o -H newc > fs.cpio
-	gzip fs.cpio && rm -rf fs
+	find fs -print | cpio -o -H newc | gzip > fs.cpio.gz && rm -rf fs
 	echo -n "Creating full cpio archive... "
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
 	# Restore package tree in case we want to browse it.
 	echo -n "Restoring original package tree... "
-	gzip -d fs.cpio.gz && cpio -id < fs.cpio
-	rm fs.cpio && cd ..
+	zcat fs.cpio.gz | cpio -id && cd ..
 	# Log process.
 	echo "$PACKAGE-$VERSION.tazpkg (done)" >> $LOG
 	echo "================================================================================"
