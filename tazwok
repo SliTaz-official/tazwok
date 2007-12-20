@@ -294,26 +294,21 @@ gen_package()
 	fi
 	# Creat the files.list by redirecting find outpout.
 	echo -n "Creating the list of files..."
-	cd taz/$PACKAGE-$VERSION/fs
-	ALL_FILES="$(find . -print)"
+	cd taz/$PACKAGE-$VERSION
   	LAST_FILE=""
-  	FILES_LIST=""
-  	for i in $FILES_LIST; do
+  	( find fs -print; echo ) | while read file; do
 		if [ "$LAST_FILE" != "" ]; then
-			case "$i" in
+			case "$file" in
 			$LAST_FILE/*)
-				case "$(ls -ld \"$LAST_FILE\")" in 
-				drwxr-xr-x\ *\ root\ root\ *);;
-				*) FILES_LIST="$FILES_LIST '${LAST_FILE#fs}'";;
+				case "$(ls -ld "$LAST_FILE")" in 
+				drwxr-xr-x\ *\ root\ *\ root\ *);;
+				*) echo ${LAST_FILE#fs};;
 				esac;;
-			*) FILES_LIST="$FILES_LIST '${LAST_FILE#fs}'";;
+			*) echo ${LAST_FILE#fs};;
 			esac
 		fi
-		LAST_FILE=$i
-	done
-	FILES_LIST="$FILES_LIST '${LAST_FILE#fs}'"
-	cd .. 
-	eval 'for i in' $FILES_LIST '; do echo $i; done' > ../files.list
+		LAST_FILE="$file"
+	done > files.list
 	status
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
