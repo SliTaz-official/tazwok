@@ -343,7 +343,7 @@ Wok directory        : $WOK
 Packages repository  : $PACKAGES_REPOSITORY
 Sources repository   : $SOURCES_REPOSITORY
 Packages in the wok  : `ls -1 $WOK | wc -l`
-Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg | wc -l`
+Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 ================================================================================"
 		echo ""
 		;;
