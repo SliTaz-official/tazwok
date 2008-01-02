@@ -48,7 +48,7 @@ if test $(id -u) = 0 ; then
 	# Check for the sources repository.
 	if [ ! -d "$SOURCES_REPOSITORY" ]; then
 		echo "Creating the sources repository..."
-		mkdir -p $PACKAGES_REPOSITORY
+		mkdir -p $SOURCES_REPOSITORY
 	fi
 fi
 
@@ -585,7 +585,7 @@ Maintainer : $MAINTAINER"
 		echo ""
 		echo "Repository path : $PACKAGES_REPOSITORY"
 		echo -n "Creating the packages list... "
-		ls -1 > /tmp/packages.list
+		ls -1 *.tazpkg > /tmp/packages.list
 		sed -i s/'.tazpkg'/''/ /tmp/packages.list
 		status
 		echo -n "Building the md5sum for all packages... "
