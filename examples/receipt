@@ -12,7 +12,7 @@ WGET_URL="http://ftp.gnu.org/pub/gnu/bc/$TARBALL"
 # Rules to configure and make the package.
 compile_rules()
 {
-    cd $PACKAGE-$VERSION
+    cd $src
     ./configure --prefix=/usr --infodir=/usr/share/info \
     --mandir=/usr/share/man $CONFIGURE_ARGS
     make

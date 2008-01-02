@@ -1,3 +1,11 @@
+2008-01-02  Christophe Lincoln  <pankso@slitaz.org>
+
+ * Release - Tazwok 1.3
+ 
+ * Les messages de log sont maintenant directement fournis par le dépôt
+   Mercurial de Tazwok : http://hg.slitaz.org/tazwok/
+
+
 2007-11-03  Christophe Lincoln  <pankso@slitaz.org>
 
  * Release - Tazwok 1.2
