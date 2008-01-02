@@ -16,7 +16,7 @@ VERSION=1.2
 ####################
 
 # Packages categories.
-CATEGORIES="base-system base-apps x-window extra"
+CATEGORIES="base-system base-apps x-window devel extra"
 
 # Use words rater than numbers in the code.
 COMMAND=$1
@@ -163,6 +163,36 @@ check_for_wanted()
 	fi
 }
 
+# Check for build dependencies and notify user.
+check_for_build_depends()
+{
+	echo "Checking for build dependencies..."
+	for pkg in $BUILD_DEPENDS
+	do
+		if [ ! -d "/var/lib/tazpkg/installed/$pkg" ]; then
+			MISSING_PACKAGE=$pkg
+		fi
+	done
+	if [ ! "$MISSING_PACKAGE" = "" ]; then
+		echo "================================================================================"
+		for pkg in $BUILD_DEPENDS
+		do
+			if [ ! -d "/var/lib/tazpkg/installed/$pkg" ]; then
+				MISSING_PACKAGE=$pkg
+				echo "Missing : $pkg"
+			fi
+		done
+		echo "================================================================================"
+		echo "You can continue or exit to install missing dependencies."
+		echo -n "Continue or exit (y/N) ? "; read anser
+		if [ "$anser" == "y" ]; then
+			continue
+		else
+			exit 0
+		fi
+	fi
+}
+
 # Configure and make a package with the receipt.
 compile_package()
 {
@@ -180,6 +210,7 @@ compile_package()
 	else
 		src=$WOK/$PACKAGE/$PACKAGE-$VERSION
 	fi
+	check_for_build_depends
 	check_for_wanted
 	echo ""
 	echo "Starting to cook $PACKAGE..."
