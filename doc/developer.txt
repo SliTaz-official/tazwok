@@ -16,8 +16,8 @@ disponibles, chaque paquet contient au minimum une recette (receipt) servant
 à télécharger, désarchiver, compiler et générer le paquet binaire. Pour
 fonctionner, Tazwok a aussi besoin d'un répertoire pour stocker les sources
 téléchargées ($SOURCES_REPOSITORY) et d'un répertoire pour les paquets générés
-($PACKAGES_REPOSITORY). Taz utilise un fichier de configuration (tazwok.conf),
-ce fichier peut se trouver dans /etc ou dans le répertoire courant.
+($PACKAGES_REPOSITORY), ces valeurs peuvent être configurées via le fichier :
+/etc/tazwok.conf.
 
 
 Coding style
@@ -26,7 +26,7 @@ Tazwok est écrit en script SHell, compatible avec ash du projet Busybox qui
 est le SHell par défaut sur SliTaz. Le code est identé avec des tabulations,
 cela donne un script plus léger (en terme de octect). Les commentaires se
 mettent en English et devraient aider a s'y retouver. On peut créer de
-nouvelles fonctions si nécessaire et ajouter des commandes qu'il faut tout
+nouvelles fonctions si nécessaire et ajouter des commandes qu'il faut et tout
 de suite documenter (voir même avant pour en discuter sur la liste).
 
 
@@ -34,7 +34,7 @@ BUGS et améliorations
 ---------------------
 Si vous découvez un bug dans le code, ou des commandes qui pourraient être
 plus courtes et mieux pensées, n'hésitez pas à vous inscrire sur la liste de
-SliTaz ou à envoyer directemnt un mail au mainteneur actuel de Tazwok (voir
+SliTaz ou à envoyer directement un mail au mainteneur actuel de Tazwok (voir
 le fichier AUTHORS contenu dans les sources).
 
 
@@ -52,21 +52,16 @@ contenant toutes les recettes et fichiers nécessaire à la compilation et
 génération des paquets. Le wok principalement utilisé est celui de la version
 Cooking (en cuisson), il contient les dernières recettes et fichiers. Pour
 installer un wok, on peut télécharger l'archive, désarchiver et configurer
-Tazwok pour qu'il trouve les fichiers du wok. Exemple :
+Tazwok pour qu'il trouve les fichiers du wok ou cloner le dépôt Mercurial.
+Toute les infos d'utilisation du wok sont décrites sur la page Forge du site :
 
- # cd /home/slitaz
- # wget http://download.tuxfamily.org/slitaz/wok/cooking-wok.tar.gz
- # tar xzf cooking-wok.tar.gz
-
-Configurer Tazwok pour lister les paquet disponibles :
-
- # tazwok list
+    http://www.slitaz.org/devel/forge.html
 
 
 Cooklists - Liste de cuisson
 ----------------------------
-Pour compiler une plusieurs paquets en une seule commande, on peut utiliser
-des liste de paquets. Il y a des listes exemples dans le répertoire examples/
+Pour compiler plusieurs paquets en une seule commande, on peut utiliser des 
+listes de cuisson. Il y a des listes exemples dans le répertoire examples/
 de cette archive et dans le répertoire /usr/share/examples/tazwok/cooklists
 sur SliTaz.
 

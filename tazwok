@@ -8,7 +8,7 @@
 #
 # (C) 2007-2008 SliTaz - GNU General Public License.
 #
-VERSION=1.3
+VERSION=1.3.1
 
 ####################
 # Tazwok variables #
@@ -272,6 +272,47 @@ compile_package()
 	fi
 }
 
+# Copy all generic files (locale, pixmaps, .desktop). We use standard path,
+# so some packages need to copy these files with the receipt and genpkg_rules.
+# This function is executed by gen_package when 'tazwok genpkg'.
+copy_generic_files()
+{
+	# In most case locale are in $_pkg/usr/share/locale so we copy files
+	# using generic variables and $LOCALE from Tazwok config file.
+	if [ ! "$LOCALE" = "" ]; then
+		if [ -d "$_pkg/usr/share/locale" ]; then
+			mkdir -p $fs/usr/share/locale
+			for i in $LOCALE
+			do
+				cp -a $_pkg/usr/share/locale/$i \
+					$fs/usr/share/locale 2>/dev/null
+			done
+		fi
+	fi
+	# Pixmaps. Some icons/images can be add trough genpkg_rules and
+	# generic copy can be disable with GENERIC_PIXMAPS="no" in pkg receipt.
+	if [ ! "$GENERIC_PIXMAPS" = "no" ]; then
+		if [ -d "$_pkg/usr/share/pixmaps" ]; then
+			mkdir -p $fs/usr/share/pixmaps
+			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.* \
+				$fs/usr/share/pixmaps 2>/dev/null
+			# Custom or home made PNG pixmap can be in stuff.
+			if [ -f "stuff/$PACKAGE.png" ]; then
+				cp -a stuff/$PACKAGE.png $fs/usr/share/pixmaps
+			fi
+		fi
+	fi
+	# Desktop entry (.desktop).
+	if [ -d "$_pkg/usr/share/applications" ]; then
+		cp -a $_pkg/usr/share/applications $fs/usr/share
+		# Home made desktop file can be in stuff.
+		if [ -f "stuff/$PACKAGE.desktop" ]; then
+			mkdir -p $fs/usr/share/applications
+			cp -a stuff/$PACKAGE.desktop $fs/usr/share/applications
+		fi
+	fi
+}
+
 # Creat a package tree and build the gziped cpio archive
 # to make a SliTaz (.tazpkg) package.
 gen_package()
@@ -300,19 +341,20 @@ gen_package()
 		_pkg=$src/_pkg
 	fi
 	cd $WOK/$PACKAGE
-	# Execute genpkg_rules to build the package.
+	# Execute genpkg_rules and copy generic files to build the package.
 	echo ""
 	echo "Bulding $PACKAGE with the receipt..."
 	echo "================================================================================"
-	if [ `cat $RECEIPT | grep genpkg_rules` ]; then
+	if [ `cat $RECEIPT | grep ^genpkg_rules` ]; then
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		genpkg_rules
+		copy_generic_files
 	else
 		echo "No package rules to gen $PACKAGE..."
+		exit 1
 	fi
-	# Copy the receipt and description (if exist) in
-	# the binary package tree.
+	# Copy the receipt and description (if exist) in the binary package tree.
 	cd $WOK/$PACKAGE
 	echo -n "Copying the receipt..."
 	cp receipt taz/$PACKAGE-$VERSION

@@ -2,19 +2,22 @@
 
 PACKAGE="bc"
 VERSION="1.06"
-CATEGORY="base-apps"
+CATEGORY="utilities"
 SHORT_DESC="Bc is a cmdline calculator."
-MAINTAINER="pankso@slitaz.org"
+MAINTAINER="name@example.org"
 TARBALL="$PACKAGE-$VERSION.tar.gz"
 WEB_SITE="http://www.gnu.org/software/bc/"
-WGET_URL="http://ftp.gnu.org/pub/gnu/bc/$TARBALL"
+WGET_URL="$GNU_MIRROR/$PACKAGE/$TARBALL"
 
 # Rules to configure and make the package.
 compile_rules()
 {
     cd $src
-    ./configure --prefix=/usr --infodir=/usr/share/info \
-    --mandir=/usr/share/man $CONFIGURE_ARGS
+    ./configure \
+    	--prefix=/usr \
+    	--infodir=/usr/share/info \
+    	--mandir=/usr/share/man \
+    	$CONFIGURE_ARGS
     make
     make DESTDIR=$PWD/_pkg install
 }
@@ -22,7 +25,7 @@ compile_rules()
 # Rules to gen a SliTaz package suitable for Tazpkg.
 genpkg_rules()
 {
-    mkdir -p $fs/usr/bin
-    cp -a $_pkg/usr/bin/* $fs/usr/bin
+    mkdir -p $fs/usr
+    cp -a $_pkg/usr/bin $fs/usr
     strip -s $fs/usr/bin/*
 }
