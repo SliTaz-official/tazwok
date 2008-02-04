@@ -15,7 +15,17 @@ VERSION=1.3.1
 ####################
 
 # Packages categories.
-CATEGORIES="base-system base-apps x-window devel extra"
+CATEGORIES="
+base-system
+utilities
+network
+graphics
+multimedia
+office
+development
+system-tools
+security
+meta"
 
 # Use words rater than numbers in the code.
 COMMAND=$1
@@ -277,7 +287,6 @@ compile_package()
 # This function is executed by gen_package when 'tazwok genpkg'.
 copy_generic_files()
 {
-	cd $WOK/$PACKAGE
 	# In most case locale are in $_pkg/usr/share/locale so we copy files
 	# using generic variables and $LOCALE from Tazwok config file.
 	if [ ! "$LOCALE" = "" ]; then
@@ -312,6 +321,23 @@ copy_generic_files()
 		mkdir -p $fs/usr/share/applications
 		cp -a stuff/$PACKAGE.desktop $fs/usr/share/applications
 	fi
+}
+
+# Find and strip : --strip-all (-s) or --strip-debug on static libs.
+strip_package()
+{
+	echo -n "Executing strip on all files..."
+	# Binaries.
+	for dir in $fs/bin $fs/sbin $fs/usr/bin $fs/usr/sbin $fs/usr/games
+	do
+		if [ -d "$dir" ]; then
+			find $dir -type f -exec strip -s '{}' 2>/dev/null \;
+		fi
+	done
+	# Libraries.
+	find $fs -name "*.so*" -exec strip -s '{}' 2>/dev/null \;
+	find $fs -name "*.a" -exec strip --strip-debug '{}' 2>/dev/null \;
+	status
 }
 
 # Creat a package tree and build the gziped cpio archive
@@ -350,6 +376,7 @@ gen_package()
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		genpkg_rules
+		cd $WOK/$PACKAGE
 		# Skip generic files for packages with a WANTED variable 
 		# (dev and splited pkgs).
 		if [ ! "$WANTED" = "" ]; then
@@ -357,6 +384,7 @@ gen_package()
 		else
 			copy_generic_files
 		fi
+		strip_package
 	else
 		echo "No package rules to gen $PACKAGE..."
 		exit 1
