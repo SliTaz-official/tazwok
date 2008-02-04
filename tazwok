@@ -277,6 +277,7 @@ compile_package()
 # This function is executed by gen_package when 'tazwok genpkg'.
 copy_generic_files()
 {
+	cd $WOK/$PACKAGE
 	# In most case locale are in $_pkg/usr/share/locale so we copy files
 	# using generic variables and $LOCALE from Tazwok config file.
 	if [ ! "$LOCALE" = "" ]; then
@@ -296,20 +297,20 @@ copy_generic_files()
 			mkdir -p $fs/usr/share/pixmaps
 			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.* \
 				$fs/usr/share/pixmaps 2>/dev/null
-			# Custom or home made PNG pixmap can be in stuff.
-			if [ -f "stuff/$PACKAGE.png" ]; then
-				cp -a stuff/$PACKAGE.png $fs/usr/share/pixmaps
-			fi
+		fi
+		# Custom or home made PNG pixmap can be in stuff.
+		if [ -f "stuff/$PACKAGE.png" ]; then
+			cp -a stuff/$PACKAGE.png $fs/usr/share/pixmaps
 		fi
 	fi
 	# Desktop entry (.desktop).
 	if [ -d "$_pkg/usr/share/applications" ]; then
 		cp -a $_pkg/usr/share/applications $fs/usr/share
-		# Home made desktop file can be in stuff.
-		if [ -f "stuff/$PACKAGE.desktop" ]; then
-			mkdir -p $fs/usr/share/applications
-			cp -a stuff/$PACKAGE.desktop $fs/usr/share/applications
-		fi
+	fi
+	# Home made desktop file can be in stuff.
+	if [ -f "stuff/$PACKAGE.desktop" ]; then
+		mkdir -p $fs/usr/share/applications
+		cp -a stuff/$PACKAGE.desktop $fs/usr/share/applications
 	fi
 }
 
