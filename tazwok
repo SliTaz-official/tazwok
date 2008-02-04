@@ -350,7 +350,13 @@ gen_package()
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		genpkg_rules
-		copy_generic_files
+		# Skip generic files for packages with a WANTED variable 
+		# (dev and splited pkgs).
+		if [ ! "$WANTED" = "" ]; then
+			continue
+		else
+			copy_generic_files
+		fi
 	else
 		echo "No package rules to gen $PACKAGE..."
 		exit 1
