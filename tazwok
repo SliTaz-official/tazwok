@@ -25,6 +25,8 @@ office
 development
 system-tools
 security
+games
+misc
 meta"
 
 # Use words rater than numbers in the code.
@@ -302,8 +304,8 @@ copy_generic_files()
 	# Pixmaps. Some icons/images can be add trough genpkg_rules and
 	# generic copy can be disable with GENERIC_PIXMAPS="no" in pkg receipt.
 	if [ ! "$GENERIC_PIXMAPS" = "no" ]; then
+		mkdir -p $fs/usr/share/pixmaps
 		if [ -d "$_pkg/usr/share/pixmaps" ]; then
-			mkdir -p $fs/usr/share/pixmaps
 			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.* \
 				$fs/usr/share/pixmaps 2>/dev/null
 		fi
