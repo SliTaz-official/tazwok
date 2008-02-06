@@ -301,12 +301,15 @@ copy_generic_files()
 			done
 		fi
 	fi
-	# Pixmaps. Some icons/images can be add trough genpkg_rules and
-	# generic copy can be disable with GENERIC_PIXMAPS="no" in pkg receipt.
+	# Pixmaps (PNG or/and XPM only). Some icons/images can be add trough 
+	# genpkg_rules and generic copy can be disable with GENERIC_PIXMAPS="no"
+	# in pkg receipt.
 	if [ ! "$GENERIC_PIXMAPS" = "no" ]; then
 		if [ -d "$_pkg/usr/share/pixmaps" ]; then
 			mkdir -p $fs/usr/share/pixmaps
-			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.* \
+			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.png \
+				$fs/usr/share/pixmaps 2>/dev/null
+			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.xpm \
 				$fs/usr/share/pixmaps 2>/dev/null
 		fi
 		# Custom or home made PNG pixmap can be in stuff.
