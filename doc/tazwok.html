@@ -136,7 +136,7 @@ afficher la configuration courante). Le paquet peut ensuite facilement
 s'installer via Tazpkg ou être utilisé par Tazlito pour générer une
 distribution LiveCD automatiquement. A noter que les fichiers standards tels
 que les locales, le pixmap ou le fichier.desktop sont automatiquement copiés
-dans $fs/usr/share, si les chemins sont standards ou si le fichier exist dans
+dans $fs/usr/share, si les chemins sont standards ou si le fichier existe dans
 /stuff. Utilisation de 'genpkg' :
 </p>
 <pre>
@@ -187,12 +187,12 @@ et lire la documentation du Cookbook. Exemple d'utilisation :
 <p>
 La commande 'gen-list' permet de générer une liste de paquets (packages.list),
 leurs sommes md5 (packages.md5) et en option une liste de paquet contenant plus
-d'informations (packages.txt). Les simple lists sont crée en se basant sur les
-paquets contenus dans un répertoire. La liste au format texte est construite
-avec les recettes du wok et son nom peut être modifié via la ligne de commande.
-Le répertoire des paquets par défaut est celui spécifié dans le fichier de 
-configuration, vous avez aussi la possibilité de spécifier le répertoire à
-utiliser sur la ligne de commande. Utilisation de la commande 'gen-list' :
+d'informations (packages.txt). Les simples listes sont crées en se basant sur
+les paquets contenus dans un répertoire. La liste au format texte est construite
+avec les recettes contenues dans un wok. Le répertoire des paquets par défaut
+est celui spécifié dans le fichier de configuration, vous avez aussi la
+possibilité de spécifier le répertoire à utiliser sur la ligne de commande.
+Utilisation de la commande 'gen-list' :
 </p>
 <pre>
  # tazwok gen-list
