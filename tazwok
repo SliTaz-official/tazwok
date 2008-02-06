@@ -93,7 +93,7 @@ usage ()
   cook-list      Cook all packages specified in the list by order.
   clean          Clean all generated files in the package tree.
   new-tree       Prepare a new package tree and receipt (--interactive).
-  gen-list       Generate a packages.list and md5sum for a repository.
+  gen-list       Generate a packages lists for a repository (--text).
   gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
   remove         Remove a package from the wok.\n"
 }
@@ -227,7 +227,7 @@ compile_package()
 	echo "Starting to cook $PACKAGE..."
 	echo "================================================================================"
 	# Check for src tarball and wget if needed.
-	if [ ! "$TARBALL" = "" ]; then
+	if [ ! "$WGET_URL" = "" ]; then
 		echo "Checking for source tarball... "
 		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 			cd $SOURCES_REPOSITORY
@@ -262,7 +262,7 @@ compile_package()
 	cd $WOK/$PACKAGE
 	# Log and execute compile_rules function if it exist, to configure and
 	# make the package if it exist.
-	if [ `cat $RECEIPT | grep compile_rules` ]; then
+	if grep -q ^compile_rules $RECEIPT; then
 		echo "executing compile_rules" >> $LOG
 		compile_rules
 		# Exit if compilation failed so the binary package
@@ -375,7 +375,7 @@ gen_package()
 	echo ""
 	echo "Bulding $PACKAGE with the receipt..."
 	echo "================================================================================"
-	if [ `cat $RECEIPT | grep ^genpkg_rules` ]; then
+	if grep -q ^genpkg_rules $RECEIPT; then
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		genpkg_rules
@@ -438,6 +438,32 @@ gen_package()
 	echo ""
 }
 
+# Optional text packages list for gen-list.
+gen_textlist()
+{
+	DATE=`date +%Y-%m-%d\ \%H:%M:%S`
+	echo -n "Creating the text packages list... "
+	cat >> packages.txt << _EOT_
+# SliTaz GNU/Linux - Packages list
+#
+# Packages : _packages_
+# Date     : $DATE
+#
+_EOT_
+	for pkg in $WOK/*
+	do
+	. $pkg/receipt
+	cat >> packages.txt << _EOT_
+
+$PACKAGE
+    $VERSION
+    $SHORT_DESC
+_EOT_
+	packages=$(($packages+1))
+	done && status
+	sed -i s/"_packages_"/"$packages"/ packages.txt
+}
+
 ###################
 # Tazwok commands #
 ###################
@@ -475,7 +501,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				. $pkg/receipt
 				if [ "$CATEGORY" == "$ASKED_CATEGORY" ]; then
 					echo -n "$PACKAGE"
-					echo -e "\033[24G $VERSION"
+					echo -e "\033[28G $VERSION"
 					packages=$(($packages+1))
 				fi
 			done
@@ -490,7 +516,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			do
 				. $pkg/receipt
 				echo -n "$PACKAGE"
-				echo -en "\033[24G $VERSION"
+				echo -en "\033[28G $VERSION"
 				echo -e "\033[42G $CATEGORY"
 				packages=$(($packages+1))
 			done
@@ -604,11 +630,15 @@ Maintainer : $MAINTAINER"
 		echo ""
 		echo "Cleaning $PACKAGE..."
 		echo "================================================================================"
+		# Check for clean_wok function.
+		if grep -q ^clean_wok $RECEIPT; then
+			clean_wok
+		fi
+		# Remove taz/ and source tree if exist.
 		if [ -d "taz" ]; then
 			echo -n "Removing taz files..."
 			rm -rf taz && status
 		fi
-		# Remove source tree if exist.
 		if [ -d "$PACKAGE-$VERSION" ]; then
 			echo -n "Removing source files..."
 			rm -rf $PACKAGE-$VERSION && status
@@ -626,6 +656,7 @@ Maintainer : $MAINTAINER"
 		if [ -f "process.log" ]; then
 			echo -n "Removing process log file..."
 			rm process.log && status
+			echo "================================================================================"
 		fi
 		echo "$PACKAGE is clean. You can cook it again..."
 		echo ""
@@ -674,12 +705,14 @@ Maintainer : $MAINTAINER"
 		echo ""
 		;;
 	gen-list)
-		# cd in the directory to creat a packages.list and the md5sum file.
 		# Sed is used to remove all the .tazpkg extensions from the
 		# packages.list. The directory to move in by default is the repository
-		# if $3 is not empty cd into $3.
+		# if $2 is not empty cd into $2. A text packages list can also be gen
+		# with the option --text.
 		#
-		if [ -z "$2" ]; then
+		if [ "$2" == "--text" ]; then
+			textlist="yes"
+		elif [ -z "$2" ]; then
 			PACKAGES_REPOSITORY=$PACKAGES_REPOSITORY
 		else
 			if [ -d "$2" ]; then
@@ -691,10 +724,16 @@ Maintainer : $MAINTAINER"
 		fi
 		cd $PACKAGES_REPOSITORY
 		# Remove old packages.list and md5sum, it well be soon rebuild.
-		rm -f packages.list packages.md5
+		rm -f packages.list packages.md5 packages.txt
 		echo ""
-		echo "Repository path : $PACKAGES_REPOSITORY"
-		echo -n "Creating the packages list... "
+		echo -e "\033[1mGenerating packages lists\033[0m"
+		echo "================================================================================"
+		echo -n "Repository path : $PACKAGES_REPOSITORY" && status
+		# Gen packages.txt
+		if [ "$textlist" == "yes" ]; then
+			gen_textlist
+		fi
+		echo -n "Creating the raw packages list... "
 		ls -1 *.tazpkg > /tmp/packages.list
 		sed -i s/'.tazpkg'/''/ /tmp/packages.list
 		status
