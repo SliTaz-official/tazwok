@@ -323,11 +323,12 @@ copy_generic_files()
 		cp -a $_pkg/usr/share/applications $fs/usr/share
 	fi
 	# Home made desktop file(s) can be in stuff.
-	if [ -d "stuff" ]; then
-		if ls stuff/*.desktop >/dev/null; then
+	if [ -d "stuff/applications" ]; then
+			cp -a stuff/applications $fs/usr/share
+	fi
+	if [ -f "stuff/$PACKAGE.desktop" ]; then
 			mkdir -p $fs/usr/share/applications
-			cp -a stuff/*.desktop $fs/usr/share/applications
-		fi
+			cp -a stuff/$PACKAGE.desktop $fs/usr/share/applications
 	fi
 }
 
