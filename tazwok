@@ -8,7 +8,7 @@
 #
 # (C) 2007-2008 SliTaz - GNU General Public License.
 #
-VERSION=1.3.1
+VERSION=1.3.2
 
 ####################
 # Tazwok variables #
@@ -323,10 +323,11 @@ copy_generic_files()
 		cp -a $_pkg/usr/share/applications $fs/usr/share
 	fi
 	# Home made desktop file(s) can be in stuff.
-	if [ -f "stuff/$PACKAGE.desktop" ]; then
-		mkdir -p $fs/usr/share/applications
-		cp -a stuff/$PACKAGE.desktop $fs/usr/share/applications
-		cp -a stuff/$PACKAGE-*.desktop $fs/usr/share/applications
+	if [ -d "stuff" ]; then
+		if ls stuff/*.desktop >/dev/null; then
+			mkdir -p $fs/usr/share/applications
+			cp -a stuff/*.desktop $fs/usr/share/applications
+		fi
 	fi
 }
 
