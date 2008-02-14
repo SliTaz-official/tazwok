@@ -1,5 +1,16 @@
 2008-01-02  Christophe Lincoln  <pankso@slitaz.org>
 
+ * Release - Tazwok 1.4
+   
+   Cette version strip automatiquement les paquets, copie les fichiers
+   standars si ils existent (fichier de bureau .desktop, pixmaps, locale(s)).
+   Au sujet des locale, on peut facilemnt spécifier plusieurs locales séparées
+   par un espace dans le fichiers de configuration. Tazlito permet aussi de
+   créer un liste des paquets au format text ave un peu plus d'infos que la 
+   packages.list brut.
+ 
+2008-01-02  Christophe Lincoln  <pankso@slitaz.org>
+
  * Release - Tazwok 1.3
  
  * Les messages de log sont maintenant directement fournis par le dépôt
