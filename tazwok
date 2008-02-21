@@ -293,11 +293,12 @@ copy_generic_files()
 	# using generic variables and $LOCALE from Tazwok config file.
 	if [ ! "$LOCALE" = "" ]; then
 		if [ -d "$_pkg/usr/share/locale" ]; then
-			mkdir -p $fs/usr/share/locale
 			for i in $LOCALE
 			do
-				cp -a $_pkg/usr/share/locale/$i \
-					$fs/usr/share/locale 2>/dev/null
+				if [ -d "$_pkg/usr/share/locale/$i" ]; then
+					mkdir -p $fs/usr/share/locale
+					cp -a $_pkg/usr/share/locale/$i $fs/usr/share/locale
+				fi
 			done
 		fi
 	fi
