@@ -35,7 +35,10 @@ PACKAGE=$2
 LIST=$2
 
 # Include config file or exit if any file found.
-if [ -f "/etc/tazwok.conf" ]; then
+
+if [ -f "./tazwok.conf" ]; then
+	. ./tazwok.conf
+elif [ -f "/etc/tazwok.conf" ]; then
 	. /etc/tazwok.conf
 else
 	echo -e "\nUnable to find the configuration file : /etc/tazwok.conf"
@@ -167,12 +170,24 @@ check_for_wanted()
 			echo -e "\nWanted package is missing in the work directory.\n"
 			exit 0
 		fi
+		# Checking for buildtree of Wanted package
+		if [ ! -d "$WOK/$WANTED/$WANTED-$VERSION" ]; then
+			echo -e "\n\nSource files of wanted package is missing in the work directory."
+			echo -n "Would you like to build the missing package (y/N) ? " ; read anser
+			if [ "$anser" == "y" ]; then
+				tazwok cook $WANTED
+			else
+				echo -e "\nWanted package source tree is missing in the work directory.\n"
+				exit 0
+			fi
+		fi
 		status
 		# Set wanted src path.
 		src=$WOK/$WANTED/$WANTED-$VERSION
 		_pkg=$src/_pkg
 	fi
 }
+
 
 # Check for build dependencies and notify user.
 check_for_build_depends()
