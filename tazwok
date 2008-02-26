@@ -189,7 +189,7 @@ check_for_wanted()
 }
 
 
-# Check for build dependencies and notify user.
+# Check for build dependencies, notify user and install if specified.
 check_for_build_depends()
 {
 	echo "Checking for build dependencies..."
@@ -209,13 +209,21 @@ check_for_build_depends()
 			fi
 		done
 		echo "================================================================================"
-		echo "You can continue or exit to install missing dependencies."
-		echo -n "Continue or exit (y/N) ? "; read anser
-		if [ "$anser" == "y" ]; then
-			continue
-		else
-			exit 0
-		fi
+		echo "You can continue, exit or install missing dependencies."
+		echo -n "Install, continue or exit (install/y/N) ? "; read anser
+		case $anser in
+			install)
+				for pkg in $BUILD_DEPENDS
+				do
+					if [ ! -d "/var/lib/tazpkg/installed/$pkg" ]; then
+						tazpkg get-install $pkg
+					fi
+				done ;;
+			y|yes)
+				continue ;;
+			*)
+				exit 0 ;;
+		esac
 	fi
 }
 
