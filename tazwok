@@ -171,7 +171,7 @@ check_for_wanted()
 			exit 0
 		fi
 		# Checking for buildtree of Wanted package
-		if [ ! -d "$WOK/$WANTED/$WANTED-$VERSION" ]; then
+		if [ ! -d "$WOK/$WANTED/taz" ]; then
 			echo -e "\n\nSource files of wanted package is missing in the work directory."
 			echo -n "Would you like to build the missing package (y/N) ? " ; read anser
 			if [ "$anser" == "y" ]; then
