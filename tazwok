@@ -8,7 +8,7 @@
 #
 # (C) 2007-2008 SliTaz - GNU General Public License.
 #
-VERSION=1.4
+VERSION=1.5
 
 ####################
 # Tazwok variables #
@@ -27,7 +27,8 @@ system-tools
 security
 games
 misc
-meta"
+meta
+non-free"
 
 # Use words rater than numbers in the code.
 COMMAND=$1
