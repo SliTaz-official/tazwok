@@ -273,8 +273,7 @@ compile_package()
 				echo "untaring $TARBALL" >> $LOG
 				echo -n "Untaring $TARBALL... "
 				if [ "`echo $TARBALL | grep zip$`" ]; then
-					( cd $WOK/$PACKAGE; unzip $SOURCES_REPOS
-ITORY/$TARBALL )
+					( cd $WOK/$PACKAGE; unzip $SOURCES_REPOSITORY/$TARBALL )
 				elif [ "`basename $TARBALL | grep tar$`" ]; then
 					tar xf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE
 				elif [ "`basename $TARBALL | grep tar.bz2`" ]; then
