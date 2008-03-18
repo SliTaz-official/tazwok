@@ -279,7 +279,9 @@ compile_package()
 				*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				esac
 				status
-				chown -R root.root $WOK/$PACKAGE/$PACKAGE-*
+				# Permissions settings
+				chown -R root.root $WOK/$PACKAGE/$PACKAGE-* 2>/dev/null
+				chown -R root.root $WOK/$PACKAGE/$SOURCE-* 2>/dev/null
 			else
 				echo -n "Source direcory exit... " && status
 			fi
