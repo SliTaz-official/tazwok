@@ -227,6 +227,12 @@ check_for_build_depends()
 		esac
 	fi
 }
+download()
+{
+	for file in $@; do
+		wget $file && break
+	done
+}
 
 # Configure and make a package with the receipt.
 compile_package()
@@ -255,7 +261,8 @@ compile_package()
 		echo "Checking for source tarball... "
 		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 			cd $SOURCES_REPOSITORY
-			wget $WGET_URL
+			download $WGET_URL
+			#wget $WGET_URL
 			# Exit if download failed to avoid errors.
 			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 				echo -e "\nDownload failed, exiting. Please check WGET_URL variable.\n"
