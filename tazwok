@@ -502,6 +502,8 @@ $PACKAGE
     $VERSION
     $SHORT_DESC
 _EOT_
+	# packages.desv is used by Tazpkgbox <table>.
+	echo "$PACKAGE | $VERSION | $SHORT_DESC" >> packages.desc
 	packages=$(($packages+1))
 	done && status
 	sed -i s/"_packages_"/"$packages"/ packages.txt
