@@ -484,6 +484,7 @@ gen_package()
 # Optional text packages list for gen-list.
 gen_textlist()
 {
+	rm -f packages.desc
 	DATE=`date +%Y-%m-%d\ \%H:%M:%S`
 	echo -n "Creating the text packages list... "
 	cat >> packages.txt << _EOT_
@@ -495,6 +496,7 @@ gen_textlist()
 _EOT_
 	for pkg in $WOK/*
 	do
+	PACKAGE=""
 	. $pkg/receipt
 	cat >> packages.txt << _EOT_
 
@@ -502,8 +504,8 @@ $PACKAGE
     $VERSION
     $SHORT_DESC
 _EOT_
-	# packages.desv is used by Tazpkgbox <table>.
-	echo "$PACKAGE | $VERSION | $SHORT_DESC" >> packages.desc
+	# packages.desv is used by Tazpkgbox <tree>.
+	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
 	packages=$(($packages+1))
 	done && status
 	sed -i s/"_packages_"/"$packages"/ packages.txt
