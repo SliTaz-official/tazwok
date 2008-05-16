@@ -528,7 +528,7 @@ _EOT_
 	echo -n "Creating the text files list... "
 	for pkg in $WOK/*
 	do
-	if [ -f $pkg/taz/*/files_list ]; then
+	if [ -f $pkg/taz/*/files.list ]; then
 		. $pkg/taz/*/receipt
 		( echo "$PACKAGE"; cat $pkg/taz/*/files.list ) | awk '
 BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
