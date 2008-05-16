@@ -504,13 +504,23 @@ _EOT_
 	for pkg in $WOK/*
 	do
 	PACKAGE=""
-	. $pkg/receipt
+	PACKED_SIZE=""
+	if [ -f $pkg/taz/*/receipt ]; then
+		. $pkg/receipt
+	else
+		. $pkg/taz/*/receipt
+	fi
 	cat >> packages.txt << _EOT_
 
 $PACKAGE
     $VERSION
     $SHORT_DESC
 _EOT_
+	if [ -n "$PACKED_SIZE" ]; then
+		cat >> packages.txt << _EOT_
+    $UNPACKED_SIZE ($PACKED_SIZE installed)	
+_EOT_
+	fi
 	# packages.desv is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
 	packages=$(($packages+1))
