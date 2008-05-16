@@ -463,10 +463,17 @@ gen_package()
 		LAST_FILE="$file"
 	done > files.list
 	status
+	UNPACKED_SIZE=$(du -hs . | awk '{ print $1 }')
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
 	echo -n "Compressing the fs... "
 	find fs -print | cpio -o -H newc | gzip > fs.cpio.gz && rm -rf fs
+	PACKED_SIZE=$(du -hs . | awk '{ print $1 }')
+	echo -n "Undating receipt sizes..."
+	sed -i s/^PACKED_SIZE.*$// receipt	
+	sed -i s/^UNPACKED_SIZE.*$// receipt	
+	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
+	status
 	echo -n "Creating full cpio archive... "
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
 	# Restore package tree in case we want to browse it.
