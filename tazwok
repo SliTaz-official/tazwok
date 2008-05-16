@@ -525,6 +525,17 @@ _EOT_
 	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
 	packages=$(($packages+1))
 	done && status
+	echo -n "Creating the text files list... "
+	for pkg in $WOK/*
+	do
+	if [ -f $pkg/taz/*/files_list ]; then
+		. $pkg/taz/*/receipt
+		( echo "$PACKAGE"; cat $pkg/taz/*/files.list ) | awk '
+BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
+	else
+		echo "No files_list in $pkg" 1>&2
+	fi
+	done | lzma e files.list.lzma -si && status
 	sed -i s/"_packages_"/"$packages"/ packages.txt
 }
 
