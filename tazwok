@@ -506,9 +506,9 @@ _EOT_
 	PACKAGE=""
 	PACKED_SIZE=""
 	if [ -f $pkg/taz/*/receipt ]; then
-		. $pkg/receipt
-	else
 		. $pkg/taz/*/receipt
+	else
+		. $pkg/receipt
 	fi
 	cat >> packages.txt << _EOT_
 
