@@ -518,7 +518,7 @@ $PACKAGE
 _EOT_
 	if [ -n "$PACKED_SIZE" ]; then
 		cat >> packages.txt << _EOT_
-    $UNPACKED_SIZE ($PACKED_SIZE installed)	
+    $PACKED_SIZE ($UNPACKED_SIZE installed)	
 _EOT_
 	fi
 	# packages.desv is used by Tazpkgbox <tree>.
