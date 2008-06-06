@@ -571,6 +571,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			echo "$PACKAGE-$VERSION.tazpkg" >> /tmp/wok.list
 			if [ ! -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg ]; then
 				echo "Missing package: $PACKAGE ($VERSION)"
+				echo "$PACKAGE" >> /tmp/pkgs.missing
 			fi
 		done
 		for pkg in `cd $PACKAGES_REPOSITORY && ls *.tazpkg`
@@ -589,9 +590,10 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		echo "================================================================================"
 		echo "Wok: `cat wok.list | wc -l` - \
 Cooked: `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l` - \
-Old: `cat pkgs.old | wc -l`"
+Missing: `cat pkgs.missing 2>/dev/null | wc -l` - \
+Old: `cat pkgs.old 2>/dev/null | wc -l`"
 		echo ""
-		rm -f wok.list pkgs.old
+		rm -f wok.list pkgs.old pkgs.missing
 		;;
 	list)
 		# List packages in wok directory. User can specifiy a category
