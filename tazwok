@@ -476,7 +476,7 @@ gen_package()
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
 	status
 	echo -n "Creating full cpio archive... "
-	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
+	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
 	# Restore package tree in case we want to browse it.
 	echo -n "Restoring original package tree... "
 	zcat fs.cpio.gz | cpio -id
@@ -484,8 +484,8 @@ gen_package()
 	# Log process.
 	echo "$PACKAGE-$VERSION.tazpkg (done)" >> $LOG
 	echo "================================================================================"
-	echo "Package $PACKAGE ($VERSION) generated."
-	echo "Size : `du -sh $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg`"
+	echo "Package $PACKAGE ($VERSION$EXTRAVERSION) generated."
+	echo "Size : `du -sh $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg`"
 	echo ""
 }
 
