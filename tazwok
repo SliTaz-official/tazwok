@@ -400,7 +400,7 @@ gen_package()
 	# Remove old Tazwok package files.
 	if [ -d "taz" ]; then
 		rm -rf taz
-		rm -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
+		rm -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
 	fi
 	# Creat the package tree and set usful variables.
 	mkdir -p taz/$PACKAGE-$VERSION/fs
@@ -482,7 +482,7 @@ gen_package()
 	zcat fs.cpio.gz | cpio -id
 	rm fs.cpio.gz && cd ..
 	# Log process.
-	echo "$PACKAGE-$VERSION.tazpkg (done)" >> $LOG
+	echo "$PACKAGE-$VERSION$EXTRAVERSION.tazpkg (done)" >> $LOG
 	echo "================================================================================"
 	echo "Package $PACKAGE ($VERSION$EXTRAVERSION) generated."
 	echo "Size : `du -sh $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg`"
@@ -568,9 +568,9 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		for pkg in $WOK/*
 		do
 			. $pkg/receipt
-			echo "$PACKAGE-$VERSION.tazpkg" >> /tmp/wok.list
-			if [ ! -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg ]; then
-				echo "Missing package: $PACKAGE ($VERSION)"
+			echo "$PACKAGE-$VERSION$EXTRAVERSION.tazpkg" >> /tmp/wok.list
+			if [ ! -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg ]; then
+				echo "Missing package: $PACKAGE ($VERSION$EXTRAVERSION)"
 				echo "$PACKAGE" >> /tmp/pkgs.missing
 			fi
 		done
