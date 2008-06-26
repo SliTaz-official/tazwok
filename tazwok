@@ -464,6 +464,14 @@ gen_package()
 		LAST_FILE="$file"
 	done > files.list
 	status
+	echo -n "Creating md5sum of files..."
+	while read file; do
+		[ -L "$file" ] && continue
+		[ -f "$file" ] || continue
+		md5sum "$file"
+	done < files.list > md5sum
+	status
+	[ -s md5sum ] || rm -f md5sum
 	UNPACKED_SIZE=$(du -hs . | awk '{ print $1 }')
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
