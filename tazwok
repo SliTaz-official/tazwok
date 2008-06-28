@@ -483,6 +483,12 @@ gen_package()
 	sed -i s/^UNPACKED_SIZE.*$// receipt	
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
 	status
+	if [ -n "$EXTRAVERSION" ]; then
+		echo -n "Undating receipt EXTRAVERSION..."
+		sed -i s/^EXTRAVERSION.*$// receipt
+		sed -i "s/^VERSION=/EXTRAVERSION=\"$EXTRAVERSION\"\nVERSION=/" receipt
+		status
+	fi
 	echo -n "Creating full cpio archive... "
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
 	# Restore package tree in case we want to browse it.
