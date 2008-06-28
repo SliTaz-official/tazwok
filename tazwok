@@ -466,9 +466,9 @@ gen_package()
 	status
 	echo -n "Creating md5sum of files..."
 	while read file; do
-		[ -L "$file" ] && continue
-		[ -f "$file" ] || continue
-		md5sum "$file"
+		[ -L "fs$file" ] && continue
+		[ -f "fs$file" ] || continue
+		md5sum "fs$file" | sed 's/  fs/  /'
 	done < files.list > md5sum
 	status
 	[ -s md5sum ] || rm -f md5sum
