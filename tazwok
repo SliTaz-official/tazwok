@@ -581,6 +581,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 ================================================================================"
 		for pkg in $WOK/*
 		do
+			EXTRAVERSION=""
 			. $pkg/receipt
 			echo "$PACKAGE-$VERSION$EXTRAVERSION.tazpkg" >> /tmp/wok.list
 			if [ ! -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg ]; then
