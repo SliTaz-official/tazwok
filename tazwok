@@ -625,6 +625,13 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			[ -n "$SHORT_DESC" ] || echo "Package $PACKAGE has no SHORT_DESC"
 			[ -n "$MAINTAINER" ] || echo "Package $PACKAGE has no MAINTAINER"
 			[ -n "$WEB_SITE" ] || echo "Package $PACKAGE has no WEB_SITE"
+			case "$MAINTAINER" in
+			*\<*|*\>*) echo "Package $PACKAGE has an invalid MAINTAINER: $MAINTAINER";;
+			esac
+			case "$MAINTAINER" in
+			*@*);;
+			*) echo "Package $PACKAGE MAINTAINER is not an email address";;
+			esac
 			MSG="Missing dependencies for $PACKAGE $VERSION$EXTRAVERSION :\n"
 			for i in $DEPENDS; do
 				[ -d $i ] && continue
