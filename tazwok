@@ -608,7 +608,8 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		echo ""
 		echo -e "\033[1mWok and packages checking\033[0m
 ================================================================================"
-		for pkg in $WOK/*
+		cd $WOK
+		for pkg in $(ls)
 		do
 			[ -f $pkg/receipt ] || continue
 			PACKAGE=""
