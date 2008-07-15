@@ -618,6 +618,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			SHORT_DESC=""
 			MAINTAINER=""
 			WEB_SITE=""
+			DEPENDS=""
 			. $pkg/receipt
 			[ "$PACKAGE" = "$pkg" ] || echo "Package $PACKAGE should be $pkg"
 			[ -n "$VERSION" ] || echo "Package $PACKAGE has no VERSION"
