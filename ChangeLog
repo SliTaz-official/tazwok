@@ -1,3 +1,10 @@
+2008-07-16  Christophe Lincoln  <pankso@slitaz.org>
+
+ * ChangeLog is available throught Mercurial repository:
+   
+   http://hg.slitaz.org/tazwok
+   
+   
 2008-03-05  Christophe Lincoln  <pankso@slitaz.org>
 
  * Release - Tazwok 1.5
