@@ -4,15 +4,15 @@ README for Tazwok - SliTaz sources and packages cooker                     2008
 
 English
 -------
-Tazwok can compile source package and creat binary packages suitable for
-Tazpkg (Tiny autonomus zone package manager). You can build individuals
-package or a list a packages with one command, rebuild the full distro,
+Tazwok can compile source packages and create binary packages suitable for
+Tazpkg (Tiny autonomous zone package manager). You can build individual
+packages or a list of packages with one command, rebuild the full distro,
 generate a packages repository and also list and get info about packages.
-Please check 'tazwok usgae' to get a list of commands with a short
+Please check 'tazwok usage' to get a list of commands with a short
 description in English.
 
-Tazwok is a SHell script written from scratch, work with Bash, and Ash from
-the Busybox. Tazwok is licensed under free GNU gpl v3. See INSTALL at the
+Tazwok is a SHell script written from scratch, that works with Bash, and Ash
+from Busybox. Tazwok is licensed under free GNU gpl v3. See INSTALL at the
 bottom of this file for installation instructions.
 
 

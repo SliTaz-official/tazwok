@@ -1,9 +1,9 @@
 #!/bin/sh
 # Tazwok - SliTaz source compiler and binary packages generator/cooker.
 #
-# Tazwok can compile source package and creat binary packages suitable for
-# Tazpkg (Tiny Autonomus zone package manager). You can build individuals
-# package or a list a packages with one command, rebuild the full distro,
+# Tazwok can compile source packages and create binary packages suitable for
+# Tazpkg (Tiny Autonomous zone package manager). You can build individual
+# packages or a list of packages with one command, rebuild the full distro,
 # generate a packages repository and also list and get info about packages.
 #
 # (C) 2007-2008 SliTaz - GNU General Public License.
@@ -30,13 +30,12 @@ misc
 meta
 non-free"
 
-# Use words rater than numbers in the code.
+# Use words rather than numbers in the code.
 COMMAND=$1
 PACKAGE=$2
 LIST=$2
 
-# Include config file or exit if any file found.
-
+# Include config file or exit if no file found.
 if [ -f "./tazwok.conf" ]; then
 	. ./tazwok.conf
 elif [ -f "/etc/tazwok.conf" ]; then
@@ -47,7 +46,7 @@ else
 	exit 0
 fi
 
-# Creat Taz wok needed directories if user is root.
+# Create Taz wok needed directories if user is root.
 if test $(id -u) = 0 ; then
 	# Check for the wok directory.
 	if [ ! -d "$WOK" ]; then
@@ -69,7 +68,7 @@ fi
 
 # The path to the most important file used by Tazwok.
 # The receipt is used to compile the source code and
-# gen suitables packages for Tazpkg.
+# generate suitable packages for Tazpkg.
 RECEIPT="$WOK/$PACKAGE/receipt"
 
 # The path to the process log file.
@@ -89,16 +88,16 @@ usage ()
   stats          Print Tazwok statistics from the config file and the wok.
   cmp|compare    Compare the wok and the cooked pkgs (--remove old pkgs).
   list           List all packages in the wok tree or by category.
-  info           Get informations about a package in the wok.
+  info           Get information about a package in the wok.
   check-log      Check the process log file of a package.
   search         Search for a package in the wok by pattern or name.
-  compile        Configure and build the package using the receipt rules.
+  compile        Configure and build a package using the receipt rules.
   genpkg         Generate a suitable package for Tazpkg with the rules.
   cook           Compile and generate a package directly.
   cook-list      Cook all packages specified in the list by order.
   clean          Clean all generated files in the package tree.
   new-tree       Prepare a new package tree and receipt (--interactive).
-  gen-list       Generate a packages lists for a repository (--text).
+  gen-list       Generate a packages list for a repository (--text).
   gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
   remove         Remove a package from the wok.\n"
 }
@@ -152,7 +151,7 @@ check_for_list()
 		echo -e "\nPlease specify the path to the list of packages to cook.\n"
 		exit 0
 	fi
-	# Check if the list of packages exist.
+	# Check if the list of packages exists.
 	if [ -f "$LIST" ]; then
 		LIST=`cat $LIST`
 	else
@@ -302,8 +301,8 @@ compile_package()
 			echo -n "Source tarball exit... "
 			status
 		fi
-		# Untaring source if necessary. We dont need to extract source if
-		# the package is build with a wanted source package.
+		# Untaring source if necessary. We don't need to extract source if
+		# the package is built with a wanted source package.
 		if [ "$WANTED" = "" ]; then
 			if [ ! -d $src ]; then
 				# Log process.
@@ -325,8 +324,8 @@ compile_package()
 		fi
 	fi
 	cd $WOK/$PACKAGE
-	# Log and execute compile_rules function if it exist, to configure and
-	# make the package if it exist.
+	# Log and execute compile_rules function if it exists, to configure and
+	# make the package if it exists.
 	if grep -q ^compile_rules $RECEIPT; then
 		echo "executing compile_rules" >> $LOG
 		compile_rules
@@ -349,12 +348,12 @@ compile_package()
 	fi
 }
 
-# Copy all generic files (locale, pixmaps, .desktop). We use standard path,
+# Copy all generic files (locale, pixmaps, .desktop). We use standard paths,
 # so some packages need to copy these files with the receipt and genpkg_rules.
 # This function is executed by gen_package when 'tazwok genpkg'.
 copy_generic_files()
 {
-	# In most case locale are in $_pkg/usr/share/locale so we copy files
+	# In most cases, locales are in $_pkg/usr/share/locale so we copy files
 	# using generic variables and $LOCALE from Tazwok config file.
 	if [ ! "$LOCALE" = "" ]; then
 		if [ -d "$_pkg/usr/share/locale" ]; then
@@ -367,8 +366,8 @@ copy_generic_files()
 			done
 		fi
 	fi
-	# Pixmaps (PNG or/and XPM only). Some icons/images can be add trough 
-	# genpkg_rules and generic copy can be disable with GENERIC_PIXMAPS="no"
+	# Pixmaps (PNG or/and XPM only). Some icons/images can be added through 
+	# genpkg_rules and generic copy can be disabled with GENERIC_PIXMAPS="no"
 	# in pkg receipt.
 	if [ ! "$GENERIC_PIXMAPS" = "no" ]; then
 		if [ -d "$_pkg/usr/share/pixmaps" ]; then
@@ -378,7 +377,7 @@ copy_generic_files()
 			cp -a $_pkg/usr/share/pixmaps/$PACKAGE.xpm \
 				$fs/usr/share/pixmaps 2>/dev/null
 		fi
-		# Custom or home made PNG pixmap can be in stuff.
+		# Custom or homemade PNG pixmap can be in stuff.
 		if [ -f "stuff/$PACKAGE.png" ]; then
 			mkdir -p $fs/usr/share/pixmaps
 			cp -a stuff/$PACKAGE.png $fs/usr/share/pixmaps
@@ -388,7 +387,7 @@ copy_generic_files()
 	if [ -d "$_pkg/usr/share/applications" ]; then
 		cp -a $_pkg/usr/share/applications $fs/usr/share
 	fi
-	# Home made desktop file(s) can be in stuff.
+	# Homemade desktop file(s) can be in stuff.
 	if [ -d "stuff/applications" ]; then
 		mkdir -p $fs/usr/share
 		cp -a stuff/applications $fs/usr/share
@@ -416,7 +415,7 @@ strip_package()
 	status
 }
 
-# Creat a package tree and build the gziped cpio archive
+# Create a package tree and build the gziped cpio archive
 # to make a SliTaz (.tazpkg) package.
 gen_package()
 {
@@ -432,10 +431,10 @@ gen_package()
 		rm -rf taz
 		rm -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
 	fi
-	# Creat the package tree and set usful variables.
+	# Create the package tree and set useful variables.
 	mkdir -p taz/$PACKAGE-$VERSION/fs
 	fs=taz/$PACKAGE-$VERSION/fs
-	# Set $src for standards package and $_pkg variables.
+	# Set $src for standard package and $_pkg variables.
 	if [ "$WANTED" = "" ]; then
 		src=$WOK/$PACKAGE/$PACKAGE-$VERSION
 		_pkg=$src/_pkg
@@ -466,7 +465,7 @@ gen_package()
 		echo "No package rules to gen $PACKAGE..."
 		exit 1
 	fi
-	# Copy the receipt and description (if exist) in the binary package tree.
+	# Copy the receipt and description (if exists) in the binary package tree.
 	cd $WOK/$PACKAGE
 	echo -n "Copying the receipt..."
 	cp receipt taz/$PACKAGE-$VERSION
@@ -476,7 +475,7 @@ gen_package()
 		cp description.txt taz/$PACKAGE-$VERSION
 		status
 	fi
-	# Creat the files.list by redirecting find outpout.
+	# Create the files.list by redirecting find output.
 	echo -n "Creating the list of files..."
 	cd taz/$PACKAGE-$VERSION
   	LAST_FILE=""
@@ -521,7 +520,7 @@ gen_package()
 	fi
 	echo -n "Creating full cpio archive... "
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
-	# Restore package tree in case we want to browse it.
+	# Restore package tree incase we want to browse it.
 	echo -n "Restoring original package tree... "
 	zcat fs.cpio.gz | cpio -id
 	rm fs.cpio.gz && cd ..
@@ -566,7 +565,7 @@ _EOT_
     $PACKED_SIZE ($UNPACKED_SIZE installed)	
 _EOT_
 	fi
-	# packages.desv is used by Tazpkgbox <tree>.
+	# packages.desc is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
 	packages=$(($packages+1))
 	done && status
@@ -645,10 +644,10 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		done
 		;;
 	cmp|compare)
-		# Compare the wok and packages repository to help maintaining 
+		# Compare the wok and packages repository to help with maintaining 
 		# a mirror.
 		echo ""
-		echo -e "\033[1mWok and packages comparaison\033[0m
+		echo -e "\033[1mWok and packages comparison\033[0m
 ================================================================================"
 		for pkg in $WOK/*
 		do
@@ -667,7 +666,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				${i%.tazpkg}*.tazpkg) continue 2;;
 				esac
 			done
-			# not found
+			# Not found
 			echo $pkg >> /tmp/pkgs.old
 			if [ "$2" = "--remove" ]; then
 				echo "Removing package: $pkg"
@@ -723,17 +722,17 @@ Old: `cat pkgs.old 2>/dev/null | wc -l`"
 				packages=$(($packages+1))
 			done
 			echo "================================================================================"
-			echo -e "$packages packages avalaible in the wok.\n"
+			echo -e "$packages packages available in the wok.\n"
 		fi
 		;;
 	info)
-		# Informations about package.
+		# Information about a package.
 		#
 		check_for_package_on_cmdline
 		check_for_receipt
 		. $WOK/$PACKAGE/receipt
 		echo ""
-		echo -e "\033[1mTazwok package informations\033[0m
+		echo -e "\033[1mTazwok package information\033[0m
 ================================================================================
 Package	   : $PACKAGE
 Version	   : $VERSION
@@ -757,7 +756,7 @@ Maintainer : $MAINTAINER"
 		# We just cat the file log to view process info.
 		#
 		if [ ! -f "$LOG" ]; then
-			echo -e "\nNo process log found. The package is probably not cook.\n"
+			echo -e "\nNo process log found. The package is probably not cooked.\n"
 			exit 0
 		else
 			echo ""
@@ -836,7 +835,7 @@ Maintainer : $MAINTAINER"
 		if grep -q ^clean_wok $RECEIPT; then
 			clean_wok
 		fi
-		# Remove taz/ and source tree if exist.
+		# Remove taz/ and source tree if exists.
 		if [ -d "taz" ]; then
 			echo -n "Removing taz files..."
 			rm -rf taz && status
@@ -925,13 +924,13 @@ Maintainer : $MAINTAINER"
 			fi
 		fi
 		cd $PACKAGES_REPOSITORY
-		# Remove old packages.list and md5sum, it well be soon rebuild.
+		# Remove old packages.list and md5sum, they will soon be rebuilt.
 		rm -f packages.list packages.md5 packages.txt
 		echo ""
 		echo -e "\033[1mGenerating packages lists\033[0m"
 		echo "================================================================================"
 		echo -n "Repository path : $PACKAGES_REPOSITORY" && status
-		# Gen packages.txt
+		# Generate packages.txt
 		if [ "$textlist" == "yes" ]; then
 			gen_textlist
 		fi
@@ -949,12 +948,12 @@ Maintainer : $MAINTAINER"
 		echo ""
 		;;
 	new-tree)
-		# Just creat a few directories and gen a empty receipt to prepare
+		# Just create a few directories and generate an empty receipt to prepare
 		# the creation of a new package.
 		#
 		check_for_package_on_cmdline
 		if [ -d $WOK/$PACKAGE ]; then
-			echo -e "\n$PACKAGE package tree already exist.\n"
+			echo -e "\n$PACKAGE package tree already exists.\n"
 			exit 0
 		fi
 		echo "Creating : $WOK/$PACKAGE"
@@ -1053,7 +1052,7 @@ EOF
 		echo ""
 		;;
 	usage|*)
-		# Print usage also for all unknow commands.
+		# Print usage also for all unknown commands.
 		#
 		usage
 		;;
