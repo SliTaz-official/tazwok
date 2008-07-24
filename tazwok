@@ -1047,9 +1047,12 @@ EOF
 		#
 		check_for_package_on_cmdline
 		echo ""
-		echo -n "Removing $PACKAGE..."
-		rm -rf $WOK/$PACKAGE && status
-		echo ""
+		echo -n "Please confirm deletion (y/N) : "; read anser
+		if [ "$anser" = "y" ]; then
+			echo -n "Removing $PACKAGE..."
+			rm -rf $WOK/$PACKAGE && status
+			echo ""
+		fi
 		;;
 	usage|*)
 		# Print usage also for all unknown commands.
