@@ -493,6 +493,13 @@ gen_package()
 		LAST_FILE="$file"
 	done > files.list
 	status
+	if [ -z "$EXTRAVERSION" ]; then
+		case "$PACKAGE" in
+		linux*);;
+		*) EXTRAVERSION="$(grep '/lib/modules/.*-slitaz/' files.list \
+			head -1 | sed 's|/lib/modules/\(.*\)-slitaz/.*|_\1|')";;
+		esac
+	fi
 	echo -n "Creating md5sum of files..."
 	while read file; do
 		[ -L "fs$file" ] && continue
@@ -501,12 +508,14 @@ gen_package()
 	done < files.list > md5sum
 	status
 	[ -s md5sum ] || rm -f md5sum
-	UNPACKED_SIZE=$(du -hs . | awk '{ print $1 }')
+	UNPACKED_SIZE=$(du -chs fs receipt files.list md5sum description.txt \
+		2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
 	echo -n "Compressing the fs... "
 	find fs -print | cpio -o -H newc | gzip > fs.cpio.gz && rm -rf fs
-	PACKED_SIZE=$(du -hs . | awk '{ print $1 }')
+	PACKED_SIZE=$(du -chs fs.cpio.gz receipt files.list md5sum \
+		description.txt 2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	echo -n "Undating receipt sizes..."
 	sed -i s/^PACKED_SIZE.*$// receipt	
 	sed -i s/^UNPACKED_SIZE.*$// receipt	
