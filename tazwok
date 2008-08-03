@@ -424,6 +424,10 @@ gen_package()
 	check_for_receipt
 	EXTRAVERSION=""
 	. $RECEIPT
+	# May compute VERSION
+	if grep -q ^get_version $RECEIPT; then
+		get_version
+	fi
 	check_for_wanted
 	cd $WOK/$PACKAGE
 	# Remove old Tazwok package files.
@@ -520,6 +524,7 @@ gen_package()
 	sed -i s/^PACKED_SIZE.*$// receipt	
 	sed -i s/^UNPACKED_SIZE.*$// receipt	
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
+	sed -i "s/^VERSION=$/VERSION=\"$VERSION\"/" receipt
 	status
 	if [ -n "$EXTRAVERSION" ]; then
 		echo -n "Undating receipt EXTRAVERSION..."
