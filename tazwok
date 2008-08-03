@@ -496,7 +496,7 @@ gen_package()
 	if [ -z "$EXTRAVERSION" ]; then
 		case "$PACKAGE" in
 		linux*);;
-		*) EXTRAVERSION="$(grep '/lib/modules/.*-slitaz/' files.list \
+		*) EXTRAVERSION="$(grep '/lib/modules/.*-slitaz/' files.list |\
 			head -1 | sed 's|/lib/modules/\(.*\)-slitaz/.*|_\1|')";;
 		esac
 	fi
