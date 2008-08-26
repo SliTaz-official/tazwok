@@ -433,7 +433,6 @@ gen_package()
 	# Remove old Tazwok package files.
 	if [ -d "taz" ]; then
 		rm -rf taz
-		rm -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
 	fi
 	# Create the package tree and set useful variables.
 	mkdir -p taz/$PACKAGE-$VERSION/fs
@@ -450,7 +449,7 @@ gen_package()
 	cd $WOK/$PACKAGE
 	# Execute genpkg_rules and copy generic files to build the package.
 	echo ""
-	echo "Bulding $PACKAGE with the receipt..."
+	echo "Building $PACKAGE with the receipt..."
 	echo "================================================================================"
 	if grep -q ^genpkg_rules $RECEIPT; then
 		# Log process.
@@ -504,6 +503,7 @@ gen_package()
 			head -1 | sed 's|/lib/modules/\(.*\)-slitaz/.*|_\1|')";;
 		esac
 	fi
+	rm -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg 2> /dev/null
 	echo -n "Creating md5sum of files..."
 	while read file; do
 		[ -L "fs$file" ] && continue
@@ -996,9 +996,8 @@ compile_rules()
 {
 	cd $src
 	./configure --prefix=/usr --infodir=/usr/share/info \
-	--mandir=/usr/share/man $CONFIGURE_ARGS
-	make
-	make DESTDIR=$PWD/_pkg install
+	--mandir=/usr/share/man $CONFIGURE_ARGS && \
+	make && make DESTDIR=$PWD/_pkg install
 }
 
 # Rules to gen a SliTaz package suitable for Tazpkg.
@@ -1006,7 +1005,6 @@ genpkg_rules()
 {
 	mkdir -p $fs/usr
 	cp -a $_pkg/usr/bin $fs/usr
-	strip -s $fs/usr/bin/*
 }
 
 EOF
