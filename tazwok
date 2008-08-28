@@ -312,6 +312,7 @@ compile_package()
 				*zip) ( cd $WOK/$PACKAGE; unzip $SOURCES_REPOSITORY/$TARBALL );;
 				*bz2) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
+				*Z) tar xZf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				esac
 				status
