@@ -474,6 +474,12 @@ gen_package()
 	echo -n "Copying the receipt..."
 	cp receipt taz/$PACKAGE-$VERSION
 	status
+	if grep -q ^get_version $RECEIPT; then
+		echo -n "Update version in receipt..."
+		sed -i "s/^VERSION=.*/VERSION=\"$VERSION\"/" \
+			taz/$PACKAGE-$VERSION/receipt
+		status
+	fi
 	if [ -f "description.txt" ]; then
 		echo -n "Copying the description file..."
 		cp description.txt taz/$PACKAGE-$VERSION
