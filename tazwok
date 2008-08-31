@@ -681,8 +681,9 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		done
 		for pkg in `cd $PACKAGES_REPOSITORY && ls *.tazpkg`
 		do
-			# grep $pkg in /tmp/wok.list, may include EXTRAVERSION
-			for i in $(grep ^${pkg%_*} /tmp/wok.list); do
+			# grep $pkg in /tmp/wok.list
+			# may include EXTRAVERSION or computed VERSION
+			for i in $(grep ^${pkg%-*} /tmp/wok.list); do
 				case "$pkg" in
 				${i%.tazpkg}*.tazpkg) continue 2;;
 				esac
