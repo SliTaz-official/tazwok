@@ -604,6 +604,27 @@ BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
 	sed -i s/"_packages_"/"$packages"/ packages.txt
 }
 
+# Return the date of the last commit in seconds since Jan 1 1970
+hgdate()
+{
+	local pkg
+	local date
+	local mon
+	# Default date is Jan 1 1970
+	[ -d $WOK/.hg ] || return 0
+	pkg=$(basename $1)
+	# Get date for last commit
+	date="$( cd $WOK; hg log $(find $pkg/receipt $pkg/stuff -type f \
+		2> /dev/null) | grep date: | head -1 | cut -c 6-)"
+	case "$(echo $date | awk '{ print $2 }')" in
+	Jan) mon="01";; Feb) mon="02";; Mar) mon="03";; Apr) mon="04";; 
+	May) mon="05";; Jun) mon="06";; Jul) mon="07";; Aug) mon="08";; 
+	Sep) mon="09";; Oct) mon="10";; Nov) mon="11";; Dec) mon="12";;
+	esac
+	# Reformat, don't mind about TZ: we look for days or months delta
+	echo $date | sed "s|[^ ]* [^ ]* \\(.*\\) \\(.*\\):\\(.*\\):\\(.*\\) \\(.*\\) .*|$mon\1\2\3\5|"
+}
+
 ###################
 # Tazwok commands #
 ###################
@@ -674,9 +695,20 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		do
 			. $pkg/receipt
 			echo "$PACKAGE-$VERSION.tazpkg" >> /tmp/wok.list
-			if [ -z "$(ls $PACKAGES_REPOSITORY/$PACKAGE-$VERSION*.tazpkg 2> /dev/null)" ]; then
+			tpkg="$(ls $PACKAGES_REPOSITORY/$PACKAGE-$VERSION*.tazpkg 2> /dev/null)"
+			if [ -z "$tpkg" ]; then
 				echo "Missing package: $PACKAGE ($VERSION)"
 				echo "$PACKAGE" >> /tmp/pkgs.missing
+			elif [ -f $pkg/taz/*/receipt -a ! -f $pkg/taz/*/md5sum ]; then
+				echo "Obsolete package: $PACKAGE ($VERSION)"
+				echo "$PACKAGE" >> /tmp/pkgs.missing
+			else
+				srcdate=$(hgdate $pkg)
+				pkgdate=$(date -u -r $tpkg '+%m%d%H%M%Y')
+				if [ $(date -d $pkgdate +%s) -lt $(date -d $srcdate +%s) ]; then
+					echo "Rebuild package: $PACKAGE ($VERSION) cooked $(date -d $pkgdate "+%x %X"), modified $(date -d $srcdate "+%x %X")"
+					echo "$PACKAGE" >> /tmp/pkgs.missing
+				fi
 			fi
 		done
 		for pkg in `cd $PACKAGES_REPOSITORY && ls *.tazpkg`
