@@ -89,6 +89,7 @@ usage ()
   cmp|compare    Compare the wok and the cooked pkgs (--remove old pkgs).
   list           List all packages in the wok tree or by category.
   info           Get information about a package in the wok.
+  check          Check every receipt for common errors.
   check-log      Check the process log file of a package.
   search         Search for a package in the wok by pattern or name.
   compile        Configure and build a package using the receipt rules.
@@ -676,6 +677,12 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			esac
 			MSG="Missing dependencies for $PACKAGE $VERSION$EXTRAVERSION :\n"
 			for i in $DEPENDS; do
+				[ -d $i ] && continue
+				echo -e "$MSG  $i"
+				MSG=""
+			done
+			MSG="Missing build dependencies for $PACKAGE $VERSION$EXTRAVERSION :\n"
+			for i in $BUILD_DEPENDS; do
 				[ -d $i ] && continue
 				echo -e "$MSG  $i"
 				MSG=""
