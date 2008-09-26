@@ -17,6 +17,7 @@ VERSION=2.0
 # Packages categories.
 CATEGORIES="
 base-system
+x-window
 utilities
 network
 graphics
@@ -665,7 +666,14 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			. $pkg/receipt
 			[ "$PACKAGE" = "$pkg" ] || echo "Package $PACKAGE should be $pkg"
 			[ -n "$VERSION" ] || echo "Package $PACKAGE has no VERSION"
-			[ -n "$CATEGORY" ] || echo "Package $PACKAGE has no CATEGORY"
+			if [ -n "$CATEGORY" ]; then
+				case " $(echo $CATEGORIES) " in
+				*\ $CATEGORY\ *);;
+				*) echo "Package $PACKAGE has can invalid CATEGORY";;
+				esac
+			else
+				echo"Package $PACKAGE has no CATEGORY"
+			fi
 			[ -n "$SHORT_DESC" ] || echo "Package $PACKAGE has no SHORT_DESC"
 			[ -n "$MAINTAINER" ] || echo "Package $PACKAGE has no MAINTAINER"
 			[ -n "$WEB_SITE" ] || echo "Package $PACKAGE has no WEB_SITE"
