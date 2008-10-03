@@ -729,7 +729,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				fi
 			fi
 			if [ "$2" = "--cook" ]; then
-				tazwok cook $PACKAGE
+				yes '' | tazwok cook $PACKAGE
 			fi
 		done
 		for pkg in `cd $PACKAGES_REPOSITORY && ls *.tazpkg`
