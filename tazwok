@@ -311,7 +311,7 @@ compile_package()
 				echo "untaring $TARBALL" >> $LOG
 				echo -n "Untaring $TARBALL... "
 				case "$TARBALL" in
-				*zip) ( cd $WOK/$PACKAGE; unzip $SOURCES_REPOSITORY/$TARBALL );;
+				*zip) ( cd $WOK/$PACKAGE; unzip -o $SOURCES_REPOSITORY/$TARBALL );;
 				*bz2) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				*Z) tar xZf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
@@ -519,8 +519,8 @@ gen_package()
 		[ -f "fs$file" ] || continue
 		md5sum "fs$file" | sed 's/  fs/  /'
 	done < files.list > md5sum
+	#[ -s md5sum ] || rm -f md5sum
 	status
-	[ -s md5sum ] || rm -f md5sum
 	UNPACKED_SIZE=$(du -chs fs receipt files.list md5sum description.txt \
 		2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
@@ -613,11 +613,12 @@ hgdate()
 	local date
 	local mon
 	# Default date is Jan 1 1970
-	[ -d $WOK/.hg -a -x /usr/bin/hg ] || { echo "0"; return; }
+	[ -d $WOK/.hg -a -x /usr/bin/hg ] || { echo "010100001970"; return; }
 	pkg=$(basename $1)
 	# Get date for last commit
 	date="$( cd $WOK; hg log $(find $pkg/receipt $pkg/stuff -type f \
 		2> /dev/null) | grep date: | head -1 | cut -c 6-)"
+	[ -n "$date" ] || { echo "010100001970"; return; }
 	case "$(echo $date | awk '{ print $2 }')" in
 	Jan) mon="01";; Feb) mon="02";; Mar) mon="03";; Apr) mon="04";; 
 	May) mon="05";; Jun) mon="06";; Jul) mon="07";; Aug) mon="08";; 
@@ -663,9 +664,21 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			WEB_SITE=""
 			DEPENDS=""
 			BUILD_DEPENDS=""
+			WANTED=""
 			. $pkg/receipt
 			[ "$PACKAGE" = "$pkg" ] || echo "Package $PACKAGE should be $pkg"
 			[ -n "$VERSION" ] || echo "Package $PACKAGE has no VERSION"
+			if [ -n "$WANTED" ]; then
+				if [ ! -f $WANTED/receipt ]; then
+					echo "Package $PACKAGE want unknown $WANTED package"
+				else
+					BASEVERSION=$(. $WANTED/receipt ; echo $VERSION)
+					if [ "$VERSION" != "$BASEVERSION" ]; then
+						echo "Package $PACKAGE ($VERSION) want $WANTED ($BASEVERSION)"
+					fi
+				fi
+			fi
+
 			if [ -n "$CATEGORY" ]; then
 				case " $(echo $CATEGORIES) " in
 				*\ $CATEGORY\ *);;
@@ -717,6 +730,9 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				echo "$PACKAGE" >> /tmp/pkgs.missing.$$
 			elif [ -f $pkg/taz/*/receipt -a ! -f $pkg/taz/*/md5sum ]; then
 				echo "Obsolete package: $PACKAGE ($VERSION)"
+				echo "$PACKAGE" >> /tmp/pkgs.missing.$$
+			elif [ $pkg/receipt -nt $tpkg ]; then
+				echo "Refresh package: $PACKAGE ($VERSION)"
 				echo "$PACKAGE" >> /tmp/pkgs.missing.$$
 			else
 				srcdate=$(hgdate $pkg)
