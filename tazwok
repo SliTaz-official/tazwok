@@ -559,7 +559,7 @@ gen_package()
 # Optional text packages list for gen-list.
 gen_textlist()
 {
-	rm -f packages.desc
+	rm -f packages.desc packages.equiv
 	DATE=`date +%Y-%m-%d\ \%H:%M:%S`
 	echo -n "Creating the text packages list... "
 	cat >> packages.txt << _EOT_
@@ -571,6 +571,7 @@ gen_textlist()
 _EOT_
 	for pkg in $WOK/*
 	do
+	PROVIDE=""
 	PACKAGE=""
 	PACKED_SIZE=""
 	if [ -f $pkg/taz/*/receipt ]; then
@@ -591,6 +592,16 @@ _EOT_
 	fi
 	# packages.desc is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
+	# packages.equiv is used by tazpkg install to check depends
+	for i in $PROVIDE; do
+		DEST=""
+		echo $i | grep -q : && DEST="${i#*:}:"
+		if grep -qs ^${i%:*}= packages.equiv; then
+			sed -i "s/^${i%:*}=/${i%:*}=$DEST$PACKAGE /" packages.equiv
+		else
+			echo "${i%:*}=$DEST$PACKAGE" >> packages.equiv
+		fi 
+	done
 	packages=$(($packages+1))
 	done && status
 	echo -n "Creating the text files list... "
