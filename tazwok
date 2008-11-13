@@ -704,6 +704,11 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 					echo "Package $PACKAGE want unknown $WANTED package"
 				else
 					BASEVERSION=$(. $WANTED/receipt ; echo $VERSION)
+					if [ "$VERSION" = "$WANTED" ]; then
+						# BASEVERSION is computed in receipt
+						grep -q '_pkg=' $pkg/receipt && 
+						BASEVERSION=$VERSION
+					fi
 					if [ "$VERSION" != "$BASEVERSION" ]; then
 						echo "Package $PACKAGE ($VERSION) want $WANTED ($BASEVERSION)"
 					fi
