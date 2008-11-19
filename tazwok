@@ -593,6 +593,7 @@ _EOT_
 	# packages.desc is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
 	# packages.equiv is used by tazpkg install to check depends
+	touch packages.equiv
 	for i in $PROVIDE; do
 		DEST=""
 		echo $i | grep -q : && DEST="${i#*:}:"
@@ -1048,8 +1049,23 @@ Maintainer : $MAINTAINER"
 		# if $2 is not empty cd into $2. A text packages list can also be gen
 		# with the option --text.
 		#
+		fakewok="no"
 		if [ "$2" == "--text" ]; then
 			textlist="yes"
+			if [ "$3" == "--fakewok" ]; then
+				fakewok="yes"
+				WOK=/tmp/fakewok-$$
+				mkdir -p $WOK
+				PACKAGES_REPOSITORY=$(pwd)
+				for i in *.tazpkg; do
+					(cd $WOK; cpio -i receipt files.list) < $i
+					. $WOK/receipt
+					mkdir -p $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
+					mv $WOK/receipt $WOK/files.list \
+						$WOK/$PACKAGE/taz/$PACKAGE-$VERSION
+					ln $WOK/$PACKAGE/taz/$PACKAGE-$VERSION/receipt $WOK/$PACKAGE
+				done
+			fi
 		elif [ -z "$2" ]; then
 			PACKAGES_REPOSITORY=$PACKAGES_REPOSITORY
 		else
@@ -1070,6 +1086,7 @@ Maintainer : $MAINTAINER"
 		# Generate packages.txt
 		if [ "$textlist" == "yes" ]; then
 			gen_textlist
+			[ "$fakewok" == "yes" ] && rm -rf $WOK
 		fi
 		echo -n "Creating the raw packages list... "
 		ls -1 *.tazpkg > /tmp/packages.list
