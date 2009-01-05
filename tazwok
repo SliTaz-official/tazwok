@@ -719,7 +719,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			if [ -n "$CATEGORY" ]; then
 				case " $(echo $CATEGORIES) " in
 				*\ $CATEGORY\ *);;
-				*) echo "Package $PACKAGE has can invalid CATEGORY";;
+				*) echo "Package $PACKAGE has an invalid CATEGORY";;
 				esac
 			else
 				echo"Package $PACKAGE has no CATEGORY"
