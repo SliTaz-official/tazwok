@@ -83,7 +83,7 @@ LOG="$WOK/$PACKAGE/process.log"
 usage ()
 {
 	echo -e "\nSliTaz sources compiler and packages generator - Version: $VERSION\n
-\033[1mUsage: \033[0m `basename $0` [command] [package|list|category|dir] [--option]
+\033[1mUsage: \033[0m `basename $0` [command] [package|list|category|dir|id] [--option]
 \033[1mCommands: \033[0m\n
   usage          Print this short usage.
   stats          Print Tazwok statistics from the config file and the wok.
@@ -102,7 +102,9 @@ usage ()
   new-tree       Prepare a new package tree and receipt (--interactive).
   gen-list       Generate a packages list for a repository (--text).
   gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
-  remove         Remove a package from the wok.\n"
+  remove         Remove a package from the wok.
+  hgup           Pull and update a wok under HG.
+  maintained-by  List packages maintained by a contributor\n"
 }
 
 # Status function.
@@ -1213,6 +1215,25 @@ EOF
 		fi
 		cd $WOK
 		hg pull && hg update ;;
+	maintained-by)
+		# Search for packages maintained by a packagers.
+		if [ ! -n "$2" ]; then
+			echo "Specify a name or mail of a maintainer."
+			exit 0
+		fi
+		echo "Maintainer packages"
+		echo "================================================================================"
+		for pkg in $WOK/*
+		do
+			. $pkg/receipt
+			if echo "$MAINTAINER" | grep -q "$2"; then
+				echo "$PACKAGE"
+				packages=$(($packages+1))
+			fi
+		done
+		echo "================================================================================"
+		echo "Packages maintained by $1: $packages"
+		echo "" ;;
 	usage|*)
 		# Print usage also for all unknown commands.
 		#
