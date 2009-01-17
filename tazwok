@@ -1059,9 +1059,8 @@ Maintainer : $MAINTAINER"
 				fakewok="yes"
 				WOK=/tmp/fakewok-$$
 				mkdir -p $WOK
-				PACKAGES_REPOSITORY=$(pwd)
-				for i in *.tazpkg; do
-					(cd $WOK; cpio -i receipt files.list) < $i
+				for i in $PACKAGES_REPOSITORY/*.tazpkg; do
+					(cd $WOK; cpio -i receipt files.list 2>/dev/null) < $i
 					. $WOK/receipt
 					mkdir -p $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
 					mv $WOK/receipt $WOK/files.list \
