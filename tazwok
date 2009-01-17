@@ -6,7 +6,7 @@
 # packages or a list of packages with one command, rebuild the full distro,
 # generate a packages repository and also list and get info about packages.
 #
-# (C) 2007-2008 SliTaz - GNU General Public License.
+# (C) 2007-2009 SliTaz - GNU General Public License.
 #
 VERSION=2.1
 
@@ -1206,6 +1206,13 @@ EOF
 			echo ""
 		fi
 		;;
+	hgup)
+		# Pull and update an Hg wok.
+		if ls -l $WOK/.hg/hgrc | grep -q "root"; then
+			check_root
+		fi
+		cd $WOK
+		hg pull && hg update ;;
 	usage|*)
 		# Print usage also for all unknown commands.
 		#
