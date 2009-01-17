@@ -103,7 +103,8 @@ usage ()
   gen-list       Generate a packages list for a repository (--text).
   gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
   remove         Remove a package from the wok.
-  hgup           Pull and update a wok under HG.
+  hgup           Pull and update a wok under Hg.
+  maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor\n"
 }
 
@@ -1215,6 +1216,24 @@ EOF
 		fi
 		cd $WOK
 		hg pull && hg update ;;
+	maintainers)
+		echo ""
+		echo "List of maintainers for: $WOK"
+		echo "================================================================================"
+		touch /tmp/slitaz-maintainers
+		for pkg in $WOK/*
+		do
+			. $pkg/receipt
+			if ! grep -q "$MAINTAINER" /tmp/slitaz-maintainers; then
+				echo "$MAINTAINER" >> /tmp/slitaz-maintainers
+				echo "$MAINTAINER"
+			fi
+		done
+		echo "================================================================================"
+		echo "Maintainers: `cat /tmp/slitaz-maintainers | wc -l`"
+		echo ""
+		# Remove tmp files
+		rm -f /tmp/slitaz-maintainers ;;
 	maintained-by)
 		# Search for packages maintained by a packagers.
 		if [ ! -n "$2" ]; then
