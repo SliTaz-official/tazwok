@@ -1052,12 +1052,12 @@ Maintainer : $MAINTAINER"
 		# if $2 is not empty cd into $2. A text packages list can also be gen
 		# with the option --text.
 		#
-		fakewok="no"
+		fakewok=""
 		if [ "$2" == "--text" ]; then
 			textlist="yes"
 			if [ "$3" == "--fakewok" ]; then
-				fakewok="yes"
 				WOK=/tmp/fakewok-$$
+				fakewok="$WOK"
 				mkdir -p $WOK
 				for i in $PACKAGES_REPOSITORY/*.tazpkg; do
 					(cd $WOK; cpio -i receipt files.list 2>/dev/null) < $i
@@ -1088,14 +1088,14 @@ Maintainer : $MAINTAINER"
 		# Generate packages.txt
 		if [ "$textlist" == "yes" ]; then
 			gen_textlist
-			[ "$fakewok" == "yes" ] && rm -rf $WOK
+			[ "$fakewok" == "" ] || rm -rf $fakewok
 		fi
 		echo -n "Creating the raw packages list... "
 		ls -1 *.tazpkg > /tmp/packages.list
 		sed -i s/'.tazpkg'/''/ /tmp/packages.list
 		status
 		echo -n "Building the md5sum for all packages... "
-		md5sum * > packages.md5
+		md5sum *.tazpkg > packages.md5
 		status
 		mv /tmp/packages.list $PACKAGES_REPOSITORY
 		echo "================================================================================"
