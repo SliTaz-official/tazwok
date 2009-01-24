@@ -644,6 +644,18 @@ hgdate()
 	echo $date | sed "s|[^ ]* [^ ]* \\(.*\\) \\(.*\\):\\(.*\\):\\(.*\\) \\(.*\\) .*|$mon\1\2\3\5|"
 }
 
+# List packages providing a virtual package
+whoprovide()
+{
+	local i;
+	for i in $(grep -l PROVIDE $WOK/*/receipt); do
+		. $i
+		case " $PROVIDE " in
+		*\ $1\ *|*\ $1:*) echo $(basename $(dirname $i));;
+		esac
+	done
+}
+
 ###################
 # Tazwok commands #
 ###################
@@ -700,9 +712,13 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			DEPENDS=""
 			BUILD_DEPENDS=""
 			WANTED=""
+			PACKED_SIZE=""
+			UNPACKED_SIZE=""
 			. $pkg/receipt
 			[ "$PACKAGE" = "$pkg" ] || echo "Package $PACKAGE should be $pkg"
 			[ -n "$VERSION" ] || echo "Package $PACKAGE has no VERSION"
+			[ -n "$PACKED_SIZE" ] && echo "Package $PACKAGE has hardcoded PACKED_SIZE"
+			[ -n "$UNPACKED_SIZE" ] && echo "Package $PACKAGE has hardcoded UNPACKED_SIZE"
 			if [ -n "$WANTED" ]; then
 				if [ ! -f $WANTED/receipt ]; then
 					echo "Package $PACKAGE want unknown $WANTED package"
@@ -740,12 +756,14 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			MSG="Missing dependencies for $PACKAGE $VERSION$EXTRAVERSION :\n"
 			for i in $DEPENDS; do
 				[ -d $i ] && continue
+				[ -n "$(whoprovide $i)" ] && continue
 				echo -e "$MSG  $i"
 				MSG=""
 			done
 			MSG="Missing build dependencies for $PACKAGE $VERSION$EXTRAVERSION :\n"
 			for i in $BUILD_DEPENDS; do
 				[ -d $i ] && continue
+				[ -n "$(whoprovide $i)" ] && continue
 				echo -e "$MSG  $i"
 				MSG=""
 			done
