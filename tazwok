@@ -705,6 +705,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			[ -f $pkg/receipt ] || continue
 			PACKAGE=""
 			VERSION=""
+			EXTRAVERSION=""
 			CATEGORY=""
 			SHORT_DESC=""
 			MAINTAINER=""
@@ -719,6 +720,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			[ -n "$VERSION" ] || echo "Package $PACKAGE has no VERSION"
 			[ -n "$PACKED_SIZE" ] && echo "Package $PACKAGE has hardcoded PACKED_SIZE"
 			[ -n "$UNPACKED_SIZE" ] && echo "Package $PACKAGE has hardcoded UNPACKED_SIZE"
+			[ -n "$EXTRAVERSION" ] && echo "Package $PACKAGE has hardcoded EXTRAVERSION"
 			if [ -n "$WANTED" ]; then
 				if [ ! -f $WANTED/receipt ]; then
 					echo "Package $PACKAGE want unknown $WANTED package"
@@ -745,7 +747,11 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			fi
 			[ -n "$SHORT_DESC" ] || echo "Package $PACKAGE has no SHORT_DESC"
 			[ -n "$MAINTAINER" ] || echo "Package $PACKAGE has no MAINTAINER"
-			[ -n "$WEB_SITE" ] || echo "Package $PACKAGE has no WEB_SITE"
+			case "$WEB_SITE" in
+			ftp*|http*);;
+			'') echo "Package $PACKAGE has no WEB_SITE";;
+			*)  echo "Package $PACKAGE has an invalid WEB_SITE";;
+			esac
 			case "$MAINTAINER" in
 			*\<*|*\>*) echo "Package $PACKAGE has an invalid MAINTAINER: $MAINTAINER";;
 			esac
