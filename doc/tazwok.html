@@ -41,7 +41,7 @@ Tazwok - SliTaz sources and packages cooker.
 
 <h2>DESCRIPTION</h2>
 <p>
-Tazwok est un outil en ligne de commande permettant de configurer et de
+Tazwok est un outils en ligne de commande permettant de configurer et de
 compiler un paquet depuis les sources. Tazwok permet aussi de créer des
 paquets prêts à être utilisé par Tazpkg, le gestionnaire de paquets créer
 pour SliTaz. Pour fonctionner Tazwok utilise un fichier contenant la recette
@@ -49,15 +49,15 @@ et toutes les informations nécessaires à la construction du paquet, cette
 recette est aussi utilisée par Tazpkg et se compose de différentes variables
 et fonctions. Tazwok utilise un fichier de configuration (/etc/tazwok.conf)
 pour connaître le chemin vers le wok, les paquets sources et les paquets
-(.tazpkg) générés. Il est aussi capable de générer une liste de paquets avec
-leurs sommes md5, de créer un nouveau paquet de manière interactive, de faire
+(.tazpkg) générés. Il est aussi capable de générer une liste paquets avec
+leurs sommes md5, des créer un nouveau paquet de manière interactive, de faire
 une recherche, de nettoyer les fichiers générés ou encore de cuire plusieurs
 paquets en une seule fois (Voir les commandes disponibles).
 </p>
 <p>
-Tazwok est écrit en script shell depuis rien (from scratch), compatible Bash,
-et fonctionnant avec Ash du projet Busybox. Tazwok est distribué sous licence
-libre GNU gpl v3. Les recettes avec leures commandes sont basées sur le livre
+Tazwok est écript en script shell depuis rien (from scratch), compatible Bash,
+et fonctionnant avec Ash du projet Busybox. Tazwok est distribué sous license
+libre GNU gpl v3. Les recettes avec leures commades sont basée sur le livre
 de cuisine de SliTaz, le Cookbook fournit aussi de la documentation au sujet
 de Tazwok et du développement de SliTaz.
 </p>
@@ -73,7 +73,7 @@ description en English :
 </pre>
 <h3><font color="#6c0023">stats</font></h3>
 <p>
-Stats affiche les informations contenues dans le fichier de configuration et
+Stats affiche les informations contenue dans le fichier de configuration et
 le nombre de paquets disponibles dans le wok :
 </p>
 <pre>
@@ -82,7 +82,7 @@ le nombre de paquets disponibles dans le wok :
 <h3><font color="#6c0023">list</font></h3>
 <p>
 La commande 'list' permet de lister l'ensemble des paquets contenus dans le
-wok ou de lister les catégories par défaut (vous pouvez créer la votre). Elle
+wok ou de lister les catégories par défauts (vous pouvez créer la votre). Elle
 permet aussi de lister les paquets d'une catégorie :
 </p>
 <pre>
@@ -92,7 +92,7 @@ permet aussi de lister les paquets d'une catégorie :
 <h3><font color="#6c0023">info</font></h3>
 <p>
 Cette commande donne des informations sur le paquet, nom, version, etc. Info
-se base sur la recette du paquet pour connaître les informations, ce sont les
+ce base sur la recette du paquet pour connaître les informations, c'est les
 mêmes infos affichées par Tazpkg et les paquets installés :
 </p>
 <pre>
@@ -119,7 +119,7 @@ spécifier un terme ou un nom de paquet :
 Compile va compiler. Cette commande utilise les régles de compilation
 (compile_rules) spécifiées dans la recette du paquet en question, pour
 compiler les sources. A noter qu'il n'y a pas forcement de régles de
-compilation, des paquets sont directement générés par 'genpkg' et que la
+compilation, des paquets sont directement généré par 'genpkg' et que la
 commande 'cook' permet de compiler les sources et générer le paquet binaire
 en une seule fois. Exemple :
 </p>
@@ -131,7 +131,7 @@ en une seule fois. Exemple :
 Genpkg pour <em>Generate package</em>, va générer le paquet (.tazpkg) en
 utilisant la fonction 'genpkg_rules' trouvée dans sa recette et compresser
 les fichiers. Une fois le paquet généré,  il est stocké dans le repositoire
-des paquets spécifié dans le fichier de configuration ('tazwok stats' pour
+des paquetss spécifié dans le fichier de configuration ('tazwok stats' pour
 afficher la configuration courante). Le paquet peut ensuite facilement
 s'installer via Tazpkg ou être utilisé par Tazlito pour générer une
 distribution LiveCD automatiquement. A noter que les fichiers standards tels
@@ -151,8 +151,8 @@ Cook va simplement compiler et empaqueter les paquet en une seule fois :
 </pre>
 <h3><font color="#6c0023">cook-list</font></h3>
 <p>
-Cette commande va lancer 'tazwok cook' sur tous les paquets contenus dans la
-liste spécifiée en argument. Cook-list est utilisée par exemple, pour cuire
+Cette commade va lancer 'tazwok cook' sur tous les paquets contenus dans la
+liste spécifiées en argument. Cook-list est utilisés par exemple, pour cuire
 le système de base, les applications de base, le système X, etc. Avant de
 lancer cette commande avec un grand nombre de paquets, il est conseillé de
 cuire une fois le système de base (base-system) sans la glibc. Sur SliTaz,
@@ -174,7 +174,7 @@ compilation et l'empaquetage, pour recommencer à cuire (cook) :
 <p>
 La commande 'new-tree' permet de créer un nouveau paquet dans le wok et
 peut s'utiliser de manière interactive. New-tree va créer le répertoire du
-paquet et une recette modèle (receipt), cette recette peut être éditée avec
+paquet et une recette modèle (receipt), cette recette peur être éditée avec
 votre éditeur de texte préféré et peut se configurer via l'option
 '--interactive'. Pour vous aider vous pouvez regarder des recettes existantes
 et lire la documentation du Cookbook. Exemple d'utilisation :
@@ -186,8 +186,8 @@ et lire la documentation du Cookbook. Exemple d'utilisation :
 <h3><font color="#6c0023">gen-list</font></h3>
 <p>
 La commande 'gen-list' permet de générer une liste de paquets (packages.list),
-leurs sommes md5 (packages.md5) et en option une liste de paquets contenant plus
-d'informations (packages.txt). Les simples listes sont créées en se basant sur
+leurs sommes md5 (packages.md5) et en option une liste de paquet contenant plus
+d'informations (packages.txt). Les simples listes sont crées en se basant sur
 les paquets contenus dans un répertoire. La liste au format texte est construite
 avec les recettes contenues dans un wok. Le répertoire des paquets par défaut
 est celui spécifié dans le fichier de configuration, vous avez aussi la
@@ -202,8 +202,8 @@ Utilisation de la commande 'gen-list' :
 <h3><font color="#6c0023">gen-clean-wok et clean-wok</font></h3>
 <p>
 La commande 'gen-clean-wok' permet de générer un wok propre depuis le wok
-courant. Cette commande est utile pour sauvegarder une version du wok ou copier
-un wok pour tester avec un autre. Quant à la commande 'clean-wok', elle va
+courant. Cette commande est utile pour sauvegarder un version du wok ou copier
+un wok pour tester avec un autre. Quand à la commande 'clean-wok', elle va
 nettoyer tous les paquets du wok courant et supprimer tous les fichiers
 générés. Pour récupérer un wok propre ou nettoyer le wok actuel :
 </p>
@@ -218,6 +218,31 @@ y compris :
 </p>
 <pre>
  # tazwok remove package
+</pre>
+<h3><font color="#6c0023">build-depends</font></h3>
+<p>
+Build-depends génère une liste de paquets nécessaires pour compiler le wok :
+</p>
+<pre>
+ # tazwok build-depends
+</pre>
+<h3><font color="#6c0023">cmp|compare</font></h3>
+<p>
+Compare le wok avec les paquets déjà cuits et génère un rapport.
+Les paquets obsolètes peuvent être effacés avec l'option --remove.
+Les paquets à compiler peuvent l'être avec l'option --cook.
+</p>
+<pre>
+ # tazwok compare
+ # tazwok compare --remove
+ # tazwok compare --cook
+</pre>
+<h3><font color="#6c0023">check</font></h3>
+<p>
+Recherche les erreurs courantes dans les receipts :
+</p>
+<pre>
+ # tazwok check
 </pre>
 
 <h2>MAINTENEUR</h2>
