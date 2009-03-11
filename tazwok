@@ -712,7 +712,10 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				case " $ALL_DEPENDS " in
 				*\ $i\ *) continue;;
 				esac
-				[ -d $WOK/$i ] || continue
+				[ -d $WOK/$i ] || {
+					ALL_DEPENDS="$ALL_DEPENDS$i "
+					continue
+				}
 				. $WOK/$i/receipt
 				scan_dep
 			done
