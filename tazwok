@@ -93,6 +93,7 @@ usage ()
   info           Get information about a package in the wok.
   check          Check every receipt for common errors.
   check-log      Check the process log file of a package.
+  check-depends  Check every receipt for DEPENDS misses scanning ELF files
   search         Search for a package in the wok by pattern or name.
   compile        Configure and build a package using the receipt rules.
   genpkg         Generate a suitable package for Tazpkg with the rules.
@@ -693,6 +694,76 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				esac
 			done
 		done
+		;;
+	check-depends)
+		# Check package depends
+		echo ""
+		echo -e "\033[1mCheck every receipt for DEPENDS misses scanning ELF files\033[0m
+================================================================================"
+		TMPDIR=/tmp/tazwok$$
+		DEFAULT_DEPENDS="glibc-base gcc-lib-base"
+
+		# Build ALL_DEPENDS variable
+		scan_dep()
+		{
+			local i
+			ALL_DEPENDS="$ALL_DEPENDS$PACKAGE "
+			for i in $DEPENDS ; do
+				case " $ALL_DEPENDS " in
+				*\ $i\ *) continue;;
+				esac
+				[ -d $WOK/$i ] || continue
+				. $WOK/$i/receipt
+				scan_dep
+			done
+		}
+		
+		# Check for ELF file
+		is_elf()
+		{
+			[ "$(dd if=$1 bs=1 skip=1 count=3 2> /dev/null)" \
+				= "ELF" ]
+		}
+
+		# Print shared library dependencies
+		ldd()
+		{
+			LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $1
+		}
+
+		mkdir $TMPDIR
+		cd $TMPDIR
+		for i in /var/lib/tazpkg/files.list.lzma \
+	 		/var/lib/tazpkg/undigest/*/files.list.lzma ; do
+	 		[ -f $i ] && lzma d $i -so >> files.list
+		done
+		for pkg in $PACKAGES_REPOSITORY/*.tazpkg ; do
+			tazpkg extract $pkg > /dev/null 2>&1
+			. */receipt
+			ALL_DEPENDS="$DEFAULT_DEPENDS "
+			scan_dep
+			find */fs -type f | while read file ; do
+				is_elf $file || continue
+				case "$file" in
+				*.o|*.ko|*.ko.gz) continue;;
+				esac
+				ldd $file | while read lib rem; do
+					case "$lib" in
+					linux-gate.so*|ld-*.so|*/ld-*.so)
+						continue;;
+					esac
+					for dep in $(grep $lib files.list | cut -d: -f1); do
+						case " $ALL_DEPENDS " in
+						*\ $dep\ *) continue 2;;
+						esac
+					done
+					echo "$(basename $pkg): ${file#*fs} depends on package $dep for the shared library $lib"
+				done
+			done
+			rm -rf */
+		done
+		cd /tmp
+		rm -rf $TMPDIR
 		;;
 	check)
 		# Check wok consistancy
