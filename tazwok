@@ -87,13 +87,13 @@ usage ()
 \033[1mCommands: \033[0m\n
   usage          Print this short usage.
   stats          Print Tazwok statistics from the config file and the wok.
-  build-depends  Generate a list of package to build wok.
+  build-depends  Generate a list of packages to build a wok.
   cmp|compare    Compare the wok and the cooked pkgs (--remove old pkgs).
   list           List all packages in the wok tree or by category.
   info           Get information about a package in the wok.
   check          Check every receipt for common errors.
   check-log      Check the process log file of a package.
-  check-depends  Check every receipt for DEPENDS misses scanning ELF files
+  check-depends  Check every receipt for DEPENDS - doesn't scan ELF files.
   search         Search for a package in the wok by pattern or name.
   compile        Configure and build a package using the receipt rules.
   genpkg         Generate a suitable package for Tazpkg with the rules.
@@ -106,7 +106,7 @@ usage ()
   remove         Remove a package from the wok.
   hgup           Pull and update a wok under Hg.
   maintainers    List all maintainers in the wok.
-  maintained-by  List packages maintained by a contributor\n"
+  maintained-by  List packages maintained by a contributor.\n"
 }
 
 # Status function.
@@ -327,7 +327,7 @@ compile_package()
 				chown -R root.root $WOK/$PACKAGE/$PACKAGE-* 2>/dev/null
 				chown -R root.root $WOK/$PACKAGE/$SOURCE-* 2>/dev/null
 			else
-				echo -n "Source direcory exit... " && status
+				echo -n "Source directory exit... " && status
 			fi
 		fi
 	fi
@@ -338,7 +338,7 @@ compile_package()
 		echo "executing compile_rules" >> $LOG
 		compile_rules
 		# Exit if compilation failed so the binary package
-		# is not generated when using the cook comand.
+		# is not generated when using the cook command.
 		local CHECK=$?
 		if [ $CHECK = 0 ]; then
 			echo "================================================================================"
@@ -594,9 +594,9 @@ _EOT_
     $PACKED_SIZE ($UNPACKED_SIZE installed)	
 _EOT_
 	fi
-	# packages.desc is used by Tazpkgbox <tree>.
+	# Packages.desc is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> packages.desc
-	# packages.equiv is used by tazpkg install to check depends
+	# Packages.equiv is used by tazpkg install to check depends
 	touch packages.equiv
 	for i in $PROVIDE; do
 		DEST=""
@@ -698,7 +698,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 	check-depends)
 		# Check package depends
 		echo ""
-		echo -e "\033[1mCheck every receipt for DEPENDS misses scanning ELF files\033[0m
+		echo -e "\033[1mCheck every receipt for DEPENDS - doesn't scan ELF files\033[0m
 ================================================================================"
 		TMPDIR=/tmp/tazwok$$
 		DEFAULT_DEPENDS="glibc-base gcc-lib-base"
@@ -797,7 +797,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			[ -n "$EXTRAVERSION" ] && echo "Package $PACKAGE has hardcoded EXTRAVERSION"
 			if [ -n "$WANTED" ]; then
 				if [ ! -f $WANTED/receipt ]; then
-					echo "Package $PACKAGE want unknown $WANTED package"
+					echo "Package $PACKAGE wants unknown $WANTED package"
 				else
 					BASEVERSION=$(. $WANTED/receipt ; echo $VERSION)
 					if [ "$VERSION" = "$WANTED" ]; then
@@ -806,7 +806,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 						BASEVERSION=$VERSION
 					fi
 					if [ "$VERSION" != "$BASEVERSION" ]; then
-						echo "Package $PACKAGE ($VERSION) want $WANTED ($BASEVERSION)"
+						echo "Package $PACKAGE ($VERSION) wants $WANTED ($BASEVERSION)"
 					fi
 				fi
 			fi
@@ -918,7 +918,7 @@ Old: `cat pkgs.old.$$ 2>/dev/null | wc -l`"
 		rm -f wok.list.$$ pkgs.old.$$ pkgs.missing.$$
 		;;
 	list)
-		# List packages in wok directory. User can specifiy a category
+		# List packages in wok directory. User can specify a category
 		#
 		if [ "$2" = "category" ]; then
 			echo -e "\033[1m\nPackages categories :\033[0m $CATEGORIES\n"
@@ -1030,7 +1030,7 @@ Maintainer : $MAINTAINER"
 		compile_package
 		;;
 	genpkg)
-		# Generate a package
+		# Generate a package.
 		#
 		gen_package
 		;;
@@ -1087,7 +1087,7 @@ Maintainer : $MAINTAINER"
 			rm -rf $i
 			status
 		done
-		# Remove an envental $PACKAGE-build directory.
+		# Remove an eventual $PACKAGE-build directory.
 		if [ -d "$PACKAGE-build" ]; then
 			echo -n "Removing build tree..."
 			rm -rf $PACKAGE-build && status
@@ -1102,7 +1102,7 @@ Maintainer : $MAINTAINER"
 		echo ""
 		;;
 	gen-clean-wok)
-		# Generate a clean wok from the current wok by copying all receipt
+		# Generate a clean wok from the current wok by copying all receipts
 		# and stuff directory.
 		#
 		if [ -z "$2" ]; then
