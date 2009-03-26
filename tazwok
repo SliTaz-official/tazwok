@@ -784,6 +784,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			SHORT_DESC=""
 			MAINTAINER=""
 			WEB_SITE=""
+			WGET_URL=""
 			DEPENDS=""
 			BUILD_DEPENDS=""
 			WANTED=""
@@ -821,8 +822,15 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			fi
 			[ -n "$SHORT_DESC" ] || echo "Package $PACKAGE has no SHORT_DESC"
 			[ -n "$MAINTAINER" ] || echo "Package $PACKAGE has no MAINTAINER"
+			case "$WGET_URL" in
+			ftp*|http*) wget -s $WGET_URL 2> /dev/null ||
+				echo "Package $PACKAGE has a wrong WGET_URL";;
+			'') ;;
+			*)  echo "Package $PACKAGE has an invalid WGET_URL";;
+			esac
 			case "$WEB_SITE" in
-			ftp*|http*);;
+			ftp*|http*) wget -s $WEB_SITE 2> /dev/null ||
+				echo "Package $PACKAGE has a wrong WEB_SITE";;
 			'') echo "Package $PACKAGE has no WEB_SITE";;
 			*)  echo "Package $PACKAGE has an invalid WEB_SITE";;
 			esac
