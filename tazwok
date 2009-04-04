@@ -534,20 +534,22 @@ gen_package()
 	find fs -print | cpio -o -H newc | gzip > fs.cpio.gz && rm -rf fs
 	PACKED_SIZE=$(du -chs fs.cpio.gz receipt files.list md5sum \
 		description.txt 2> /dev/null | awk '{ sz=$1 } END { print sz }')
-	echo -n "Undating receipt sizes..."
+	status
+	echo -n "Updating receipt sizes..."
 	sed -i s/^PACKED_SIZE.*$// receipt	
 	sed -i s/^UNPACKED_SIZE.*$// receipt	
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
 	sed -i "s/^VERSION=$/VERSION=\"$VERSION\"/" receipt
 	status
 	if [ -n "$EXTRAVERSION" ]; then
-		echo -n "Undating receipt EXTRAVERSION..."
+		echo -n "Updating receipt EXTRAVERSION..."
 		sed -i s/^EXTRAVERSION.*$// receipt
 		sed -i "s/^VERSION=/EXTRAVERSION=\"$EXTRAVERSION\"\nVERSION=/" receipt
 		status
 	fi
 	echo -n "Creating full cpio archive... "
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
+	status
 	# Restore package tree incase we want to browse it.
 	echo -n "Restoring original package tree... "
 	zcat fs.cpio.gz | cpio -id
