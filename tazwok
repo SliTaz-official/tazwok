@@ -336,7 +336,7 @@ compile_package()
 	# make the package if it exists.
 	if grep -q ^compile_rules $RECEIPT; then
 		echo "executing compile_rules" >> $LOG
-		compile_rules
+		compile_rules 2>&1 | tee compile_rules.log
 		# Exit if compilation failed so the binary package
 		# is not generated when using the cook command.
 		local CHECK=$?
@@ -462,7 +462,7 @@ gen_package()
 	if grep -q ^genpkg_rules $RECEIPT; then
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
-		genpkg_rules
+		genpkg_rules 2>&1 | tee genpkg_rules.log
 		cd $WOK/$PACKAGE
 		# Skip generic files for packages with a WANTED variable 
 		# (dev and splited pkgs).
