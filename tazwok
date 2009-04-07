@@ -831,8 +831,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			*)  echo "Package $PACKAGE has an invalid WGET_URL";;
 			esac
 			case "$WEB_SITE" in
-			ftp*|http*) wget -s $WEB_SITE 2> /dev/null ||
-				echo "Package $PACKAGE has a wrong WEB_SITE";;
+			ftp*|http*);;
 			'') echo "Package $PACKAGE has no WEB_SITE";;
 			*)  echo "Package $PACKAGE has an invalid WEB_SITE";;
 			esac
