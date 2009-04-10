@@ -63,6 +63,7 @@ de Tazwok et du développement de SliTaz.
 </p>
 
 <h2>COMMANDES</h2>
+<a name="usage"></a>
 <h3><font color="#6c0023">usage</font></h3>
 <p>
 La commande 'usage' affiche la liste des commandes diponibles avec une petite
@@ -71,6 +72,7 @@ description en English :
 <pre>
  # tazwok usage
 </pre>
+<a name="stats"></a>
 <h3><font color="#6c0023">stats</font></h3>
 <p>
 Stats affiche les informations contenues dans le fichier de configuration et
@@ -79,6 +81,7 @@ le nombre de paquets disponibles dans le wok :
 <pre>
  # tazwok stats
 </pre>
+<a name="list"></a>
 <h3><font color="#6c0023">list</font></h3>
 <p>
 La commande 'list' permet de lister l'ensemble des paquets contenus dans le
@@ -89,6 +92,7 @@ permet aussi de lister les paquets d'une catégorie :
  # tazwok list
  # tazwok list category
 </pre>
+<a name="info"></a>
 <h3><font color="#6c0023">info</font></h3>
 <p>
 Cette commande donne des informations sur le paquet, nom, version, etc. Info
@@ -98,6 +102,7 @@ mêmes infos affichées par Tazpkg et les paquets installés :
 <pre>
  # tazwok info package
 </pre>
+<a name="check-log"></a>
 <h3><font color="#6c0023">check-log</font></h3>
 <p>
 Lors de la compilation et génération du paquet binaire, Tazwok génére quelques
@@ -106,6 +111,7 @@ messages de log stockés dans un fichier 'process.log'. Pour les afficher :
 <pre>
  # tazwok check-log package
 </pre>
+<a name="search"></a>
 <h3><font color="#6c0023">search</font></h3>
 <p>
 Search permet de faire une recherche de paquet dans le wok. Vous pouvez
@@ -114,6 +120,7 @@ spécifier un terme ou un nom de paquet :
 <pre>
  # tazwok search name
 </pre>
+<a name="compile"></a>
 <h3><font color="#6c0023">compile</font></h3>
 <p>
 Compile va compiler. Cette commande utilise les régles de compilation
@@ -126,6 +133,7 @@ en une seule fois. Exemple :
 <pre>
  # tazwok compile package
 </pre>
+<a name="genpkg"></a>
 <h3><font color="#6c0023">genpkg</font></h3>
 <p>
 Genpkg pour <em>Generate package</em>, va générer le paquet (.tazpkg) en
@@ -142,6 +150,7 @@ dans $fs/usr/share, si les chemins sont standards ou si le fichier existe dans
 <pre>
  # tazwok genpkg package
 </pre>
+<a name="cook"></a>
 <h3><font color="#6c0023">cook</font></h3>
 <p>
 Cook va simplement compiler et empaqueter les paquet en une seule fois :
@@ -149,6 +158,7 @@ Cook va simplement compiler et empaqueter les paquet en une seule fois :
 <pre>
  # tazwok cook package
 </pre>
+<a name="cook-list"></a>
 <h3><font color="#6c0023">cook-list</font></h3>
 <p>
 Cette commande va lancer 'tazwok cook' sur tous les paquets contenus dans la
@@ -162,6 +172,7 @@ des exemples /usr/share/examples/tazwok/cooklists :
 <pre>
  # tazwok cook-list packages.cooklist
 </pre>
+<a name="clean"></a>
 <h3><font color="#6c0023">clean</font></h3>
 <p>
 Clean permet simplement de supprimer tous les fichiers générés par la
@@ -170,6 +181,7 @@ compilation et l'empaquetage, pour recommencer à cuire (cook) :
 <pre>
  # tazwok clean package
 </pre>
+<a name="new-tree"></a>
 <h3><font color="#6c0023">new-tree</font></h3>
 <p>
 La commande 'new-tree' permet de créer un nouveau paquet dans le wok et
@@ -183,6 +195,7 @@ et lire la documentation du Cookbook. Exemple d'utilisation :
  # tazwok new-tree package
  # tazwok new-tree package --interactive
 </pre>
+<a name="gen-list"></a>
 <h3><font color="#6c0023">gen-list</font></h3>
 <p>
 La commande 'gen-list' permet de générer une liste de paquets (packages.list),
@@ -199,6 +212,7 @@ Utilisation de la commande 'gen-list' :
  # tazwok gen-list --text
  # tazwok gen-list /path/to/repository
 </pre>
+<a name="gen-clean-wok"></a>
 <h3><font color="#6c0023">gen-clean-wok et clean-wok</font></h3>
 <p>
 courant. Cette commande est utile pour sauvegarder une version du wok ou copier
@@ -211,6 +225,7 @@ générés. Pour récupérer un wok propre ou nettoyer le wok actuel :
  # tazwok gen-clean-wok path/to/new-wok
  # tazwok clean-wok
 </pre>
+<a name="remove"></a>
 <h3><font color="#6c0023">remove</font></h3>
 <p>
 Supprime le paquet spécifié du wok, avec tous les fichiers, stuff et recette
@@ -219,6 +234,7 @@ y compris :
 <pre>
  # tazwok remove package
 </pre>
+<a name="build-depends"></a>
 <h3><font color="#6c0023">build-depends</font></h3>
 <p>
 Build-depends génère une liste de paquets nécessaires pour compiler le wok :
@@ -226,6 +242,7 @@ Build-depends génère une liste de paquets nécessaires pour compiler le wok :
 <pre>
  # tazwok build-depends
 </pre>
+<a name="cmp"></a>
 <h3><font color="#6c0023">cmp|compare</font></h3>
 <p>
 Compare le wok avec les paquets déjà cuits et génère un rapport.
@@ -237,6 +254,7 @@ Les paquets à compiler peuvent l'être avec l'option --cook.
  # tazwok compare --remove
  # tazwok compare --cook
 </pre>
+<a name="check"></a>
 <h3><font color="#6c0023">check</font></h3>
 <p>
 Recherche les erreurs courantes dans les receipts :
