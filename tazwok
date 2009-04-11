@@ -735,7 +735,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		# Print shared library dependencies
 		ldd()
 		{
-			LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $1
+			LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $1 2> /dev/null
 		}
 
 		mkdir $TMPDIR
