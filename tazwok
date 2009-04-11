@@ -710,7 +710,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		{
 			local i
 			ALL_DEPENDS="$ALL_DEPENDS$PACKAGE "
-			for i in $DEPENDS ; do
+			for i in $DEPENDS $SUGGESTED ; do
 				case " $ALL_DEPENDS " in
 				*\ $i\ *) continue;;
 				esac
@@ -718,6 +718,8 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 					ALL_DEPENDS="$ALL_DEPENDS$i "
 					continue
 				}
+				DEPENDS=""
+				SUGGESTED=""
 				. $WOK/$i/receipt
 				scan_dep
 			done
@@ -754,14 +756,20 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				esac
 				ldd $file | while read lib rem; do
 					case "$lib" in
-					linux-gate.so*|ld-*.so|*/ld-*.so)
+					statically|linux-gate.so*|ld-*.so|*/ld-*.so)
 						continue;;
 					esac
 					for dep in $(grep $lib files.list | cut -d: -f1); do
 						case " $ALL_DEPENDS " in
 						*\ $dep\ *) continue 2;;
 						esac
+						for vdep in $(grep $dep /var/lib/tazpkg/packages.equiv | cut -d= -f1); do
+							case " $ALL_DEPENDS " in
+							*\ $vdep\ *) continue 2;;
+							esac
+						done
 					done
+					[ -n "$dep" ] || dep="UNKNOWN"
 					echo "$(basename $pkg): ${file#*fs} depends on package $dep for the shared library $lib"
 				done
 			done
