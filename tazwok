@@ -765,7 +765,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 						esac
 						for vdep in $(grep $dep /var/lib/tazpkg/packages.equiv | cut -d= -f1); do
 							case " $ALL_DEPENDS " in
-							*\ $vdep\ *) continue 2;;
+							*\ $vdep\ *) continue 3;;
 							esac
 						done
 					done
