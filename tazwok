@@ -459,6 +459,7 @@ $PACKAGE package generation aborted.
 
 _EOT_
 		# Dont generate a corrupted package.
+		cd cd $WOK/$PACKAGE && rm -rf taz
 		exit 1
 	fi
 	echo ""
