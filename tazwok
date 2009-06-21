@@ -87,6 +87,7 @@ usage ()
 \033[1mCommands: \033[0m\n
   usage          Print this short usage.
   stats          Print Tazwok statistics from the config file and the wok.
+  edit           Edit a package receipt in the current wok.
   build-depends  Generate a list of packages to build a wok.
   cmp|compare    Compare the wok and the cooked pkgs (--remove old pkgs).
   list           List all packages in the wok tree or by category.
@@ -374,7 +375,7 @@ copy_generic_files()
 			done
 		fi
 	fi
-	# Pixmaps (PNG or/and XPM only). Some icons/images can be added through 
+	# Pixmaps (PNG or/and XPM only). Some icons/images can be added through
 	# genpkg_rules and generic copy can be disabled with GENERIC_PIXMAPS="no"
 	# in pkg receipt.
 	if [ ! "$GENERIC_PIXMAPS" = "no" ]; then
@@ -464,7 +465,7 @@ gen_package()
 		echo "executing genpkg_rules" >> $LOG
 		genpkg_rules
 		cd $WOK/$PACKAGE
-		# Skip generic files for packages with a WANTED variable 
+		# Skip generic files for packages with a WANTED variable
 		# (dev and splited pkgs).
 		if [ ! "$WANTED" = "" ]; then
 			continue
@@ -500,7 +501,7 @@ gen_package()
 		if [ "$LAST_FILE" != "" ]; then
 			case "$file" in
 			$LAST_FILE/*)
-				case "$(ls -ld "$LAST_FILE")" in 
+				case "$(ls -ld "$LAST_FILE")" in
 				drwxr-xr-x\ *\ root\ *\ root\ *);;
 				*) echo ${LAST_FILE#fs};;
 				esac;;
@@ -536,8 +537,8 @@ gen_package()
 		description.txt 2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	status
 	echo -n "Updating receipt sizes..."
-	sed -i s/^PACKED_SIZE.*$// receipt	
-	sed -i s/^UNPACKED_SIZE.*$// receipt	
+	sed -i s/^PACKED_SIZE.*$// receipt
+	sed -i s/^UNPACKED_SIZE.*$// receipt
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
 	sed -i "s/^VERSION=$/VERSION=\"$VERSION\"/" receipt
 	status
@@ -593,7 +594,7 @@ $PACKAGE
 _EOT_
 	if [ -n "$PACKED_SIZE" ]; then
 		cat >> packages.txt << _EOT_
-    $PACKED_SIZE ($UNPACKED_SIZE installed)	
+    $PACKED_SIZE ($UNPACKED_SIZE installed)
 _EOT_
 	fi
 	# Packages.desc is used by Tazpkgbox <tree>.
@@ -607,7 +608,7 @@ _EOT_
 			sed -i "s/^${i%:*}=/${i%:*}=$DEST$PACKAGE /" packages.equiv
 		else
 			echo "${i%:*}=$DEST$PACKAGE" >> packages.equiv
-		fi 
+		fi
 	done
 	packages=$(($packages+1))
 	done && status
@@ -639,8 +640,8 @@ hgdate()
 		2> /dev/null) | grep date: | head -1 | cut -c 6-)"
 	[ -n "$date" ] || { echo "010100001970"; return; }
 	case "$(echo $date | awk '{ print $2 }')" in
-	Jan) mon="01";; Feb) mon="02";; Mar) mon="03";; Apr) mon="04";; 
-	May) mon="05";; Jun) mon="06";; Jul) mon="07";; Aug) mon="08";; 
+	Jan) mon="01";; Feb) mon="02";; Mar) mon="03";; Apr) mon="04";;
+	May) mon="05";; Jun) mon="06";; Jul) mon="07";; Aug) mon="08";;
 	Sep) mon="09";; Oct) mon="10";; Nov) mon="11";; Dec) mon="12";;
 	esac
 	# Reformat, don't mind about TZ: we look for days or months delta
@@ -676,8 +677,11 @@ Sources repository   : $SOURCES_REPOSITORY
 Packages in the wok  : `ls -1 $WOK | wc -l`
 Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 ================================================================================"
-		echo ""
-		;;
+		echo "" ;;
+	edit)
+		check_for_package_on_cmdline
+		check_for_receipt
+		$EDITOR $WOK/$PACKAGE/receipt ;;
 	build-depends)
 		# List dependancies to rebuild wok
 		cd $WOK
@@ -724,7 +728,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				scan_dep
 			done
 		}
-		
+
 		# Check for ELF file
 		is_elf()
 		{
@@ -813,7 +817,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 					BASEVERSION=$(. $WANTED/receipt ; echo $VERSION)
 					if [ "$VERSION" = "$WANTED" ]; then
 						# BASEVERSION is computed in receipt
-						grep -q '_pkg=' $pkg/receipt && 
+						grep -q '_pkg=' $pkg/receipt &&
 						BASEVERSION=$VERSION
 					fi
 					if [ "$VERSION" != "$BASEVERSION" ]; then
@@ -870,7 +874,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		done
 		;;
 	cmp|compare)
-		# Compare the wok and packages repository to help with maintaining 
+		# Compare the wok and packages repository to help with maintaining
 		# a mirror.
 		echo ""
 		echo -e "\033[1mWok and packages comparison\033[0m
@@ -923,7 +927,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				rm $PACKAGES_REPOSITORY/$pkg
 			else
 				echo "Old package:     $pkg"
-			fi	
+			fi
 		done
 		cd /tmp
 		echo "================================================================================"
@@ -1000,7 +1004,7 @@ Maintainer : $MAINTAINER"
 		fi
 		echo "================================================================================"
 		echo ""
-		
+
 		;;
 	check-log)
 		# We just cat the file log to view process info.
@@ -1291,7 +1295,7 @@ EOF
 			sed -i s/'MAINTAINER=\"\"'/"MAINTAINER=\"$anser\""/ receipt
 			# Web site.
 			echo -n "Web site      : " ; read anser
-			sed -i s#'WEB_SITE=\"\"'#"WEB_SITE=\"$anser\""# receipt	
+			sed -i s#'WEB_SITE=\"\"'#"WEB_SITE=\"$anser\""# receipt
 			echo ""
 			# Wget URL.
 			echo "Wget URL to download source tarball."
@@ -1368,7 +1372,7 @@ EOF
 			fi
 		done
 		echo "================================================================================"
-		echo "Packages maintained by $1: $packages"
+		echo "Packages maintained by $2: $packages"
 		echo "" ;;
 	usage|*)
 		# Print usage also for all unknown commands.
