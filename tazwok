@@ -14,7 +14,11 @@ VERSION=2.2
 # Tazwok variables #
 ####################
 
-# Packages categories.
+# Packages categories
+#
+# We may move this to a centralized config for Tazwok, Tazpkg and Tazbb.
+# /var/lib/tazpkg/categories ?
+#
 CATEGORIES="
 base-system
 x-window
@@ -424,6 +428,42 @@ strip_package()
 	status
 }
 
+# Check FSH in a slitaz package (Path: /:/usr)
+check_fsh()
+{
+	cd $WOK/$PACKAGE/taz/*/fs
+	for i in `ls -d * usr/* 2>/dev/null`
+	do
+		if ! echo $FSH | grep -q $i; then
+			echo "Wrong path: /$i"
+			error=1
+		fi
+	done
+	if [ "$error" = "1" ]; then
+		cat << _EOT_
+
+Package will install files in a non standard directory and want be generated.
+You may have a wrong copy path in genpkg_rules or must add some options to
+configure in compile_rules. Some valid options for SliTaz (Linux FSH):
+
+ --prefix=/usr
+ --sysconfdir=/etc
+ --libexecdir=/usr/lib/(pkgname)
+ --localstatedir=/var
+ --mandir=/usr/share/man
+ --infodir=/usr/share/info
+
+For more information please read SliTaz doc and run: ./configure --help
+================================================================================
+$PACKAGE package generation aborted.
+
+_EOT_
+		# Dont generate a corrupted package.
+		exit 1
+	fi
+	echo ""
+}
+
 # Create a package tree and build the gziped cpio archive
 # to make a SliTaz (.tazpkg) package.
 gen_package()
@@ -456,7 +496,8 @@ gen_package()
 		_pkg=$src/_pkg
 	fi
 	cd $WOK/$PACKAGE
-	# Execute genpkg_rules and copy generic files to build the package.
+	# Execute genpkg_rules, check package and copy generic files to build
+	# the package.
 	echo ""
 	echo "Building $PACKAGE with the receipt..."
 	echo "================================================================================"
@@ -464,6 +505,7 @@ gen_package()
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		genpkg_rules
+		check_fsh
 		cd $WOK/$PACKAGE
 		# Skip generic files for packages with a WANTED variable
 		# (dev and splited pkgs).
