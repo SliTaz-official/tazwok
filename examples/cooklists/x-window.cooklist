@@ -1,7 +1,6 @@
 expat
 freetype
 fontconfig
-
 xorg-randrproto
 xorg-renderproto
 xorg-inputproto
@@ -29,7 +28,6 @@ xorg-libXi
 xorg-libfontenc
 xorg-rgb
 xorg-xload
-
 xterm
 libpng
 jwm

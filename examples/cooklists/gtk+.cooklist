@@ -2,4 +2,4 @@ cairo
 glib
 pango
 atk
-gtk
+gtk+
