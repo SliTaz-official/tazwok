@@ -350,6 +350,10 @@ compile_package()
 			echo "$PACKAGE compiled on : `date +%Y%m%d\ \%H:%M:%S`"
 			echo ""
 			echo "compilation done : `date +%Y%m%d\ \%H:%M:%S`" >> $LOG
+
+			for i in $( grep -l "WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
+				tazwok genpkg $(basename $(dirname $i))
+			done
 		else
 			echo "================================================================================"
 			echo "Compilation failed. Please read the compilator output."
@@ -580,8 +584,8 @@ gen_package()
 		description.txt 2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	status
 	echo -n "Updating receipt sizes..."
-	sed -i s/^PACKED_SIZE.*$// receipt
-	sed -i s/^UNPACKED_SIZE.*$// receipt
+	sed -i '/^PACKED_SIZE/d' receipt
+	sed -i '/^UNPACKED_SIZE/d' receipt
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
 	sed -i "s/^VERSION=$/VERSION=\"$VERSION\"/" receipt
 	status
