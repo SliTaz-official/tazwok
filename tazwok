@@ -40,6 +40,9 @@ COMMAND=$1
 PACKAGE=$2
 LIST=$2
 
+LOCALSTATE=/var/lib/tazpkg
+INSTALLED=$LOCALSTATE/installed
+
 # Include config file or exit if no file found.
 if [ -f "./tazwok.conf" ]; then
 	. ./tazwok.conf
@@ -208,7 +211,7 @@ check_for_build_depends()
 	echo "Checking for build dependencies..."
 	for pkg in $BUILD_DEPENDS
 	do
-		if [ ! -d "/var/lib/tazpkg/installed/$pkg" ]; then
+		if [ ! -d "$INSTALLED/$pkg" ]; then
 			MISSING_PACKAGE=$pkg
 		fi
 	done
@@ -216,7 +219,7 @@ check_for_build_depends()
 		echo "================================================================================"
 		for pkg in $BUILD_DEPENDS
 		do
-			if [ ! -d "/var/lib/tazpkg/installed/$pkg" ]; then
+			if [ ! -d "$INSTALLED/$pkg" ]; then
 				MISSING_PACKAGE=$pkg
 				echo "Missing : $pkg"
 			fi
@@ -228,7 +231,7 @@ check_for_build_depends()
 			install)
 				for pkg in $BUILD_DEPENDS
 				do
-					if [ ! -d "/var/lib/tazpkg/installed/$pkg" ]; then
+					if [ ! -d "$INSTALLED/$pkg" ]; then
 						tazpkg get-install $pkg
 					fi
 				done ;;
@@ -791,8 +794,8 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 
 		mkdir $TMPDIR
 		cd $TMPDIR
-		for i in /var/lib/tazpkg/files.list.lzma \
-	 		/var/lib/tazpkg/undigest/*/files.list.lzma ; do
+		for i in $LOCALSTATE/files.list.lzma \
+	 		$LOCALSTATE/undigest/*/files.list.lzma ; do
 	 		[ -f $i ] && lzma d $i -so >> files.list
 		done
 		for pkg in $PACKAGES_REPOSITORY/*.tazpkg ; do
@@ -814,7 +817,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 						case " $ALL_DEPENDS " in
 						*\ $dep\ *) continue 2;;
 						esac
-						for vdep in $(grep $dep /var/lib/tazpkg/packages.equiv | cut -d= -f1); do
+						for vdep in $(grep $dep $LOCALSTATE/packages.equiv | cut -d= -f1); do
 							case " $ALL_DEPENDS " in
 							*\ $vdep\ *) continue 3;;
 							esac
@@ -918,6 +921,10 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			MSG="Dependencies loop between $PACKAGE and :\n"
 			ALL_DEPS=""
 			check_for_deps_loop $PACKAGE $DEPENDS
+			[ -d $WOK/$pkg/taz ] && for i in $BUILD_DEPENDS; do
+				[ $WOK/$pkg/taz -nt $INSTALLED/$i ] && continue
+				echo "$pkg should be rebuilt since $i installation"
+			done
 		done
 		;;
 	cmp|compare)
