@@ -354,9 +354,14 @@ compile_package()
 			echo ""
 			echo "compilation done : `date +%Y%m%d\ \%H:%M:%S`" >> $LOG
 
+			# Regenerate every package who want PACKAGE compiled
+			# make tazwok genpkg happy
+			mkdir $WOK/$PACKAGE/taz
 			for i in $( grep -l "^WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
 				tazwok genpkg $(basename $(dirname $i))
 			done
+			# Still need tazwok genpkg for this package
+			rm -rf $WOK/$PACKAGE/taz
 		else
 			echo "================================================================================"
 			echo "Compilation failed. Please read the compilator output."
