@@ -444,6 +444,9 @@ strip_package()
 check_fsh()
 {
 	cd $WOK/$PACKAGE/taz/*/fs
+	[ -n "$FSH" ] || FSH="bin boot dev etc home init lib media mnt proc \
+root sbin share sys tmp usr var vz usr/bin usr/games usr/include usr/lib \
+usr/local usr/sbin usr/share usr/src"
 	for i in `ls -d * usr/* 2>/dev/null`
 	do
 		if ! echo $FSH | grep -q $i; then
