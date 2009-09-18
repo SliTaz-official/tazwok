@@ -590,8 +590,12 @@ gen_package()
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
 	echo -n "Compressing the fs... "
-	find fs -print | cpio -o -H newc | gzip > fs.cpio.gz && rm -rf fs
-	PACKED_SIZE=$(du -chs fs.cpio.gz receipt files.list md5sum \
+	find fs -print | cpio -o -H newc | case "$PACKAGE-$COMPRESSION" in
+	tazpkg-lzma)	gzip > fs.cpio.gz;;
+	*-lzma)		lzma e fs.cpio.lzma -si;;
+	*)		gzip > fs.cpio.gz;;
+	esac && rm -rf fs
+	PACKED_SIZE=$(du -chs fs.cpio.* receipt files.list md5sum \
 		description.txt 2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	status
 	echo -n "Updating receipt sizes..."
@@ -611,8 +615,8 @@ gen_package()
 	status
 	# Restore package tree incase we want to browse it.
 	echo -n "Restoring original package tree... "
-	zcat fs.cpio.gz | cpio -id
-	rm fs.cpio.gz && cd ..
+	( zcat fs.cpio.gz 2> /dev/null || unlzma -c fs.cpio.lzma ) | cpio -id
+	rm fs.cpio.* && cd ..
 	# Log process.
 	echo "$PACKAGE-$VERSION$EXTRAVERSION.tazpkg (done)" >> $LOG
 	echo "================================================================================"
