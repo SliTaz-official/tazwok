@@ -236,7 +236,7 @@ check_for_build_depends()
 					fi
 				done ;;
 			y|yes)
-				continue ;;
+				;;
 			*)
 				exit 0 ;;
 		esac
@@ -525,9 +525,7 @@ gen_package()
 		cd $WOK/$PACKAGE
 		# Skip generic files for packages with a WANTED variable
 		# (dev and splited pkgs).
-		if [ ! "$WANTED" = "" ]; then
-			continue
-		else
+		if [ "$WANTED" = "" ]; then
 			copy_generic_files
 		fi
 		strip_package
