@@ -354,17 +354,17 @@ compile_package()
 			echo ""
 			echo "compilation done : `date +%Y%m%d\ \%H:%M:%S`" >> $LOG
 
-			# Regenerate every package who want PACKAGE compiled
+			# Regenerate every package that wants a PACKAGE compiled
 			# make tazwok genpkg happy
 			mkdir $WOK/$PACKAGE/taz
 			for i in $( grep -l "^WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
 				tazwok genpkg $(basename $(dirname $i))
 			done
-			# Still need tazwok genpkg for this package
+			# Still needs tazwok genpkg for this package
 			rm -rf $WOK/$PACKAGE/taz
 		else
 			echo "================================================================================"
-			echo "Compilation failed. Please read the compilator output."
+			echo "Compilation failed. Please read the compiler output."
 			echo "" && exit 1
 		fi
 	else
@@ -458,7 +458,7 @@ usr/local usr/sbin usr/share usr/src"
 		cat << _EOT_
 
 Package will install files in a non standard directory and wont be generated.
-You may have a wrong copy path in genpkg_rules or must add some options to
+You may have a wrong copy path in genpkg_rules or need to add some options to
 configure in compile_rules. Some valid options for SliTaz (Linux FSH):
 
  --prefix=/usr
@@ -533,13 +533,13 @@ gen_package()
 		echo "No package rules to gen $PACKAGE..."
 		exit 1
 	fi
-	# Copy the receipt and description (if exists) in the binary package tree.
+	# Copy the receipt and description (if exists) into the binary package tree.
 	cd $WOK/$PACKAGE
 	echo -n "Copying the receipt..."
 	cp receipt taz/$PACKAGE-$VERSION
 	status
 	if grep -q ^get_version $RECEIPT; then
-		echo -n "Update version in receipt..."
+		echo -n "Updating version in receipt..."
 		sed -i "s/^VERSION=.*/VERSION=\"$VERSION\"/" \
 			taz/$PACKAGE-$VERSION/receipt
 		status
@@ -611,7 +611,7 @@ gen_package()
 	echo -n "Creating full cpio archive... "
 	find . -print | cpio -o -H newc > $PACKAGES_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg
 	status
-	# Restore package tree incase we want to browse it.
+	# Restore package tree in case we want to browse it.
 	echo -n "Restoring original package tree... "
 	( zcat fs.cpio.gz 2> /dev/null || unlzma -c fs.cpio.lzma ) | cpio -id
 	rm fs.cpio.* && cd ..
@@ -843,7 +843,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		rm -rf $TMPDIR
 		;;
 	check)
-		# Check wok consistancy
+		# Check wok consistency
 		echo ""
 		echo -e "\033[1mWok and packages checking\033[0m
 ================================================================================"
@@ -933,7 +933,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			check_for_deps_loop $PACKAGE $DEPENDS
 			[ -d $WOK/$pkg/taz ] && for i in $BUILD_DEPENDS; do
 				[ $WOK/$pkg/taz -nt $INSTALLED/$i/files.list ] && continue
-				echo "$pkg should be rebuilt since $i installation"
+				echo "$pkg should be rebuilt after $i installation"
 			done
 		done
 		;;
@@ -1342,7 +1342,7 @@ EOF
 		status
 		# Interactive mode, asking and seding.
 		if [ "$3" = "--interactive" ]; then
-			echo "Entering in interactive mode..."
+			echo "Entering into interactive mode..."
 			echo "================================================================================"
 			echo "Package       : $PACKAGE"
 			# Version.
