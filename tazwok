@@ -457,7 +457,7 @@ usr/local usr/sbin usr/share usr/src"
 	if [ "$error" = "1" ]; then
 		cat << _EOT_
 
-Package will install files in a non standard directory and wont be generated.
+Package will install files in a non standard directory and won't be generated.
 You may have a wrong copy path in genpkg_rules or need to add some options to
 configure in compile_rules. Some valid options for SliTaz (Linux FSH):
 
