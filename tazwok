@@ -354,14 +354,6 @@ compile_package()
 			echo ""
 			echo "compilation done : `date +%Y%m%d\ \%H:%M:%S`" >> $LOG
 
-			# Regenerate every package that wants a PACKAGE compiled
-			# make tazwok genpkg happy
-			mkdir $WOK/$PACKAGE/taz
-			for i in $( grep -l "^WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
-				tazwok genpkg $(basename $(dirname $i))
-			done
-			# Still needs tazwok genpkg for this package
-			rm -rf $WOK/$PACKAGE/taz
 		else
 			echo "================================================================================"
 			echo "Compilation failed. Please read the compiler output."
@@ -371,6 +363,18 @@ compile_package()
 		echo "no compile_rules" >> $LOG
 		echo -e "No compile rules for $PACKAGE...\n"
 	fi
+}
+
+# Regenerate every package that wants a PACKAGE compiled
+refresh_packages_from_compile()
+{
+	# make tazwok genpkg happy
+	mkdir $WOK/$PACKAGE/taz
+	for i in $( grep -l "^WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
+		tazwok genpkg $(basename $(dirname $i))
+	done
+	# Still needs tazwok genpkg for this package
+	rm -rf $WOK/$PACKAGE/taz
 }
 
 # Copy all generic files (locale, pixmaps, .desktop). We use standard paths,
@@ -1125,6 +1129,7 @@ Maintainer : $MAINTAINER"
 		#
 		check_root
 		compile_package
+		refresh_packages_from_compile
 		gen_package
 		;;
 	cook-list)
@@ -1135,8 +1140,7 @@ Maintainer : $MAINTAINER"
 		check_for_list
 		for pkg in $LIST
 		do
-			tazwok compile $pkg
-			tazwok genpkg $pkg
+			tazwok cook $pkg
 		done
 		;;
 	clean)
