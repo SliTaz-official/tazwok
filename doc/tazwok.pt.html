@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="pt" lang="pt">
+<head>
+    <title>Manual Tazwok</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
+    <meta name="description" content="" />
+    <meta name="expires" content="never" />
+    <meta name="modified" content="2008-07-18 20:30:00" />
+    <style type="text/css"><!--
+    body { font: 90% sans-serif, vernada, arial; margin: 0; }
+    #header { background: #f0ba08; color: black; height: 50px;
+        border-top: 1px solid black; border-bottom: 1px solid black; }
+    #content { margin: 0px 50px 26px 50px; }
+    h1 { margin: 14px 0px 0px 16px; }
+    li { line-height: 1.4em; }
+    pre { padding: 5px; color: black; background: #e1e0b0; }
+    pre.script { padding: 10px; color: black; background: #e8e8e8;
+        border: 1px inset #333333; }
+    code { font-size: 100%; color: #669900; background: transparent; }
+    hr { color: white; background: white; height: 1px; border: 0; }
+    --></style>
+</head>
+<body bgcolor="#ffffff">
+<div id="header">
+<h1><font color="#3e1220">Manual Tazwok</font></h1>
+</div>
+<hr />
+<!-- Start content -->
+<div id="content">
+
+<h2>NOME</h2>
+<p>
+Tazwok - SliTaz sources and packages cooker.
+</p>
+
+<h2>SINTAXE</h2>
+<pre> tazwok [command] [package|list|category|dir] [--option]
+</pre>
+
+<h2>DESCRIÇÃO</h2>
+<p>
+O Tazwok é uma ferramenta de linha de comando para configurar e compilar um pacote
+a partir de seus fontes. Ele também pode criar pacotes prontos para serem 
+utilizados pelo Tazpkg, o gerenciador de pacotes do SliTaz. Para funcionar,
+o Tazwok usa um diretório contendo a receita e as informações necessárias para
+a construção do pacote. Esta receita também pode ser usada pelo Tazpkg e 
+consiste de diferentes variáveis e funções. Tazwok usa o arquivo de configuração
+/etc/tazwok.conf para achar o caminho até o wok, os fontes do pacote e gerar
+os pacotes .tazpkg. Também pode gerar uma lista de pacotes com seus md5, criar
+pacotes interativamente, buscar por pacotes no wok, limpar arquivos gerados e 
+até mesmo produzir diferentes pacotes ao mesmo tempo (ver os comandos disponíveis).
+</p>
+<p>
+O Tazwok é inteiramente construído a partir do zero usando SHell Script. 
+Compatível com o Bash, roda sobre o Ash - parte do projeto Busybox. O Tazwok é 
+distribuído sob a licença livre GNU GPL V3. O Livro de Receitas do SliTaz
+também fornece documentação sobre o Tazwok e receitas de pacotes.
+</p>
+
+<h2>COMANDOS</h2>
+<a name="usage"></a>
+<h3><font color="#6c0023">usage</font></h3>
+<p>
+Mostra um resumo dos comandos disponíveis e uma pequena descrição em inglês:
+</p>
+<pre> # tazwok usage
+</pre>
+<a name="stats"></a>
+<h3><font color="#6c0023">stats</font></h3>
+<p>
+Mostra informações contidas no arquivo de configuração e o número de pacotes
+disponíveis no wok:
+</p>
+<pre> # tazwok stats
+</pre>
+<a name="list"></a>
+<h3><font color="#6c0023">list</font></h3>
+<p>
+Permite listar todos os pacotes que se encontram no wok ou as categorias padrão
+(você pode criar a sua própria). Também lista os pacotes por categoria:
+</p>
+<pre> # tazwok list
+ # tazwok list category
+</pre>
+<a name="info"></a>
+<h3><font color="#6c0023">info</font></h3>
+<p>
+Este comando fornece informações sobre o pacote - nome, versão, etc. Informações
+nas receitas básicas de pacote são como as mostradas pelo Tazpkg sobre os 
+pacotes instalados:
+</p>
+<pre> # tazwok info package
+</pre>
+<a name="check-log"></a>
+<h3><font color="#6c0023">check-log</font></h3>
+<p>
+Ao compilar um binário a partir dos fontes, o Tazwok gera algumas mensagens que
+são armazenadas no arquivo "process.log". Para visualizá-lo:
+</p>
+<pre> # tazwok check-log package
+</pre>
+<a name="search"></a>
+<h3><font color="#6c0023">search</font></h3>
+<p>
+Permite procurar por pacotes no wok. Pode-se especificar uma palavra-chave ou o
+nome do pacote:
+</p>
+<pre> # tazwok search name
+</pre>
+<a name="compile"></a>
+<h3><font color="#6c0023">compile</font></h3>
+<p>
+Este comando utiliza as regras de compilação (compile_rules) especificadas na
+receita do pacote em questão para compilar os fontes. Note que as regras de 
+compilação nem sempre são necessárias - pacotes gerados pelos comandos "genpkg"
+e "cook" também podem compilar fontes e generar pacotes binários. Exemplo:
+</p>
+<pre> # tazwok compile package
+</pre>
+<a name="genpkg"></a>
+<h3><font color="#6c0023">genpkg</font></h3>
+<p>
+"Genpkg" gera um pacote .tazpkg usando as "genpkg_rules" encontradas na receita.
+Uma vez que o pacote é gerado, ele é armazenado no repositório de pacotes
+especificado no arquivo de configuração (para visualizar rode "tazwok stats").
+O pacote pode ser usando pelo Tazpkg ou pelo Tazlito para gerar uma distribuição
+LiveCD. Note que arquivos padrão como local, pixmap e name.desktop são
+automaticamente copiados para $fs/usr/share, caso os caminhos padrões sejam
+informados ou se o arquivo existe no diretório /stuff. Exemplo de utilização
+do "genpkg":
+</p>
+<pre> # tazwok genpkg package
+</pre>
+<a name="cook"></a>
+<h3><font color="#6c0023">cook</font></h3>
+<p>
+Simplesmente compila e gera o pacote:
+</p>
+<pre> # tazwok cook package
+</pre>
+<a name="cook-list"></a>
+<h3><font color="#6c0023">cook-list</font></h3>
+<p>
+Este comando roda o "tazwok cook" em todos os pacotes contidos no arquivo de
+listagem especificado como argumento na linha de comando. "Cook-list" é usado, 
+por exemplo, para gerar o sistema base (base-system) sem a glibc. No SliTaz,
+você encontra exemplo de listas de geração no diretório /usr/share/examples/tazwok.cooklists:
+</p>
+<pre> # tazwok cook-list packages.cooklist
+</pre>
+<a name="clean"></a>
+<h3><font color="#6c0023">clean</font></h3>
+<p>
+Deleta todos os arquivos gerados na compilação e empacotamento:
+</p>
+<pre> # tazwok clean package
+</pre>
+<a name="new-tree"></a>
+<h3><font color="#6c0023">new-tree</font></h3>
+<p>
+O comando "new-tree" cria um novo pacote no wok e pode ser usado interativamente.
+Ele cria um diretório para o pacote e uma receita, que pode ser editada por seu
+editor de textos favorito e que pode ser configurada pela opção --interactive.
+Para obter ajuda você pode dar uma olhada nas receitas existentes ou ler a
+documentação no Livro de Receitas. Exemplo:
+</p>
+<pre> # tazwok new-tree package
+ # tazwok new-tree package --interactive
+</pre>
+<a name="gen-list"></a>
+<h3><font color="#6c0023">gen-list</font></h3>
+<p>
+O comando "gen-list" gera uma lista de pacotes (packages.list), seus md5
+(packages.md5) e uma lista de opções de pacotes contendo informações 
+(packages.txt). As listas são criadas na base de pacotes contidos em um
+diretório. A lista em formato texto é construída usando uma receita contida
+no wok. O diretório de pacotes padrão é aquele especificado no arquivo de
+configuração, mas você pode especificá-lo na linha de comando. Exemplos:
+</p>
+<pre> # tazwok gen-list
+ # tazwok gen-list --text
+ # tazwok gen-list /path/to/repository
+</pre>
+<a name="gen-clean-wok"></a>
+<h3><font color="#6c0023">gen-clean-wok and clean-wok</font></h3>
+<p>
+O comando "gen-clean-wok" cria um novo wok, o que é útil para salvar uma versão
+do wok ou criar uma cópia de testes. Rodar "clean-wok" limpa todos os pacotes
+no wok atual e apaga todos os arquivos gerados. Para gerar um wok limpo ou limpar
+o wok atual:
+</p>
+<pre> # tazwok gen-clean-wok path/to/new-wok
+ # tazwok clean-wok
+</pre>
+<a name="remove"></a>
+<h3><font color="#6c0023">remove</font></h3>
+<p>
+Remove o pacote especificado do wok, incluindo receitas e outros arquivos
+relacionados:
+</p>
+<pre> # tazwok remove package
+</pre>
+<a name="build-depends"></a>
+<h3><font color="#6c0023">build-depends</font></h3>
+<p>
+Gera uma lista de pacotes para a construção do wok:
+</p>
+<pre> # tazwok build-depends
+</pre>
+<a name="compare"></a>
+<h3><font color="#6c0023">cmp|compare</font></h3>
+<p>
+Compara o wok e os pacotes preparados e gera um relatório. Pacotes
+obsoletos podem ser deletados com a opção --remove. A opção --cook
+compila os pacotes. Exemplos:
+</p>
+<pre> # tazwok compare
+ # tazwok compare --remove
+ # tazwok compare --cook
+</pre> 
+<a name="check"></a>
+<h3><font color="#6c0023">check</font></h3>
+<p>
+Checa as receitas em busca de erros comuns:
+</p>
+<pre> # tazwok check
+</pre>
+
+<h2>MANTENEDOR</h2>
+<p>
+Christophe Lincoln &lt;pankso at slitaz.org&gt;
+</p>
+
+<!-- End content -->
+</div>
+
+</body>
+</html>
