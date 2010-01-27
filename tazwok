@@ -307,6 +307,11 @@ compile_package()
 			cd $SOURCES_REPOSITORY
 			download $WGET_URL
 			#wget $WGET_URL
+			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
+				echo "Download failed, try with mirror copy... "
+				file=$(basename $WGET_URL)
+				download http://mirror.slitaz.org/sources/packages/${file:0:1}/$file
+			fi
 			# Exit if download failed to avoid errors.
 			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 				echo -e "\nDownload failed, exiting. Please check WGET_URL variable.\n"
