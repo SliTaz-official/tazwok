@@ -102,6 +102,7 @@ usage ()
   check          Check every receipt for common errors.
   check-log      Check the process log file of a package.
   check-depends  Check every receipt for DEPENDS - doesn't scan ELF files.
+  check-src      Check upstream tarball for package in the wok.
   search         Search for a package in the wok by pattern or name.
   compile        Configure and build a package using the receipt rules.
   genpkg         Generate a suitable package for Tazpkg with the rules.
@@ -1447,6 +1448,26 @@ EOF
 		echo "================================================================================"
 		echo "Packages maintained by $2: $packages"
 		echo "" ;;
+	check-src)
+		# Verify if upstream package is still available
+		#
+		check_for_package_on_cmdline
+		check_for_receipt
+		. $WOK/$PACKAGE/receipt
+		check_src()
+		{
+			for url in $@; do
+				wget -s $url  2>/dev/null && break
+			done
+		}
+		if [ ! -z "$WGET_URL" ];then
+			echo -n "$PACKAGE : "
+			check_src $WGET_URL
+			status
+		else
+			echo "No tarball to check for $PACKAGE"
+		fi
+		;;
 	usage|*)
 		# Print usage also for all unknown commands.
 		#
