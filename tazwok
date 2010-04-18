@@ -1163,39 +1163,21 @@ Maintainer : $MAINTAINER"
 		if grep -q ^clean_wok $RECEIPT; then
 			clean_wok
 		fi
-		# Remove taz/ and source tree if exists.
-		if [ -d "taz" ]; then
-			echo -n "Removing taz files..."
-			rm -rf taz
-			status
-		fi
-		for i in $PACKAGE-$VERSION $SOURCE-$VERSION ; do
-			[ -e "$i" ] || continue
-			echo -n "Removing source files..."
-			if [ -L $i ]; then
-				target=$(readlink $i)
-				[ -d "$target" ] && case "$target" in
-				/*|.|./*|..|../*);;
-				*) rm -rf $target;;
+		# Clean shoul only have a receipt, stuff and optionnal desc.
+		for f in `ls .`
+		do
+			case $f in
+				receipt|stuff|description.txt)
+					continue ;;
+				*)
+					echo "Removing: $f"
+					rm -rf $f ;;
 				esac
-			fi
-			rm -rf $i
-			status
 		done
-		# Remove an eventual $PACKAGE-build directory.
-		if [ -d "$PACKAGE-build" ]; then
-			echo -n "Removing build tree..."
-			rm -rf $PACKAGE-build && status
-		fi
-		# Remove process log file.
-		if [ -f "process.log" ]; then
-			echo -n "Removing process log file..."
-			rm process.log && status
 			echo "================================================================================"
 		fi
 		echo "$PACKAGE is clean. You can cook it again..."
-		echo ""
-		;;
+		echo "" ;;
 	gen-clean-wok)
 		# Generate a clean wok from the current wok by copying all receipts
 		# and stuff directory.
