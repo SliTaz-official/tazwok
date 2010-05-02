@@ -1170,12 +1170,12 @@ Maintainer : $MAINTAINER"
 				receipt|stuff|description.txt)
 					continue ;;
 				*)
-					echo "Removing: $f"
-					rm -rf $f ;;
-				esac
+					echo -n "Removing: $f"
+					rm -rf $f
+					status ;;
+			esac
 		done
 			echo "================================================================================"
-		fi
 		echo "$PACKAGE is clean. You can cook it again..."
 		echo "" ;;
 	gen-clean-wok)
