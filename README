@@ -11,7 +11,7 @@ generate a packages repository and also list and get info about packages.
 Please check 'tazwok usage' to get a list of commands with a short
 description in English.
 
-Tazwok is a SHell script written from scratch, that works with Bash and Ash
+Tazwok is a SHell script written from scratch that works with Bash and Ash
 from Busybox. Tazwok is licensed under free GNU gpl v3. See INSTALL at the
 bottom of this file for installation instructions.
 
@@ -70,7 +70,7 @@ INSTALL/UNINSTALL Tazwok
 Vous pouvez utiliser PREFIX= pour installer Tazwok dans un autre répertoire
 que /usr/bin.
 
- # cd into/tazwok-version
+ # cd into /tazwok-version
  # make install
 
 Utilisation/Usage :
