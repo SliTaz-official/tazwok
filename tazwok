@@ -54,7 +54,7 @@ else
 	exit 0
 fi
 
-# Create Taz wok needed directories if user is root.
+# Create Tazwok needed directories if user is root.
 if test $(id -u) = 0 ; then
 	# Check for the wok directory.
 	if [ ! -d "$WOK" ]; then
@@ -177,8 +177,8 @@ check_for_list()
 }
 
 # Check for the wanted package if specified in WANTED
-# receipt variable. Set the $src/$_pkg variable to help compiling
-# and generating packages.
+# receipt variable. Set the $src/$_pkg variable to help compile
+# and generate packages.
 check_for_wanted()
 {
 	if [ ! "$WANTED" = "" ]; then
@@ -736,7 +736,7 @@ whoprovide()
 
 case "$COMMAND" in
 	stats)
-		# Tazwok general statistics from the config file the wok.
+		# Tazwok general statistics from the wok config file.
 		#
 		echo ""
 		echo -e "\033[1mTazwok configuration statistics\033[0m
@@ -753,7 +753,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		check_for_receipt
 		$EDITOR $WOK/$PACKAGE/receipt ;;
 	build-depends)
-		# List dependancies to rebuild wok
+		# List dependencies to rebuild wok
 		cd $WOK
 		ALL_DEPS="slitaz-toolchain"
 		echo $ALL_DEPS
@@ -1013,7 +1013,7 @@ Old: `cat pkgs.old.$$ 2>/dev/null | wc -l`"
 		rm -f wok.list.$$ pkgs.old.$$ pkgs.missing.$$
 		;;
 	list)
-		# List packages in wok directory. User can specify a category
+		# List packages in wok directory. User can specify a category.
 		#
 		if [ "$2" = "category" ]; then
 			echo -e "\033[1m\nPackages categories :\033[0m $CATEGORIES\n"
@@ -1163,7 +1163,7 @@ Maintainer : $MAINTAINER"
 		if grep -q ^clean_wok $RECEIPT; then
 			clean_wok
 		fi
-		# Clean shoul only have a receipt, stuff and optionnal desc.
+		# Clean should only have a receipt, stuff and optional desc.
 		for f in `ls .`
 		do
 			case $f in
@@ -1200,7 +1200,7 @@ Maintainer : $MAINTAINER"
 			cp -a $WOK/$pkg/receipt $dest/$pkg
 			status
 			if [ -d "$WOK/$pkg/stuff" ]; then
-				echo -n "Copying all the stuff directory..."
+				echo -n "Copying the stuff directory..."
 				cp -a $WOK/$pkg/stuff $dest/$pkg
 				status
 			fi
@@ -1223,7 +1223,7 @@ Maintainer : $MAINTAINER"
 		;;
 	gen-list)
 		# Sed is used to remove all the .tazpkg extensions from the
-		# packages.list. The directory to move in by default is the repository
+		# packages.list. The directory to move into by default is the repository,
 		# if $2 is not empty cd into $2. A text packages list can also be gen
 		# with the option --text.
 		#
@@ -1387,7 +1387,7 @@ EOF
 		fi
 		;;
 	hgup)
-		# Pull and update an Hg wok.
+		# Pull and update a Hg wok.
 		if ls -l $WOK/.hg/hgrc | grep -q "root"; then
 			check_root
 		fi
@@ -1412,7 +1412,7 @@ EOF
 		# Remove tmp files
 		rm -f /tmp/slitaz-maintainers ;;
 	maintained-by)
-		# Search for packages maintained by a packagers.
+		# Search for packages maintained by a contributor.
 		if [ ! -n "$2" ]; then
 			echo "Specify a name or email of a maintainer."
 			exit 0
