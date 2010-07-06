@@ -8,7 +8,7 @@
 #
 # (C) 2007-2009 SliTaz - GNU General Public License.
 #
-VERSION=3.1
+VERSION=3.2.1
 
 ####################
 # Tazwok variables #
@@ -648,6 +648,7 @@ gen_textlist()
 _EOT_
 	for pkg in $WOK/*
 	do
+	[ ! -f $pkg/receipt ] && continue
 	PROVIDE=""
 	PACKAGE=""
 	PACKED_SIZE=""
@@ -955,6 +956,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 ================================================================================"
 		for pkg in $WOK/*
 		do
+			[ ! -f $pkg/receipt ] && continue
 			WANTED=""
 			. $pkg/receipt
 			echo "$PACKAGE-$VERSION.tazpkg" >> /tmp/wok.list.$$
@@ -971,6 +973,7 @@ Cooked packages      : `ls -1 $PACKAGES_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			else
 				srcdate=$(hgdate $pkg)
 				pkgdate=$(date -u -r $tpkg '+%m%d%H%M%Y')
+				echo "DEBUG:$srcdate|$pkgdate"
 				if [ $(date -d $pkgdate +%s) -lt $(date -d $srcdate +%s) ]; then
 					echo "Rebuild package: $PACKAGE ($VERSION) cooked $(date -d $pkgdate "+%x %X"), modified $(date -d $srcdate "+%x %X")"
 					echo "$PACKAGE" >> /tmp/pkgs.missing.$$
@@ -1027,6 +1030,7 @@ Old: `cat pkgs.old.$$ 2>/dev/null | wc -l`"
 			echo "================================================================================"
 			for pkg in $WOK/*
 			do
+				[ ! -f $pkg/receipt ] && continue
 				. $pkg/receipt
 				if [ "$CATEGORY" == "$ASKED_CATEGORY" ]; then
 					echo -n "$PACKAGE"
@@ -1043,6 +1047,7 @@ Old: `cat pkgs.old.$$ 2>/dev/null | wc -l`"
 			echo "================================================================================"
 			for pkg in $WOK/*
 			do
+				[ ! -f $pkg/receipt ] && continue
 				. $pkg/receipt
 				echo -n "$PACKAGE"
 				echo -en "\033[28G $VERSION"
