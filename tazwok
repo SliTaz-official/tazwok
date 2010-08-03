@@ -646,6 +646,18 @@ gen_textlist()
 # Date     : $DATE
 #
 _EOT_
+
+	# Extract informations from package if needed & possible.
+	for dir in $WOK/*; do
+		pkg=$(cd $PACKAGES_REPOSITORY && echo ${dir##*/}* | sed -e 's/ .*//' -e 's/.tazpkg//' -e "s~${dir%/*}/~~")
+		if [ ! -f $dir/taz/$pkg/receipt ] && [ -f $PACKAGES_REPOSITORY/$pkg.tazpkg ]; then
+			mkdir -p $dir/taz/$pkg
+			(cd $dir/taz/$pkg
+			cpio -i --quiet 'receipt' < $PACKAGES_REPOSITORY/$pkg.tazpkg
+			cpio -i --quiet 'files.list' < $PACKAGES_REPOSITORY/$pkg.tazpkg)
+		fi
+	done
+	
 	for pkg in $WOK/*
 	do
 	[ ! -f $pkg/receipt ] && continue
@@ -1235,7 +1247,10 @@ Maintainer : $MAINTAINER"
 		fakewok=""
 		if [ "$2" == "--text" ]; then
 			textlist="yes"
+			
+			# Fakewok can be deleted, actually we just warning users about that.
 			if [ "$3" == "--fakewok" ]; then
+				echo "WARNING: fakewok is deprecated - tazwok extract datas from packages automatically when necessary."
 				WOK=/tmp/fakewok-$$
 				fakewok="$WOK"
 				mkdir -p $WOK
