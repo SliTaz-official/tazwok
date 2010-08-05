@@ -653,8 +653,8 @@ _EOT_
 		if [ ! -f $dir/taz/$pkg/receipt ] && [ -f $PACKAGES_REPOSITORY/$pkg.tazpkg ]; then
 			mkdir -p $dir/taz/$pkg
 			(cd $dir/taz/$pkg
-			cpio -i receipt < $PACKAGES_REPOSITORY/$pkg.tazpkg
-			cpio -i files.list < $PACKAGES_REPOSITORY/$pkg.tazpkg) > /dev/null 2>&1
+			cpio --quiet -i receipt < $PACKAGES_REPOSITORY/$pkg.tazpkg
+			cpio --quiet -i files.list < $PACKAGES_REPOSITORY/$pkg.tazpkg) > /dev/null 2>&1
 		fi
 	done
 	
