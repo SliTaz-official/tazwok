@@ -82,6 +82,9 @@ RECEIPT="$WOK/$PACKAGE/receipt"
 # The path to the process log file.
 LOG="$WOK/$PACKAGE/process.log"
 
+# Limit memory usage
+ulimit -v $(awk '/MemTotal/ { print int(($2*80)/100) }' < /proc/meminfo)
+
 ####################
 # Tazwok functions #
 ####################
