@@ -382,6 +382,12 @@ refresh_packages_from_compile()
 	mkdir $WOK/$PACKAGE/taz
 	for i in $( grep -l "^WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
 		tazwok genpkg $(basename $(dirname $i))
+		ps ww | grep -q tazbb && (
+			EXTRAVERSION=
+			. $i
+			pkg=$PACKAGE-${VERSION}$EXTRAVERSION.tazpkg
+			yes | tazpkg install $PACKAGES_REPOSITORY/$pkg --forced
+		)
 	done
 	# Still needs tazwok genpkg for this package
 	rm -rf $WOK/$PACKAGE/taz
