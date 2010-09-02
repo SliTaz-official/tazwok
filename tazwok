@@ -383,9 +383,11 @@ refresh_packages_from_compile()
 	for i in $( grep -l "^WANTED=\"$PACKAGE\"" $WOK/*/receipt) ; do
 		tazwok genpkg $(basename $(dirname $i))
 		ps ww | grep -q tazbb && (
+			TAZBB_NO_INSTALL=
 			EXTRAVERSION=
 			. $i
 			pkg=$PACKAGE-${VERSION}$EXTRAVERSION.tazpkg
+			[ -n "$TAZBB_NO_INSTALL" ] ||
 			yes | tazpkg install $PACKAGES_REPOSITORY/$pkg --forced
 		)
 	done
