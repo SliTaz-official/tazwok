@@ -278,6 +278,10 @@ check_for_deps_loop()
 download()
 {
 	for file in $@; do
+		case "$file" in
+		[Hh][Tt][Tt][Pp][Ss]*)
+			wget --no-check-certificate $file && break ;;
+		esac
 		wget $file && break
 	done
 }
