@@ -280,9 +280,10 @@ download()
 	for file in $@; do
 		case "$file" in
 		[Hh][Tt][Tt][Pp][Ss]*)
-			wget --no-check-certificate $file && break ;;
+			wget --no-check-certificate -O $(basename $file) \
+				$file && break ;;
 		esac
-		wget $file && break
+		wget -O $(basename $file) $file && break
 	done
 }
 
