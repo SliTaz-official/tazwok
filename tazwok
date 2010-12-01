@@ -467,6 +467,15 @@ strip_package()
 	status
 }
 
+# Remove .pyc and .pyo files from packages
+py_compiled_files_remove()
+{
+	echo -n "Removing all .pyc and .pyo files from package ..."
+	find $fs -type f -name "*.pyc" -delete 2>/dev/null
+	find $fs -type f -name "*.pyo" -delete 2>/dev/null
+	status
+}
+
 # Check FSH in a slitaz package (Path: /:/usr)
 check_fsh()
 {
@@ -556,6 +565,7 @@ gen_package()
 			copy_generic_files
 		fi
 		strip_package
+		py_compiled_files_remove
 	else
 		echo "No package rules to gen $PACKAGE..."
 		exit 1
