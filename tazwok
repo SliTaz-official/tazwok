@@ -338,7 +338,7 @@ compile_package()
 				echo "untaring $TARBALL" >> $LOG
 				echo -n "Untaring $TARBALL... "
 				case "$TARBALL" in
-				*zip|*xpi) ( cd $WOK/$PACKAGE; unzip -o $SOURCES_REPOSITORY/$TARBALL );;
+				*zip|*xpi|*jar) ( cd $WOK/$PACKAGE; unzip -o $SOURCES_REPOSITORY/$TARBALL );;
 				*bz2) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $WOK/$PACKAGE;;
 				*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $WOK/$PACKAGE;;
