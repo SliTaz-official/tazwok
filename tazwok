@@ -1890,7 +1890,7 @@ cook_list()
 
 configure_tazchroot()
 {
-	cat >> $LOCAL_REPOSITORY/tazchroot.conf << EOF
+	cat > $LOCAL_REPOSITORY/tazchroot.conf << EOF
 # Tazchroot configuration file - created by tazwok.
 
 # Default chroot path
@@ -2759,6 +2759,17 @@ EOF
 		report start
 		mkdir $tmp
 		remove_old_packages
+	;;
+	configure-chroot)
+		check_root
+		get_tazwok_config
+		if [ -f /usr/bin/tazchroot ]; then
+			cd $LOCAL_REPOSITORY
+			configure_tazchroot
+		else
+			echo "The packages tazchroot need to be installed" >&2
+			exit 1
+		fi
 	;;
 	chroot)
 		check_root
