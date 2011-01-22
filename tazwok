@@ -1255,9 +1255,6 @@ sort_db()
 	# The toolchain packages are moved in first position.
 	grep $(for pkg in `scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
 		--look_for=all --with_args`; do echo " -e ^$pkg$"; done) \
-		$tmp/cookorder | tac 
-	grep $(for pkg in `scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
-		--look_for=all --with_args`; do echo " -e ^$pkg$"; done) \
 		$tmp/cookorder | tac > $PACKAGES_REPOSITORY/cookorder.txt
 	for pkg in $(cat $PACKAGES_REPOSITORY/cookorder.txt); do
 		sed "/^$pkg$/d" -i $tmp/cookorder
@@ -1392,6 +1389,18 @@ look_for_dev()
 
 scan()
 {
+	# With some commands we don't want report (list output).
+	if [ "$COMMAND" = gen-cooklist ] || [ "$COMMAND" = build-depends ]; then
+		report(){ : ; }
+	fi
+	
+	# Generate wok data files if they're missing. Output message in
+	# stderr as stdout output may be used as packages list.
+	if [ ! -s "$wan_db" ] || [ ! -s "$dep_db" ]; then
+		echo "Missing wok data files, generating them... This may take few minutes." >&2
+		gen_wok_db
+	fi
+	
 	# Get packages in argument.
 	local PACKAGE pkg_list=
 	for arg in $@; do
@@ -1467,10 +1476,6 @@ scan()
 			done
 		fi
 		if [ "$cooklist" ]; then
-			
-			# Make report quiet.
-			report(){ : ; }
-			
 			mv $tmp/dep $tmp/cooklist
 			sort_cooklist
 			rm $tmp/cooklist
