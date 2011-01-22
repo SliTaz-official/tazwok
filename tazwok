@@ -1905,7 +1905,7 @@ chroot_dir=\$LOCAL_REPOSITORY/chroot
 script_dir=/var/lib/tazchroot
 
 # List of directories to mount.
-list_dir="$(for dir in packages wok src packages-incoming log flavors iso; do [ -d "$LOCAL_REPOSITORY/$dir" ] && echo $LOCAL_REPOSITORY/$dir; done)
+list_dir="$(for dir in packages wok src packages-incoming log flavors iso; do echo $LOCAL_REPOSITORY/$dir; done)
 $SLITAZ_LOG$( [ "$undigest" ] && echo -e "\n$SLITAZ_DIR/$SLITAZ_VERSION/packages" )"
 
 create_chroot()
