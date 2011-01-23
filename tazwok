@@ -1169,9 +1169,9 @@ packages_db_end()
 	# Dont log this because lzma always output error.
 	lzma e files.list files.list.lzma
 	rm files.list 2>/dev/null
-	if ! grep -q ^$pkg_repository$ $LOCAL_STATE/mirror && \
-		! { [ -d $LOCAL_STATE/undigest ] && \
-		grep -q ^$pkg_repository$ $LOCAL_STATE/undigest/*/mirror; }; then
+	if ! grep -q ^$pkg_repository$ $LOCALSTATE/mirror && \
+		! { [ -d $LOCALSTATE/undigest ] && \
+		grep -q ^$pkg_repository$ $LOCALSTATE/undigest/*/mirror; }; then
 		tazpkg add-undigest $(basename `echo $pkg_repository | sed 's~/packages~~'`) $pkg_repository
 	fi
 }
@@ -1921,7 +1921,7 @@ create_chroot()
 	done
 
 	# Store list of installed packages needed by cleanchroot.
-	ls -1 \$chroot_dir/\$INSTALLED > \$chroot_dir/\$LOCAL_STATE/chroot-pkgs
+	ls -1 \$chroot_dir/\$INSTALLED > \$chroot_dir/\$LOCALSTATE/chroot-pkgs
 
 	sed -e "s~^SLITAZ_DIR=.*~SLITAZ_DIR=\$SLITAZ_DIR~" \\
 		-e "s/^SLITAZ_VERSION=.*/SLITAZ_VERSION=\$SLITAZ_VERSION/" \\
@@ -1933,12 +1933,12 @@ $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/sl
 mount_chroot()
 {
 	cp -a /etc/resolv.conf \$chroot_dir/etc/resolv.conf
-	echo "\$LOCAL_REPOSITORY/packages" > \$chroot_dir\$LOCAL_STATE/mirror
-	mkdir -p \$chroot_dir\$LOCAL_STATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming
-	echo "\$LOCAL_REPOSITORY/packages-incoming" > \$chroot_dir\$LOCAL_STATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming/mirror
-$( [ "$undigest" ] && echo '	mkdir -p $chroot_dir$LOCAL_STATE/undigest/$SLITAZ_VERSION
-	echo "$SLITAZ_DIR/$SLITAZ_VERSION/packages" > $chroot_dir$LOCAL_STATE/undigest/$SLITAZ_VERSION/mirror' )
-	echo -e "\${LOCAL_REPOSITORY##*/}-incoming\nmain" > \$chroot_dir\$LOCAL_STATE/priority
+	echo "\$LOCAL_REPOSITORY/packages" > \$chroot_dir\$LOCALSTATE/mirror
+	mkdir -p \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming
+	echo "\$LOCAL_REPOSITORY/packages-incoming" > \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming/mirror
+$( [ "$undigest" ] && echo '	mkdir -p $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION
+	echo "$SLITAZ_DIR/$SLITAZ_VERSION/packages" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror' )
+	echo -e "\${LOCAL_REPOSITORY##*/}-incoming\nmain" > \$chroot_dir\$LOCALSTATE/priority
 	mount -t proc proc \$chroot_dir/proc
 	mount -t sysfs sysfs \$chroot_dir/sys
 	mount -t devpts devpts \$chroot_dir/dev/pts
