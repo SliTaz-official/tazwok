@@ -1029,17 +1029,21 @@ update_packages_db()
 	touch $tmp/pkglist
 	
 	# Look for removed/update packages.
+	unset updated_pkg
 	for PACKAGE in $(grep ^[0-9,a-z,A-Z] packages.txt); do
-		pkg="$(grep ^$PACKAGE- packages.list | sed 1!d).tazpkg"
+		pkg="$pkg_repository/$(grep -m1 ^$PACKAGE- packages.list).tazpkg"
 		if ! [ -f "$pkg" ]; then
 			erase_package_info
 		else
-			echo $pkg >> $tmp/pkglist
 			if [ "$pkg" -nt "packages.list" ]; then
-				erase_package_info
-				get_packages_info
+				updated_pkg="$updated_pkg $pkg"
 			fi
 		fi
+	done
+	
+	for pkg in $updated_pkg; do
+		erase_package_info
+		get_packages_info
 	done
 	
 	# Look for new packages.
@@ -1048,7 +1052,6 @@ update_packages_db()
 			get_packages_info
 		fi
 	done
-	rm $tmp/pkglist
 	report end-step
 	packages_db_end
 }
