@@ -1044,7 +1044,7 @@ update_packages_db()
 	
 	# Look for new packages.
 	for pkg in $(echo $pkg_repository/*.tazpkg | fgrep -v '*'); do
-		if ! fgrep "  ${pkg##*/}" $pkg_repository/packages.md5; then
+		if ! fgrep -q "  ${pkg##*/}" $pkg_repository/packages.md5; then
 			get_packages_info
 		fi
 	done
