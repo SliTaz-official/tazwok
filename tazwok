@@ -1436,7 +1436,6 @@ scan()
 	}
 	#
 	##############################################################
-	mkdir -p $tmp
 	for PACKAGE in $(echo $pkg_list | filter); do
 		look_for_$look_for
 	done  | tr ' ' '\n' | sort -u > $tmp/list
@@ -1964,7 +1963,6 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		# List dependencies to rebuild wok, or only a package
 		get_tazwok_config
 		if [ "$PACKAGE" = toolchain-cooklist ]; then
-			mkdir -p $tmp
 			scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
 				--cooklist
 		elif [ ! "$PACKAGE" ] || [ "$PACKAGE" = toolchain ]; then
@@ -2285,7 +2283,6 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir $tmp
 		gen_package
 	;;
 	cook)
@@ -2296,7 +2293,6 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir -p $tmp
 		cook
 	;;
 	sort-cooklist)
@@ -2307,7 +2303,6 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir -p $tmp
 		cooklist=$LIST
 		sort_cooklist
 		cp -af $tmp/cooklist $cooklist
@@ -2320,7 +2315,6 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir -p $tmp
 		cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
 		if [ "$LIST" ]; then
 			sort_cooklist
@@ -2424,7 +2418,6 @@ Maintainer : $MAINTAINER"
 		
 		# Use report shared library to control output.
 		tmp=/tmp/tazwok-$$
-		mkdir $tmp
 		source_lib report
 		dbtype=packages
 		mode=update
@@ -2634,12 +2627,11 @@ EOF
 			echo "No tarball to download for $PACKAGE"
 		fi
 	;;
-	check-commit)
+	rec-commit)
 		check_root
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir -p $tmp
 		check_for_commit
 		gen_cook_list
 	;;
@@ -2648,7 +2640,6 @@ EOF
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir -p $tmp
 		check_for_commit
 		# 2) update cook-database (actually complete regeneration)
 		dbtype=wok
@@ -2665,7 +2656,6 @@ EOF
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir -p $tmp
 		# 2) update cook-database (actually complete regeneration)
 		dbtype=wok
 		mode=gen
@@ -2688,7 +2678,6 @@ EOF
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir $tmp
 		dbtype=wok
 		mode=gen
 		files_list="$dep_db $wan_db $PACKAGE_REPOSITORY/cookorder.txt"
@@ -2709,7 +2698,6 @@ EOF
 		get_tazwok_config
 		source_lib report
 		report start
-		mkdir $tmp
 		check_for_incoming
 	;;
 	configure-chroot)
