@@ -2712,14 +2712,6 @@ EOF
 		mkdir $tmp
 		check_for_incoming
 	;;
-	remove-old)
-		check_root
-		get_tazwok_config
-		source_lib report
-		report start
-		mkdir $tmp
-		remove_old_packages
-	;;
 	configure-chroot)
 		check_root
 		get_tazwok_config
