@@ -528,7 +528,7 @@ check_for_compile_rules()
 		rm -f /tmp/config.site
 
 		# Free some RAM by cleaning cache if option is enabled.
-		freeram=$(free | fgrep '-/+ buffers' | tr -s ' ' | cut -f 4 -d ' ')
+		freeram=$(free | fgrep '/+ buffers' | tr -s ' ' | cut -f 4 -d ' ')
 
 		# Disable -pipe in CFLAGS/CXXFLAGS if less than 512Mb of free
 		# RAM are available.
