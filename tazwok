@@ -1556,7 +1556,17 @@ gen_cook_list()
 		scan `cat $cooklist` --cooklist
 	fi
 	report end-step
-	[ -s $tmp/checked ] || return
+	
+	[ -s $tmp/checked ] || [ -s $tmp/cooklist ] || return
+	
+	# Core toolchain should not be cooked unless cook-toolchain is used.
+	if ! [ -f /etc/config.site.tmptoolchain ] ; then
+		for PACKAGE in $(scan gcc --look_for=all --with_args --with_wanted); do
+			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/blocked || \
+				echo $PACKAGE >> $PACKAGES_REPOSITORY/blocked
+		done
+	fi
+	
 	if [ -s $PACKAGES_REPOSITORY/commit ]; then
 		cd $PACKAGES_REPOSITORY
 		for PACKAGE in $(cat commit); do
@@ -1570,28 +1580,20 @@ gen_cook_list()
 	fi
 	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
 	[ "$plan_regen_cookorder" ] && sort_db
-	[ -s $PACKAGES_REPOSITORY/cooklist ] || return
-	
-	# Core toolchain should not be cooked unless cook-toolchain is used.
-	if ! [ -f /etc/config.site.tmptoolchain ] ; then
-		for PACKAGE in $(scan gcc --look_for=all --with_args --with_wanted); do
-			[ -f $tmp/cooklist ] && sed "/^$PACKAGE/d" -i $tmp/cooklist
-			[ -f $tmp/checked ] && sed "/^$PACKAGE/d" -i $tmp/checked
-			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/blocked || \
-				echo $PACKAGE >> $PACKAGES_REPOSITORY/blocked
-		done
-	fi
 	sort_cooklist
 }
 
 sort_cooklist()
 {
-	
 	if [ -f "$tmp/checked" ]; then
 		rm -f $tmp/cooklist
 		cat $tmp/checked | while read PACKAGE; do
 			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/cooklist && \
 				echo $PACKAGE >> $tmp/cooklist
+		done
+	elif ! [ "$COMMAND" = gen-cooklist ]; then
+		cat $PACKAGES_REPOSITORY/blocked | while read PACKAGE; do
+			sed "/^$PACKAGE/d" -i $tmp/cooklist
 		done
 	fi
 	
