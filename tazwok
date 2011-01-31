@@ -1797,8 +1797,11 @@ cook()
 	# Remove build_depends in cook mode (if in cooklist, it's done when
 	# checking build_depends of next package and we remove only unneeded
 	# packages to keep chroot minimal and gain some time).
-	[ "$COMMAND" = cook ] && remove_build_depends $MISSING_PACKAGE
-
+	if [ "$COMMAND" = cook ]; then
+		remove_build_depends $MISSING_PACKAGE
+		[ -x /usr/bin/clean-chroot ] && clean-chroot
+	fi
+	
 	# Regen the cooklist if it was planned and command is not cook.
 	[ "$regen_cooklist" ] && unset regen_cooklist && \
 		[ "$COMMAND" != cook ] && sort_cooklist
@@ -1827,6 +1830,7 @@ cook_list()
 			cook
 		done
 		remove_build_depends $MISSING_PACKAGE $remove_later
+		[ -x /usr/bin/clean-chroot ] && clean-chroot
 	else
 		echo "Nothing to cook."
 		return
