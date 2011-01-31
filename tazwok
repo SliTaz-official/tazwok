@@ -925,7 +925,8 @@ gen_package()
 	sed -i '/^UNPACKED_SIZE/d' receipt
 	sed -i "s/^PACKAGE=/PACKED_SIZE=\"$PACKED_SIZE\"\nUNPACKED_SIZE=\"$UNPACKED_SIZE\"\nPACKAGE=/" receipt
 	sed -i "s/^VERSION=$/VERSION=\"$VERSION\"/" receipt
-	if [ -n "$EXTRAVERSION" ]; then
+	report end-step
+	if [ "$EXTRAVERSION" ]; then
 		report step "Updating receipt EXTRAVERSION"
 		sed -i s/^EXTRAVERSION.*$// receipt
 		sed -i "s/^VERSION=/EXTRAVERSION=\"$EXTRAVERSION\"\nVERSION=/" receipt
