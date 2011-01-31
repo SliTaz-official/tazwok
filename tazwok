@@ -102,10 +102,8 @@ get_tazwok_config()
 
 	# /!\ This part needs some changes.
 	# Basically, get theses files from the net if they are missing.
-	dbtype=wok
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
-	target_db=$INCOMING_REPOSITORY/wok-depends.txt
 
 	# Check commons directories, create them if user is root.
 	if test $(id -u) = 0 ; then
@@ -118,7 +116,7 @@ get_tazwok_config()
 	
 	# Some files are needed by tazwok in PACKAGES_REPOSITORY. Create
 	# them if they are missing.
-	for file in broken blocked commit incoming genpkglist cooklist; do
+	for file in broken blocked commit incoming cooklist; do
 		[ ! -f $PACKAGES_REPOSITORY/$file ] && touch $PACKAGES_REPOSITORY/$file
 	done
 	
@@ -182,6 +180,16 @@ check_for_list()
 	fi
 }
 
+check_for_pkg_in_wok()
+{
+	[ -f $WOK/$PACKAGE/receipt ] && return
+	if [ "$undigest" ]; then
+		[ -f "$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
+		grep -q ^$PACKAGE$ $SLITAZ_VERSION/packages/packages.txt && return 1
+	fi
+	echo "Can't find $PACKAGE in wok or mirror" >&2
+	return 2
+}
 
 ########################################################################
 # TAZWOK CORE FUNCTIONS
@@ -189,6 +197,7 @@ check_for_list()
 
 remove_src()
 {
+	[ "$WANTED" ] && return
 	look_for_cookopt !remove_src && return
 	if [ ! -d $WOK/$PACKAGE/install ] && [ "$_pkg" ] && [ -d "$_pkg" ]; then
 		check_for_var_modification _pkg src || return
@@ -260,10 +269,10 @@ check_for_wanted()
 	fi
 }
 
-
 # Check for build dependencies, notify user and install if specified.
 check_for_build_depends()
 {
+	[ "$WANTED" ] && return
 	report step "Looking for build dependencies"
 
 	# Keep the list of previously installed build_depends then compare
@@ -274,8 +283,8 @@ check_for_build_depends()
 	unset MISSING_PACKAGE remove_later
 	rwanted=$(look_for_rwanted)
 
-	for pkg in $(scan $PACKAGE --look_for=bdep --with_dev | \
-		fgrep -v -e "Don't make the command fail" $(for i in $(look_for_rwanted); do echo " -e $i"; done))
+	for pkg in $(scan $BUILD_DEPENDS $DEPENDS --look_for=dep --with_dev --with_args | \
+		fgrep -v $(for i in $(look_for_rwanted) $PACKAGE; do echo " -e $i"; done))
 	do
 
 		# Delay the removing of previous cook depends if they are needed
@@ -381,16 +390,14 @@ set_pkg_path()
 	else
 		_pkg=$src/_pkg
 	fi
-	
 }
 
 # Output $VERSION-$EXTRAVERSION using packages.txt
 get_pkg_version()
 {
 	[ "$PACKAGE" ] || return
-	grep -A1 -sh ^$PACKAGE$ $1/packages.txt | tail -1 | sed 's/ *//'
+	grep -m1 -A1 -sh ^$PACKAGE$ $1/packages.txt | tail -1 | sed 's/ *//'
 }
-
 
 remove_previous_tarball()
 {
@@ -406,6 +413,7 @@ remove_previous_package()
 	if [ "$VERSION$EXTRAVERSION" != "$prev_VERSION" ]; then
 		rm -f $1/$PACKAGE-$prev_VERSION.tazpkg
 	fi
+	return
 }
 
 # Check for src tarball and wget if needed.
@@ -574,7 +582,7 @@ check_for_deps_loop()
 	shift
 	[ -n "$1" ] || return
 	list=""
-	
+
 	# Filter out already processed deps
 	for i in $@; do
 		case " $ALL_DEPS" in
@@ -607,7 +615,7 @@ refresh_packages_from_compile()
 {
 	# make tazwok genpkg happy
 	mkdir $WOK/$PACKAGE/taz
-	
+
 	# Cook rwanted in default or specied order
 	genlist=" $(look_for_rwanted | tr '\n' ' ') "
 	for i in $(look_for_cookopt genpkg | tac); do
@@ -618,7 +626,7 @@ refresh_packages_from_compile()
 		tazwok genpkg $i --SLITAZ_VERSION=$SLITAZ_VERSION \
 			--undigest=$undigest --SLITAZ_DIR=$SLITAZ_DIR
 	done
-	
+
 	# Still needs tazwok genpkg for this package
 	rm -rf $WOK/$PACKAGE/taz
 }
@@ -680,7 +688,6 @@ copy_generic_files()
 # Find and strip : --strip-all (-s) or --strip-debug on static libs.
 strip_package()
 {
-	look_for_cookopt !strip && return
 	report step "Executing strip on all files"
 	
 	# Binaries.
@@ -806,7 +813,7 @@ gen_package()
 		if [ ! "$WANTED" ]; then
 			copy_generic_files
 		fi
-		strip_package
+		look_for_cookopt !strip || strip_package
 		py_compiled_files_remove
 	else
 		echo "No package rules to gen $PACKAGE..." >&2
@@ -899,13 +906,13 @@ gen_package()
 		[ -f "fs$file" ] || continue
 		md5sum "fs$file" | sed 's/  fs/  /'
 	done < files.list > md5sum
+	report end-step
 	UNPACKED_SIZE=$(du -chs fs receipt files.list md5sum description.txt \
 		2> /dev/null | awk '{ sz=$1 } END { print sz }')
 	
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
 	# Don't log this because compression always output error messages.
-	report end-step
 	find fs -print | cpio -o -H newc | case "$PACKAGE-$COMPRESSION" in
 	tazpkg-lzma)	gzip > fs.cpio.gz;;
 	*-lzma)		lzma e fs.cpio.lzma -si;;
@@ -940,14 +947,9 @@ gen_package()
 	echo "Size : `du -sh $INCOMING_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg`"
 	echo ""
 	
-	# Remove package from broken & genpkg list if needed.
-	if grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/broken; then
-		sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/broken
-		regen_cooklist=yes
-	fi
-	
-	# Remove package from genpkglist.
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/genpkglist
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/broken
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
 }
 
 ########################################################################
@@ -971,30 +973,24 @@ get_pkg_files()
 }
 
 ########################################################################
-# This section contains functions to generate packages/wok databases.
+# This section contains functions to generate packages databases.
 ########################
 
-# Generic actions in both gen-packages-db/gen-wok-db
-gen_db()
-{
-	report step "Generating $dbtype database"
-	report open-bloc
-	report step "Removing old files"
-	for file in $files_list; do
-		[ -f $file ] && rm $file
-		[ "${file##*.}" != lzma ] && touch $file
-	done
-	
-	# Generate wok/packages data lists.
-	gen_${dbtype}_db
-	report close-bloc
-}
 
 gen_packages_db()
 {
 	# pkg_repository can be $PACKAGES_REPOSITORY or $INCOMING_REPOSITORY.
-	[ ! "$pkg_repository" ] && pkg_repository=$PACKAGES_REPOSITORY
+	[ "$pkg_repository" ] || pkg_repository=$PACKAGES_REPOSITORY
 	cd $pkg_repository
+	report step "Generating packages lists: $pkg_repository"
+	report open-bloc
+	report step "Removing old files"
+	for file in files.list.lzma packages.list packages.txt \
+		packages.desc packages.equiv packages.md5; do
+		[ -f $file ] && rm $file
+	done
+	touch files.list
+	
 	packages_db_start
 	unset RECEIPT
 	report step "Reading datas from all packages"
@@ -1003,33 +999,29 @@ gen_packages_db()
 	done
 	report end-step
 	packages_db_end
+	report close-bloc
 }
 
 update_packages_db()
 {
-	[ ! "$pkg_repository" ] && pkg_repository=$PACKAGES_REPOSITORY
+	[ "$pkg_repository" ] || pkg_repository=$PACKAGES_REPOSITORY
 	cd $pkg_repository
-	
-	# If files are missing, generate the lists - not only update.
-	dbtype=packages
-	files_list="packages.list packages.equiv packages.md5 packages.desc packages.txt"
-	for file in $files_list; do
+	for file in packages.list packages.equiv packages.md5 packages.desc \
+		packages.txt; do
 		if [ ! -f "$file" ]; then
-			gen_db
+			gen_packages_db
 			return
 		fi
 	done
 	if	[ -f files.list.lzma ]; then
 		lzma d files.list.lzma files.list
 	else
-		gen_db
+		gen_packages_db
 	fi
+	report step "Updating packages lists: $pkg_repository"
 	packages_db_start
-	report step "Updating packages lists"
-	touch $tmp/pkglist
 	
 	# Look for removed/update packages.
-	unset updated_pkg
 	for PACKAGE in $(grep ^[0-9,a-z,A-Z] packages.txt); do
 		pkg="$pkg_repository/$(grep -m1 ^$PACKAGE- packages.list).tazpkg"
 		if ! [ -f "$pkg" ]; then
@@ -1045,6 +1037,7 @@ update_packages_db()
 		erase_package_info
 		get_packages_info
 	done
+	unset updated_pkg
 	
 	# Look for new packages.
 	for pkg in $(echo $pkg_repository/*.tazpkg | fgrep -v '*'); do
@@ -1163,7 +1156,8 @@ packages_db_end()
 	
 	# Dont log this because lzma always output error.
 	lzma e files.list files.list.lzma
-	rm files.list 2>/dev/null
+	rm -f files.list
+	[ -f packages.equiv ] || touch packages.equiv
 }
 
 ########################################################################
@@ -1172,33 +1166,50 @@ packages_db_end()
 
 gen_wok_db()
 {
-	get_wok_info $(echo $WOK/*/receipt | sed -e "s~$WOK/~~g" -e "s~/receipt~~g")
-	sort_db
-	report close-bloc
-}
-
-get_wok_info()
-{
-	report step "Getting datas from wok"
+	report step "Generating wok database"
 	report open-bloc
-	
-	report step "Generating wok-wanted.txt"
-	for PACKAGE in $@; do
-		RECEIPT=$WOK/$PACKAGE/receipt
-		source_receipt
-		[ "$WANTED" ] || continue
-		echo -e $PACKAGE"\t"$WANTED >> $wan_db
+	report step "Removing old files"
+	for file in $wan_db $dep_db $PACKAGES_REPOSITORY/cookorder.txt; do
+		[ -f $file ] && rm $file
 	done
-	
+	report step "Generating wok-wanted.txt"
+	gen_wan_db
 	report step "Generating wok-depends.txt"
-	for PACKAGE in $@; do
+	for PACKAGE in $(cut -f1 -d '|' $PACKAGES_REPOSITORY/packages.desc \
+		$INCOMING_REPOSITORY/packages.desc | sort -u); do
 		RECEIPT=$WOK/$PACKAGE/receipt
 		if [ -s $RECEIPT ]; then
 			source_receipt
 			echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ' >> $dep_db
 		fi
 	done
-	report end-step
+	report close-bloc
+}
+
+gen_wan_db()
+{
+	for RECEIPT in $(fgrep -l WANTED $WOK/*/receipt); do
+		WANTED=
+		source $RECEIPT
+		[ "$WANTED" ] || continue
+		echo -e $PACKAGE"\t"$WANTED >> $tmp/wan_db
+	done
+	if [ "$(diff -q $tmp/wan_db $wan_db)" ]; then
+		mv -f $tmp/wan_db $wan_db
+		plan_regen_cookorder=yes
+	else
+		rm $tmp/wan_db
+	fi
+}
+
+update_dep_db()
+{
+	dep_info=$(echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ')
+	[ "$dep_info" = "$(grep -m1 ^$PACKAGE$'\t' $dep_db)" ] && return
+	sed "/^$PACKAGE\t/d" -i $dep_db
+	echo "$dep_info" >> $dep_db
+	plan_regen_cookorder=yes
+	plan_sort_depdb=yes
 }
 
 sort_db()
@@ -1251,6 +1262,7 @@ sort_db()
 	done
 
 	tac $tmp/cookorder >> $PACKAGES_REPOSITORY/cookorder.txt
+	unset plan_regen_cookorder
 	report end-step
 }
 
@@ -1273,13 +1285,6 @@ look_for_dep()
 
 look_for_bdep()
 {
-#	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-#		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
-#		| cut -f 3
-#	else
-#		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
-#			cut -f 3
-#	fi
 	look_for_all
 }
 
@@ -1292,23 +1297,6 @@ look_for_all()
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
 			cut -f 2,3 | sed 's/ 	 / /'
 	fi
-}
-
-filter()
-{
-	for pkg in $(cat); do
-		if grep -q ^$pkg$'\t' $dep_db; then
-			{ grep ^$pkg$'\t' $wan_db || echo $pkg
-			} | sed 's/\t/ /'
-		else
-			echo "Error: $pkg can't be found." >&2
-		fi
-	done
-}
-
-look_for_all_filtered()
-{
-	look_for_all | filter
 }
 
 look_for_rdep()
@@ -1383,21 +1371,14 @@ scan()
 	if [ "$COMMAND" = gen-cooklist ] || [ "$COMMAND" = build-depends ]; then
 		report(){ : ; }
 	fi
-	
-	# Generate wok data files if they're missing. Output message in
-	# stderr as stdout output may be used as packages list.
-	if [ ! -s "$wan_db" ] || [ ! -s "$dep_db" ]; then
-		echo "Missing wok data files, generating them... This may take few minutes." >&2
-		gen_wok_db
-	fi
-	
+
 	# Get packages in argument.
 	local PACKAGE pkg_list=
 	for arg in $@; do
 		[ "$arg" = "${arg#--}" ] || continue
 		pkg_list="$pkg_list $arg"
 	done
-	
+
 	# Get options.
 	[ "$pkg_list" ] || return
 	local cooklist= look_for= with_dev= with_wanted= with_args= log_command="$0 $@" \
@@ -1407,72 +1388,85 @@ scan()
 	# Cooklist is a special case where we need to modify a little
 	# scan behavior
 	if [ "$cooklist" ]; then
-		look_for=all_filtered && with_args=yes && with_dev= && with_wanted= && rwan=yes
-		pkg_list=$(echo $pkg_list | filter)
+		gen_wan_db
+		look_for=all && with_args=yes && with_dev= && with_wanted=
+		filter=use_wanted
+		append_to_dep()
+		{
+			check_for_commit && echo $PACKAGE >> $tmp/dep
+		}
+	else
+		append_to_dep()
+		{
+			echo $PACKAGE >> $tmp/dep
+		}
 	fi
+
+	[ "$with_dev" ] && filter=with_dev
+	[ "$with_wanted" ] && filter=with_wanted
 	
 	##############################################################
 	# ADD TO LISTS PROPOSAL ######################################
 	##############################################################
 	#
-	include_wanted()
+	with_dev()
 	{
-		for pkg in $(cat); do
-			{ grep ^$pkg$'\t' $wan_db || echo $pkg
-			} | sed 's/\t/ /'
+		for PACKAGE in $(cat); do
+			echo $PACKAGE
+			look_for_dev
+		done
+	}
+
+	with_wanted()
+	{
+		for PACKAGE in $(cat); do
+			echo $PACKAGE
+			look_for_wanted
 		done
 	}
 	
-	no_duplication()
+	use_wanted()
 	{
-		for pkg in $(cat); do
-			grep -q ^$pkg$ $tmp/list $tmp/dep && continue
-			echo $pkg
-		done
+	for PACKAGE in $(cat); do
+		{ grep ^$PACKAGE$'\t' $wan_db || echo $PACKAGE
+		} | sed 's/.*\t//'
+	done
 	}
-		
-	append_to_list()
-	{
-		no_duplication  >> $tmp/list
-		# OU
-		include_wanted | no_duplication >> $tmp/list
-	}
-	#
-	##############################################################
-	for PACKAGE in $(echo $pkg_list | filter); do
-		look_for_$look_for
+	
+	if [ "$filter" ]; then
+		pkg_list=$(echo $pkg_list | $filter)
+		scan_pkg()
+		{
+			look_for_$look_for | $filter
+		}
+	else
+		scan_pkg()
+		{
+			look_for_$look_for
+		}
+	fi
+	
+	for PACKAGE in $pkg_list; do
+		[ "$with_args" ] && append_to_dep
+		scan_pkg		
 	done  | tr ' ' '\n' | sort -u > $tmp/list
 	[ "$look_for" = bdep ] && look_for=dep
 	while [ -s $tmp/list ]; do
 		PACKAGE=$(sed 1!d $tmp/list)
 		sed 1d -i $tmp/list
-		echo $PACKAGE >> $tmp/dep
-		for depend in $(look_for_$look_for); do
-			if ! grep -q ^$depend$ $tmp/list $tmp/dep; then
-				echo $depend >> $tmp/list
+		append_to_dep
+		for pkg in $(scan_pkg); do
+			if ! grep -q ^$pkg$ $tmp/list $tmp/dep; then
+				echo $pkg >> $tmp/list
 			fi
 		done
 	done
-	[ "$with_args" ] && echo $pkg_list | tr ' ' '\n' >> $tmp/dep
-	if [ -s $tmp/dep ]; then
-		if [ "$with_wanted" ]; then
-			cat $tmp/dep | while read PACKAGE; do
-				look_for_rwanted >> $tmp/dep
-			done
-		elif [ "$with_dev" ]; then
-			cat $tmp/dep | while read PACKAGE; do
-				look_for_dev >> $tmp/dep
-			done
-		fi
-		if [ "$cooklist" ]; then
-			mv $tmp/dep $tmp/cooklist
-			sort_cooklist
-			rm $tmp/cooklist
-		else
-			cat $tmp/dep | sort -u
-		fi
+	if [ "$cooklist" ]; then
+		mv $tmp/dep $tmp/cooklist
+	else	
+		cat $tmp/dep | sort -u
 	fi
-	rm $tmp/dep $tmp/list 2>/dev/null
+	rm -f $tmp/dep $tmp/list
 }
 
 ########################################################################
@@ -1480,32 +1474,22 @@ scan()
 # find which packages to cook.
 ########################
 
-# Actually its becomes more than check commit... Maybe put this in report
-# function is a good idea.
 check_for_commit()
 {
-	report step "Checking for commits"
-	
-	# Clean the list... Later we will perfom a partial clean only to keep
-	# some usefull informations
-	rm $PACKAGES_REPOSITORY/commit 2>/dev/null
-	
-	# If there's a packages-incoming repository we need to check it too.
-	for RECEIPT in $(echo $WOK/*/receipt | fgrep -v '*'); do
+	if ! check_for_pkg_in_wok; then
+		[ "$?" = 2 ] && return 1
+		return
+	fi
+	for PACKAGE in $(look_for_rwanted) $PACKAGE; do
+		RECEIPT=$WOK/$PACKAGE/receipt
 		source_receipt
-	
+
 		# We use md5 of cooking stuff in the packaged receipt to check
 		# commit. We look consecutively in 3 different locations :
-		# - in the wok/PACKAGE/taz folder
+		# - in the wok/PACKAGE/taz/* folder
 		# - in the receipt in the package in incoming repository
 		# - in the receipt in the package in packages repository
 		# If md5sum match, there's no commit.
-		# If there's not md5sum datas, because the package was cooked
-		# with a previous version of tazwok, we don't put in in commit
-		# list (need a cook-all to refresh them)
-		# If there's no receipt available, package is missing so we put
-		# it in commit list.
-		# First look for package in packages-incoming.
 		check_for_commit_using_md5sum()
 		{
 			if [ ! -f $WOK/$PACKAGE/md5 ]; then
@@ -1513,16 +1497,16 @@ check_for_commit()
 					sed -e 1d -e 's/^# //' > $WOK/$PACKAGE/md5
 				cd $WOK/$PACKAGE
 			fi
-	
-			# Use md5sum list in receipt to check for commit.
+		
 			if [ -s md5 ]; then					
 				if md5sum -cs md5; then
-					return_code=0
-	
-					# If md5sum check if ok, check for new files in
-					# cooking stuff.
-					for file in receipt description.txt $( [ -d stuff ] && find stuff); do
-						if [ -f $file ] && ! fgrep -q "  $file" md5; then
+		
+				# If md5sum check if ok, check for new/missing files in
+				# cooking stuff.
+				for file in $([ -f receipt ] && echo receipt; \
+						[ -f description.txt ] && echo description.txt; \
+						[ -d stuff ] && find stuff); do
+						if ! fgrep -q "  $file" md5; then
 							set_commited
 						fi
 					done
@@ -1530,14 +1514,15 @@ check_for_commit()
 					set_commited
 				fi
 			else
-				gen_cookmd5
+				set_commited
 			fi
 		}
 		set_commited()
 		{
-			echo $PACKAGE >> $PACKAGES_REPOSITORY/commit
-			echo "Commit: $PACKAGE ($VERSION)"
+			! grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/commit &&
+				echo $PACKAGE >> $PACKAGES_REPOSITORY/commit
 			gen_cookmd5
+			update_dep_db
 		}
 		taz_dir=$(echo $WOK/$PACKAGE/taz/$PACKAGE-* | fgrep -v '*')
 		if [ -f $WOK/$PACKAGE/md5 ]; then
@@ -1553,135 +1538,143 @@ check_for_commit()
 				get_pkg_files $pkg
 				check_for_commit_using_md5sum
 				rm -r $pkg_files_dir
-				continue
+			else
+				set_commited
 			fi
-			set_commited
 		fi
+	[ "$forced" ] || echo $PACKAGE >> $tmp/checked
 	done
-	report end-step
+	return
 }
 
 gen_cook_list()
 {
+	report step "Scanning wok"
+	if [ "$pkg" ]; then
+		scan $pkg --cooklist
+	else
+		scan `cat $cooklist` --cooklist
+	fi
+	report end-step
+	[ -s $tmp/checked ] || return
 	if [ -s $PACKAGES_REPOSITORY/commit ]; then
-		report step "Generate genpkg & cook lists."
 		cd $PACKAGES_REPOSITORY
-		#cp commit $tmp/commit
-		#if [ -s broken ]; then	
-			## dep_scan return deps including the packages given in argument.
-			## To avoid that, we firt generate a list of direct rdepends of
-			## brokens without packages in argument, then we generate the
-			## full rdeps list. We do this because we don't want to block
-			## packages at source of broken tree if a fix as been commited.
-			#for PACKAGE in $(cat broken); do
-				#look_for_rdep >> $tmp/broken
-			#done
-			#cat $tmp/broken
-			#look_for=rdep && with_wanted=yes
-			#for PACKAGE in $(dep_scan `cat $tmp/broken`); do
-				#if grep -q ^$PACKAGE$ $tmp/commit; then
-					#sed "/^$PACKAGE$/d" -i $tmp/commit
-				#fi
-			#done
-			#rm $tmp/broken
-		#fi
 		for PACKAGE in $(cat commit); do
 			WANTED="$(look_for_wanted)"
 			if [ "$WANTED" ]; then
-
-				# If cook of wanted package is planned, this one will be
-				# packaged at the same time. Else if wanted package is
-				# broken or blocked, ignore the commit. Else, put the
-				# package in genpkglist.
-				{ grep -q ^$WANTED$ commit || grep -q ^$WANTED$ broken || \
-					grep -q ^$WANTED$ cooklist || grep -q ^$WANTED$ blocked || \
-					grep -q ^$WANTED$ genpkglist
-				} && continue
-				echo $WANTED >> genpkglist
-			else
-				{ grep -q ^$PACKAGE$ blocked || grep -q ^$PACKAGE$ cooklist 
-				} && continue
-				echo $PACKAGE >> cooklist
-				sed "/^$PACKAGE$/d" -i broken
+				grep -q ^$WANTED$ broken cooklist blocked commit && continue
 			fi
+			grep -q ^$PACKAGE$ blocked cooklist && continue
+			echo $PACKAGE >> cooklist
 		done
-		#rm $tmp/commit
-		if [ -s genpkglist ]; then
-			echo "genpkglist:"
-			cat genpkglist
-		fi
-		report end-step
 	fi
-	cooklist=$PACKAGES_REPOSITORY/cooklist
+	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
+	[ "$plan_regen_cookorder" ] && sort_db
+	[ -s $PACKAGES_REPOSITORY/cooklist ] || return
+	
+	# Core toolchain should not be cooked unless cook-toolchain is used.
+	if ! [ -f /etc/config.site.tmptoolchain ] ; then
+		for PACKAGE in $(scan gcc --look_for=all --with_args --with_wanted); do
+			[ -f $tmp/cooklist ] && sed "/^$PACKAGE/d" -i $tmp/cooklist
+			[ -f $tmp/checked ] && sed "/^$PACKAGE/d" -i $tmp/checked
+			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/blocked || \
+				echo $PACKAGE >> $PACKAGES_REPOSITORY/blocked
+		done
+	fi
 	sort_cooklist
 }
 
 sort_cooklist()
 {
-	[ ! "$cooklist" ] && cooklist=$PACKAGES_REPOSITORY/cooklist
-	[ -s $cooklist ] || [ -s "$tmp/cooklist" ] || return
-	[ -s $PACKAGES_REPOSITORY/cookorder.txt ] || gen_wok_db
-	[ ! -s "$tmp/cooklist" ] && cp -a $cooklist $tmp/cooklist
+	
+	if [ -f "$tmp/checked" ]; then
+		rm -f $tmp/cooklist
+		cat $tmp/checked | while read PACKAGE; do
+			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/cooklist && \
+				echo $PACKAGE >> $tmp/cooklist
+		done
+	fi
+	
+	[ -s $tmp/cooklist ] || return
 	report step "Sorting cooklist"
-
-	# Use cookorder.txt to sort cooklist.
-	cat $PACKAGES_REPOSITORY/cookorder.txt | while read PACKAGE; do
-		if grep -q ^$PACKAGE$ $tmp/cooklist; then
+	for PACKAGE in $(cat $tmp/cooklist); do
+		WANTED="$(look_for_wanted)"
+		[ "$WANTED" ] || continue
+		if grep -q ^$WANTED$ $PACKAGES_REPOSITORY/broken $tmp/cooklist.tmp; then		
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
-			echo $PACKAGE >> $tmp/cooklist.tmp
+		elif [ ! -d $WOK/$WANTED/install ]; then
+			sed "/^$PACKAGE$/d" -i $tmp/cooklist
+			echo $WANTED >> $tmp/cooklist
 		fi
 	done
 
-	# Remaining packages in cooklist are thoses without compile_rules.
-	# They can be cooked first in any order.
-	mv -f $tmp/cooklist.tmp $tmp/cooklist
-	[ "$cooklist" = "$PACKAGES_REPOSITORY/cooklist" ] && \
-		cat $tmp/cooklist > $cooklist
-	cat $tmp/cooklist
+	# Use cookorder.txt to sort cooklist.
+	if [ -s $tmp/cooklist ]; then
+		cat $PACKAGES_REPOSITORY/cookorder.txt | while read PACKAGE; do
+			if grep -q ^$PACKAGE$ $tmp/cooklist; then
+				sed "/^$PACKAGE$/d" -i $tmp/cooklist
+				echo $PACKAGE >> $tmp/cooklist.tmp
+			fi
+		done
+
+		# Remaining packages in cooklist are thoses without compile_rules.
+		# They can be cooked first in any order.
+		if [ -f $tmp/cooklist.tmp ]; then
+			cat $tmp/cooklist.tmp >> $tmp/cooklist
+			rm $tmp/cooklist.tmp
+		fi
+		
+		cat $tmp/cooklist
+		[ "$cooklist" = "$PACKAGES_REPOSITORY/cooklist" ] && \
+			cat $tmp/cooklist > $cooklist
+	fi
+	
 	report end-step
 }
 
 check_for_incoming()
 {
-	[ -s $INCOMING_REPOSITORY/packages.txt ] || return
-	report step "Checking packages-incoming repository"
-	cd $INCOMING_REPOSITORY
-	grep ^[0-9,a-z,A-Z] packages.txt > $tmp/incoming
-	scan `cat $PACKAGES_REPOSITORY/broken` --look_for=bdep --with_wanted > $tmp/broken
-	for PACKAGE in $(scan `cat $tmp/broken` --look_for=rdep --with_wanted --with_args); do
-		sed "/^$PACKAGE$/d" -i $tmp/incoming
-		for rwanted in $(look_for_rwanted); do
-			sed "/^$rwanted$/d" -i $tmp/incoming
-		done
-	done
-	rm $tmp/broken
-	if [ "$incoming_delay" != 0 ]; then
-		cat $tmp/incoming | while read PACKAGE; do
-			[ "$(grep ^$PACKAGE$ $tmp/incoming)" ] || continue
-			dep_list=$( { scan $PACKAGE --look_for=bdep --with_wanted && \
-				scan $PACKAGE --look_for=rdep --with_wanted --with_args; } \
-				| sort -u )
-			for dep in $dep_list; do
-				[ "$(find -name "`get_pkg_version $INCOMING_REPOSITORY`.tazpkg" -mtime +$incoming_delay)" ] && continue
-				for pkg in $dep_list; do
-					sed "/^$pkg$/d" -i $tmp/incoming
-				done && break
-			done
-		done
+	[ -s $INCOMING_REPOSITORY/packages.desc ] || {
+	echo "No packages in $INCOMING_REPOSITORY."
+	return; }
+	if [ -s $PACKAGES_REPOSITORY/broken ]; then
+		echo "Don't move incoming packages to main repository because theses ones are broken:
+		$(cat $PACKAGES_REPOSITORY/broken)" >&2
+		return
 	fi
-	if [ -s "$tmp/incoming" ]; then
-		for PACKAGE in $(cat $tmp/incoming); do
+	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
+		echo "Don't move incoming packages to main repository because some of them need to be cooked:
+		$(cat $PACKAGES_REPOSITORY/cooklist)" >&2
+		return
+	fi
+	rm -f $WOK/*/md5
+	pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
+		grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+		} | sort -u)"
+	cooklist=$PACKAGES_REPOSITORY/cooklist
+	gen_cook_list
+	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
+		echo "Don't move incoming packages to main repository because some of them need to be cooked." >&2
+		return
+	fi
+	report step "Moving incoming packages to main repository"
+	unset EXTRAVERSION
+	for PACKAGE in $(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc); do
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
+			VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
 			remove_previous_package $PACKAGES_REPOSITORY
 			remove_previous_tarball
-			cur_VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
-			mv -f $PACKAGE-$cur_VERSION.tazpkg $PACKAGES_REPOSITORY
-			echo "Moving $PACKAGE to main repository."
-		done
-	pkg_repository=$INCOMING_REPOSITORY && update_packages_db
-	pkg_repository=$PACKAGES_REPOSITORY && update_packages_db
-	fi
+			echo "Moving $PACKAGE..."
+			mv -f $INCOMING_REPOSITORY/$PACKAGE-$VERSION.tazpkg $PACKAGES_REPOSITORY
+			touch $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
+	done
 	report end-step
+	for file in packages.list packages.equiv packages.md5 packages.desc \
+		packages.txt; do
+		echo -n "" > $INCOMING_REPOSITORY/$file
+	done
+	rm -r $INCOMING_REPOSITORY/files.list.lzma
+	pkg_repository=$PACKAGES_REPOSITORY && update_packages_db
 }
 
 ########################################################################
@@ -1750,12 +1743,7 @@ cook()
 	report step "Cooking $PACKAGE"
 	report open-bloc
 
-	# Clean package if needed.
 	clean $PACKAGE
-
-	# Remove PACKAGE from commit & cook lists.
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
 	[ -s $tmp/cooklist ] && sed "/^$PACKAGE$/d" -i $tmp/cooklist
 	
 	if compile_package; then
@@ -1821,33 +1809,26 @@ cook()
 	return $cook_code
 }
 
-genpkg_list()
-{
-	while [ -s $PACKAGES_REPOSITORY/genpkglist ]; do
-		PACKAGE=$(sed 1!d $PACKAGES_REPOSITORY/genpkglist)
-		gen_package
-	done
-}
-
 cook_list()
 {
-	if [ ! -s $cooklist ]; then
+	if [ -s $tmp/cooklist ]; then
+		if [ -f /usr/bin/tazchroot ]; then
+			# Note : options -main variables- are automatically keeped by
+			# the sub-applications tazchroot/tazwok; as well as report data.
+			cd $LOCAL_REPOSITORY
+			[ ! -f tazchroot.conf ] && configure_tazchroot
+			tazchroot tazwok cook-list --SLITAZ_DIR=$SLITAZ_DIR --SLITAZ_VERSION=$SLITAZ_VERSION ${undigest:+ --undigest=$undigest}
+			return
+		fi
+		while [ -s $tmp/cooklist ]; do
+			PACKAGE=$(sed 1!d $tmp/cooklist)
+			cook
+		done
+		remove_build_depends $MISSING_PACKAGE $remove_later
+	else
 		echo "Nothing to cook."
 		return
 	fi
-	if [ -f /usr/bin/tazchroot ]; then
-		# Note : options -main variables- are automatically keeped by
-		# the sub-applications tazchroot/tazwok; as well as report data.
-		cd $LOCAL_REPOSITORY
-		[ ! -f tazchroot.conf ] && configure_tazchroot
-		tazchroot tazwok cook-list --SLITAZ_DIR=$SLITAZ_DIR --SLITAZ_VERSION=$SLITAZ_VERSION ${undigest:+ --undigest=$undigest}
-		return
-	fi
-	while [ -s $tmp/cooklist ]; do
-		PACKAGE=$(sed 1!d $tmp/cooklist)
-		cook
-	done
-	remove_build_depends $MISSING_PACKAGE $remove_later
 }
 
 configure_tazchroot()
@@ -1977,22 +1958,14 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		fi
 	;;
 	gen-cooklist)
-		get_options_list="list"
+		get_options_list="pkg"
 		get_tazwok_config
-		if [ "$list" ]; then
-			LIST="$list"
-			check_for_list
-		else
-			LIST=$(for pkg in $@; do
-				[ "$pkg" = "${pkg#--}" ] || continue
-				echo -n "$pkg "
-			done)
-			if [ ! "$LIST" ]; then
-				echo "Please give packages or a list file in argument." >&2
-				exit
-			fi
+		check_root
+		if ! [ "$pkg" ]; then
+			cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
 		fi
-		scan $LIST --cooklist
+		forced=yes
+		gen_cook_list
 	;;
 	check-depends)
 		# Check package depends /!\ 
@@ -2311,19 +2284,16 @@ Maintainer : $MAINTAINER"
 		cp -af $tmp/cooklist $cooklist
 	;;
 	cook-list)
-		# Cook all packages listed in a file. The path to the cooklist must
-		# be specified on the cmdline.
-		# /!\ 
+		# Cook all packages listed in a file or in default cooklist.
 		check_root
+		get_options_list="pkg forced"
 		get_tazwok_config
 		source_lib report
 		report start
-		cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
-		if [ "$LIST" ]; then
-			sort_cooklist
-		else
-			cp $cooklist $tmp/cooklist
+		if ! [ "$pkg" ]; then
+			cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
 		fi
+		gen_cook_list
 		cook_list
 	;;
 	clean)
@@ -2385,54 +2355,47 @@ Maintainer : $MAINTAINER"
 		echo "`ls -1 $WOK | wc -l` packages cleaned."
 	;;
 	gen-list)
-		check_root
 		get_tazwok_config
+		if [ "$2" ]; then
+			if [ -d "$2" ]; then
+				pkg_repository=$2
+			else
+				echo -e "\nUnable to find directory : $2\n" >&2
+				exit 1
+			fi
+		fi
+				
 		source_lib report
 		report start
-		dbtype=packages
-		mode=gen
-		for pkg_repository in $PACKAGES_REPOSITORY $INCOMING_REPOSITORY; do
-			files_list="$pkg_repository/files.list.lzma \
-				$pkg_repository/packages.list \
-				$pkg_repository/packages.txt \
-				$pkg_repository/packages.desc \
-				$pkg_repository/packages.equiv \
-				$pkg_repository/packages.md5"
-			gen_db
-			echo "$pkgs packages in the repository."
-			echo ""
-		done
+		if [ "$pkg_repository" ]; then
+			gen_packages_db
+		else
+			pkg_repository=$PACKAGES_REPOSITORY && gen_packages_db
+			pkg_repository=$INCOMING_REPOSITORY && gen_packages_db
+		fi
 	;;
 	check-list)
 		# The directory to move into by default is the repository,
 		# if $2 is not empty cd into $2.
 		#
 		get_tazwok_config
-		if [ -z "$2" ]; then
-			PACKAGES_REPOSITORY=$PACKAGES_REPOSITORY
-		else
+		if [ "$2" ]; then
 			if [ -d "$2" ]; then
-				PACKAGES_REPOSITORY=$2
+				pkg_repository=$2
 			else
 				echo -e "\nUnable to find directory : $2\n" >&2
 				exit 1
 			fi
 		fi
 		
-		# Use report shared library to control output.
-		tmp=/tmp/tazwok-$$
 		source_lib report
-		dbtype=packages
-		mode=update
-		cd $PACKAGES_REPOSITORY
-		for pkg in $(echo *.tazpkg); do
-			package_md5=$(md5sum $pkg)
-			[ "$package_md5" = "$(fgrep "  $pkg" packages.md5)" ] && continue
-			erase_package_info
-			get_packages_info
-		done
-		echo "$pkgs packages in the repository."
-		echo ""
+		report start
+		if [ "$pkg_repository" ]; then
+			update_packages_db
+		else
+			pkg_repository=$PACKAGES_REPOSITORY && update_packages_db
+			pkg_repository=$INCOMING_REPOSITORY && update_packages_db
+		fi
 	;;
 	new-tree)
 		# Just create a few directories and generate an empty receipt to prepare
@@ -2469,12 +2432,7 @@ WGET_URL=""
 compile_rules()
 {
 	cd $src
-	./configure \
-		--prefix=/usr \
-		--infodir=/usr/share/info \
-		--mandir=/usr/share/man \
-		$CONFIGURE_ARGS &&
-	make -j 4 && make DESTDIR=$PWD/_pkg install
+	./configure && make && make install
 }
 
 # Rules to gen a SliTaz package suitable for Tazpkg.
@@ -2630,50 +2588,62 @@ EOF
 			echo "No tarball to download for $PACKAGE"
 		fi
 	;;
-	rec-commit)
+	check-commit)
 		check_root
+		get_options_list="missing forced"
 		get_tazwok_config
 		source_lib report
 		report start
-		check_for_commit
+		if [ "$forced" ]; then
+			rm -f $WOK/*/md5
+			unset forced
+		fi
+		if [ "$missing" ]; then
+			pkg=$(ls -1 $WOK)
+		else
+			pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
+				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			} | sort -u)"
+		fi
+		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 	;;
 	cook-commit)
 		check_root
+		get_options_list="missing forced"
 		get_tazwok_config
 		source_lib report
 		report start
-		check_for_commit
-		# 2) update cook-database (actually complete regeneration)
-		dbtype=wok
-		mode=gen
-		files_list="$dep_db $wan_db $PACKAGE_REPOSITORY/cookorder.txt"
-		gen_db
-		# 3) check cooklist
-		# 	3.1) rename pkgs with wanted variable to wanted pkg
+		if [ "$forced" ]; then
+			rm -f $WOK/*/md5
+			unset forced
+		fi
+		if [ "$missing" ]; then
+			pkg=$(ls -1 $WOK)
+		else
+			pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
+				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			} | sort -u)"
+		fi
+		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 		cook_list
 	;;
 	cook-all)
 		check_root
+		get_options_list="forced missing"
 		get_tazwok_config
 		source_lib report
 		report start
-		# 2) update cook-database (actually complete regeneration)
-		dbtype=wok
-		mode=gen
-		files_list="$dep_db $wan_db $PACKAGE_REPOSITORY/cookorder.txt"
-		gen_db
-		# Add all packages, without toolchain, in cooklist.
-		# Recook toolchain need to be coded.
-		echo -n "" > $PACKAGES_REPOSITORY/cooklist
-		for pkg in $(cd $WOK && echo *); do
-			echo $pkg >> $PACKAGES_REPOSITORY/cooklist
-		done
-		for pkg in $(scan gcc --look_for=all --with_wanted --with_args); do
-			sed "/^$pkg$/d" -i $PACKAGES_REPOSITORY/cooklist
-		done
-		sort_cooklist
+		if [ "$missing" ]; then
+			pkg=$(ls -1 $WOK)
+		else
+			pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
+				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			} | sort -u)"
+		fi
+		cooklist=$PACKAGES_REPOSITORY/cooklist
+		gen_cook_list
 		cook_list
 	;;
 	gen-wok-db)
@@ -2681,16 +2651,13 @@ EOF
 		get_tazwok_config
 		source_lib report
 		report start
-		dbtype=wok
-		mode=gen
-		files_list="$dep_db $wan_db $PACKAGE_REPOSITORY/cookorder.txt"
-		gen_db
+		gen_wok_db
 	;;
 	report)
 		check_root
 		get_tazwok_config
 		cd $PACKAGES_REPOSITORY
-		for i in commit genpkglist cooklist incoming broken blocked; do
+		for i in commit cooklist incoming broken blocked; do
 			if [ -s $i ]; then
 				echo -e "\n********************* $i *********************\n$(cat $i)\n*********************"
 			fi
@@ -2752,5 +2719,4 @@ EOF
 	;;
 esac
 
-[ -d "$tmp" ] && rm -r $tmp
 report stop 2>/dev/null || exit 0
