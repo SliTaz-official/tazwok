@@ -1651,15 +1651,17 @@ check_for_incoming()
 		$(cat $PACKAGES_REPOSITORY/cooklist)" >&2
 		return
 	fi
-	rm -f $WOK/*/md5
-	pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
-		grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
-		} | sort -u)"
-	cooklist=$PACKAGES_REPOSITORY/cooklist
-	gen_cook_list
-	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
-		echo "Don't move incoming packages to main repository because some of them need to be cooked." >&2
-		return
+	if ! [ "$forced" ]; then
+		rm -f $WOK/*/md5
+		pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
+			grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			} | sort -u)"
+		cooklist=$PACKAGES_REPOSITORY/cooklist
+		gen_cook_list
+		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
+			echo "Don't move incoming packages to main repository because some of them need to be cooked." >&2
+			return
+		fi
 	fi
 	report step "Moving incoming packages to main repository"
 	unset EXTRAVERSION
@@ -2673,6 +2675,7 @@ EOF
 	;;
 	check-incoming)
 		check_root
+		get_options_list="forced"
 		get_tazwok_config
 		source_lib report
 		report start
