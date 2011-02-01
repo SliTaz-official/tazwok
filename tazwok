@@ -1237,7 +1237,6 @@ update_dep_db()
 sort_db()
 {
 	report step "Generating cookorder.txt"
-	rm $PACKAGES_REPOSITORY/blocked && touch $PACKAGES_REPOSITORY/blocked
 	cat $dep_db | sed 's/ \t / /' | while read PACKAGE BUILD_DEPENDS; do
 		grep -q ^$PACKAGE$'\t' $wan_db && continue
 		
