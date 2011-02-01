@@ -1215,7 +1215,7 @@ update_wan_db()
 		WANTED=
 		source $RECEIPT
 		[ "$WANTED" ] || continue
-		wan_info=$(echo -e $PACKAGE"\t"$WANTED >> $tmp/wan_db)
+		wan_info=$(echo -e $PACKAGE"\t"$WANTED)
 		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && return
 		sed "/^$PACKAGE\t/d" -i $wan_db
 		echo "$dep_info" >> $wan_db
