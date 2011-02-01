@@ -104,6 +104,9 @@ get_tazwok_config()
 	# Basically, get theses files from the net if they are missing.
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
+	[ -f $dep_db ] || touch $dep_db
+	[ -f $wan_db ] || touch $wan_db
+	[ -f $PACKAGES_REPOSITORY/cookorder.txt ] || touch $PACKAGES_REPOSITORY/cookorder.txt
 
 	# Check commons directories, create them if user is root.
 	if test $(id -u) = 0 ; then
@@ -199,9 +202,9 @@ remove_src()
 {
 	[ "$WANTED" ] && return
 	look_for_cookopt !remove_src && return
-	if [ ! -d $WOK/$PACKAGE/install ] && [ "$_pkg" ] && [ -d "$_pkg" ]; then
+	if [ ! -d $WOK/$PACKAGE/install ] && [ "$src" ] && [ -d "$src/_pkg" ]; then
 		check_for_var_modification _pkg src || return
-		mv "$_pkg" $WOK/$PACKAGE/install
+		mv "$src/_pkg" $WOK/$PACKAGE/install
 	fi
 	
 	# Don't remove sources if a package use src variable in his
@@ -284,7 +287,7 @@ check_for_build_depends()
 	unset MISSING_PACKAGE remove_later
 	rwanted=$(look_for_rwanted)
 
-	for pkg in $(scan $BUILD_DEPENDS $DEPENDS --look_for=dep --with_dev --with_args | \
+	for pkg in $(scan $PACKAGE --look_for=bdep --with_dev | \
 		fgrep -v $(for i in $(look_for_rwanted) $PACKAGE; do echo " -e $i"; done))
 	do
 
@@ -610,8 +613,6 @@ download()
 }
 
 # Regenerate every package that wants a PACKAGE compiled
-# /!\
-
 refresh_packages_from_compile()
 {
 	# make tazwok genpkg happy
@@ -623,13 +624,16 @@ refresh_packages_from_compile()
 		[ "${genlist/ $i }" = "$genlist" ] && continue
 		genlist=" $i${genlist/ $i / }"
 	done
-	for i in $genlist; do
-		tazwok genpkg $i --SLITAZ_VERSION=$SLITAZ_VERSION \
-			--undigest=$undigest --SLITAZ_DIR=$SLITAZ_DIR
-	done
-
-	# Still needs tazwok genpkg for this package
-	rm -rf $WOK/$PACKAGE/taz
+	if [ "$genlist" ]; then
+		local PACKAGE SOURCE VERSION EXTRAVERSION CATEGORY SHORT_DESC \
+		MAINTAINER WEB_SITE WGET_URL DEPENDS BUILD_DEPENDS WANTED \
+		PACKED_SIZE UNPACKED_SIZE COOK_OPT PROVIDE CONFIG_FILES TAGS \
+		src _pkg DESTDIR CONFIG_SITE RECEIPT LOG
+		for PACKAGE in $genlist; do
+			set_common_path
+			gen_package
+		done
+	fi
 }
 
 # Copy all generic files (locale, pixmaps, .desktop). We use standard paths,
@@ -862,34 +866,31 @@ gen_package()
 	done > files.list
 	
 	# Next, check if something has changed in lib files.
-	if [ ! "$cook_rdep" ]; then
-		report step "Look for changes in libraries"
-		
-		# Find the most recent previous files.list.
-		# /!\ need some work to check only for minor update (not micro)
-		if grep -q ^$PACKAGE$ $INCOMING_REPOSITORY/packages.txt 2>/dev/null; then
-			files_list_dir=$PACKAGES_INCOMING
-		elif grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/packages.txt 2>/dev/null; then
-			files_list_dir=$PACKAGES_REPOSITORY
-		elif [ "$undigest" ] && grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/packages.txt 2>/dev/null; then
-			files_list_dir=$SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming
-		elif [ "$undigest" ] && grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/packages.txt 2>/dev/null; then
-			files_list_dir=$SLITAZ_DIR/$SLITAZ_VERSION/packages
-		fi
-		
-		# If founded, generate libs.list (new and previous)
-		if [ "$files_list_dir" ] && [ -f $files_list_dir/files.list.lzma ]; then
-			grep -e '\.so$' -e '\.so.[0-9]' files.list >> $tmp/libs.list.new
-			if [ -f $tmp/libs.list.new ]; then
-				lzma d $files_list_dir/files.list.lzma $tmp/files.list 2>/dev/null
-				grep ^$PACKAGE: $tmp/files.list >> $tmp/libs.list.previous
-				
-				# If something as changed in libs path/names, plan recook of all
-				# reverse build depends. 
-				[ "$(diff -q $tmp/libs.list.old $tmp/libs.list.previous 2>/dev/null)" ] && cook_rdep=yes
-				rm $tmp/libs.list.new $tmp/files.list $tmp/libs.list.old 2>/dev/null
-				unset files_list_dir
-			fi
+	if fgrep -q '.so' files.list; then
+		report step "Look for major/minor update in libraries"
+		for rep in $INCOMING_REPOSITORY $PACKAGES_REPOSITORY \
+			$([ "$undigest" ] && echo SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming && \
+			echo $SLITAZ_DIR/$SLITAZ_VERSION/packages); do
+			prev_VERSION=$(get_pkg_version $rep)
+			[ "$prev_VERSION" ] && pkg_file=$rep/$PACKAGE-$prev_VERSION.tazpkg && break
+		done
+		if [ "$pkg_file" ]; then
+			get_pkg_files $pkg_file
+			cd $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
+			fgrep ".so" files.list | egrep -v "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" | \
+			while read lib; do
+				fgrep -q "$lib" $pkg_files_dir/files.list && continue
+				echo "A minor/major update in libraries is detected, planning re-cook of reverse-depends of $PACKAGE."
+				for rdep in $(scan $PACKAGE --look_for=rdep | use_wanted); do
+					[ "$rdep" = "${WANTED:-$PACKAGE}" ] && continue
+					grep -q ^$rdep$ $PACKAGES_REPOSITORY/blocked \
+						$PACKAGES_REPOSITORY/cooklist && continue
+					echo $rdep >> $PACKAGES_REPOSITORY/cooklist
+				done
+				regen_cooklist=yes
+				break
+			done
+			rm -r $pkg_files_dir
 		fi
 		report end-step
 	fi
@@ -953,10 +954,6 @@ gen_package()
 	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
 	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
 }
-
-########################################################################
-######################## START OF NEW FUNCTIONS ########################
-########################################################################
 
 ########################################################################
 # This section contains functions used by several other functions
@@ -1030,12 +1027,12 @@ update_packages_db()
 			erase_package_info
 		else
 			if [ "$pkg" -nt "packages.list" ]; then
-				updated_pkg="$updated_pkg $pkg"
+				updated_pkg="$updated_pkg
+$PACKAGE $pkg"
 			fi
 		fi
 	done
-	
-	for pkg in $updated_pkg; do
+	echo "$updated_pkg" | sed 1d | while read PACKAGE pkg; do
 		erase_package_info
 		get_packages_info
 	done
@@ -1058,7 +1055,8 @@ packages_db_start()
 #
 # Packages : unknow
 # Date     : $(date +%Y-%m-%d\ \%H:%M:%S)
-#" > packages.txt
+#
+" > packages.txt
 	else
 		sed -e 's/^# Packages :.*/# Packages : unknow/' \
 			-e "s/# Date     :.*/# Date     : $(date +%Y-%m-%d\ \%H:%M:%S)/" \
@@ -1094,14 +1092,18 @@ get_packages_info()
 	echo "Getting datas from $PACKAGE"
 
 	cat >> $pkg_repository/packages.txt << _EOT_
-
 $PACKAGE
     $VERSION$EXTRAVERSION
     $SHORT_DESC
 _EOT_
-		[ "$PACKED_SIZE" ] && cat >> $pkg_repository/packages.txt << _EOT_
+	if [ "$PACKED_SIZE" ]; then
+		cat >> $pkg_repository/packages.txt << _EOT_
     $PACKED_SIZE ($UNPACKED_SIZE installed)
+
 _EOT_
+	else
+		echo "" >> $pkg_repository/packages.txt
+	fi
 
 	# Packages.desc is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION$EXTRAVERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> $pkg_repository/packages.desc
@@ -1185,6 +1187,7 @@ gen_wok_db()
 			echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ' >> $dep_db
 		fi
 	done
+	sort_db
 	report close-bloc
 }
 
@@ -1196,7 +1199,7 @@ gen_wan_db()
 		[ "$WANTED" ] || continue
 		echo -e $PACKAGE"\t"$WANTED >> $tmp/wan_db
 	done
-	if [ "$(diff -q $tmp/wan_db $wan_db)" ]; then
+	if ! [ -f $wan_db ] || [ "$(diff -q $tmp/wan_db $wan_db)" ]; then
 		mv -f $tmp/wan_db $wan_db
 		plan_regen_cookorder=yes
 	else
@@ -1204,10 +1207,27 @@ gen_wan_db()
 	fi
 }
 
+update_wan_db()
+{
+	local PACKAGE
+	for RECEIPT in $(fgrep WANTED $WOK/*/receipt | \
+		fgrep $PACKAGE | cut -f1 -d ':'); do
+		WANTED=
+		source $RECEIPT
+		[ "$WANTED" ] || continue
+		wan_info=$(echo -e $PACKAGE"\t"$WANTED >> $tmp/wan_db)
+		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && return
+		sed "/^$PACKAGE\t/d" -i $wan_db
+		echo "$dep_info" >> $wan_db
+		plan_regen_cookorder=yes
+		plan_sort_wandb=yes
+	done
+}
+
 update_dep_db()
 {
 	dep_info=$(echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ')
-	[ "$dep_info" = "$(grep -m1 ^$PACKAGE$'\t' $dep_db)" ] && return
+	[ "$dep_info" = "$(grep -m1 ^$PACKAGE$'\t' $dep_db 2>/dev/null)" ] && return
 	sed "/^$PACKAGE\t/d" -i $dep_db
 	echo "$dep_info" >> $dep_db
 	plan_regen_cookorder=yes
@@ -1357,6 +1377,30 @@ look_for_dev()
 		echo $PACKAGE-dev
 }
 
+with_dev()
+{
+	for PACKAGE in $(cat); do
+		echo $PACKAGE
+		look_for_dev
+	done
+}
+
+with_wanted()
+{
+	for PACKAGE in $(cat); do
+		echo $PACKAGE
+		look_for_wanted
+	done
+}
+
+use_wanted()
+{
+for input in $(cat); do
+	{ grep ^$input$'\t' $wan_db || echo $input
+	} | sed 's/.*\t//'
+done
+}
+
 ########################################################################
 # SCAN
 ########################
@@ -1369,11 +1413,6 @@ look_for_dev()
 
 scan()
 {
-	# With some commands we don't want report (list output).
-	if [ "$COMMAND" = gen-cooklist ] || [ "$COMMAND" = build-depends ]; then
-		report(){ : ; }
-	fi
-
 	# Get packages in argument.
 	local PACKAGE pkg_list=
 	for arg in $@; do
@@ -1384,7 +1423,7 @@ scan()
 	# Get options.
 	[ "$pkg_list" ] || return
 	local cooklist= look_for= with_dev= with_wanted= with_args= log_command="$0 $@" \
-		get_options_list="look_for with_dev with_wanted with_args cooklist"
+		get_options_list="look_for with_dev with_wanted with_args cooklist use_wanted"
 	get_options
 	
 	# Cooklist is a special case where we need to modify a little
@@ -1403,38 +1442,9 @@ scan()
 			echo $PACKAGE >> $tmp/dep
 		}
 	fi
-
+	
 	[ "$with_dev" ] && filter=with_dev
 	[ "$with_wanted" ] && filter=with_wanted
-	
-	##############################################################
-	# ADD TO LISTS PROPOSAL ######################################
-	##############################################################
-	#
-	with_dev()
-	{
-		for PACKAGE in $(cat); do
-			echo $PACKAGE
-			look_for_dev
-		done
-	}
-
-	with_wanted()
-	{
-		for PACKAGE in $(cat); do
-			echo $PACKAGE
-			look_for_wanted
-		done
-	}
-	
-	use_wanted()
-	{
-	for PACKAGE in $(cat); do
-		{ grep ^$PACKAGE$'\t' $wan_db || echo $PACKAGE
-		} | sed 's/.*\t//'
-	done
-	}
-	
 	if [ "$filter" ]; then
 		pkg_list=$(echo $pkg_list | $filter)
 		scan_pkg()
@@ -1447,7 +1457,7 @@ scan()
 			look_for_$look_for
 		}
 	fi
-	
+	touch $tmp/dep
 	for PACKAGE in $pkg_list; do
 		[ "$with_args" ] && append_to_dep
 		scan_pkg		
@@ -1465,7 +1475,7 @@ scan()
 	done
 	if [ "$cooklist" ]; then
 		mv $tmp/dep $tmp/cooklist
-	else	
+	else
 		cat $tmp/dep | sort -u
 	fi
 	rm -f $tmp/dep $tmp/list
@@ -1560,6 +1570,10 @@ gen_cook_list()
 	report end-step
 	
 	[ -s $tmp/checked ] || [ -s $tmp/cooklist ] || return
+	if [ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ]; then
+		sed 1d -i $PACKAGES_REPOSITORY/cookorder.txt
+		plan_regen_cookorder=yes
+	fi
 	
 	# Core toolchain should not be cooked unless cook-toolchain is used.
 	if ! [ -f /etc/config.site.tmptoolchain ] ; then
@@ -1587,6 +1601,7 @@ gen_cook_list()
 
 sort_cooklist()
 {
+	report step "Sorting cooklist"
 	if [ -f "$tmp/checked" ]; then
 		rm -f $tmp/cooklist
 		cat $tmp/checked | while read PACKAGE; do
@@ -1598,13 +1613,11 @@ sort_cooklist()
 			sed "/^$PACKAGE/d" -i $tmp/cooklist
 		done
 	fi
-	
-	[ -s $tmp/cooklist ] || return
-	report step "Sorting cooklist"
+
 	for PACKAGE in $(cat $tmp/cooklist); do
 		WANTED="$(look_for_wanted)"
 		[ "$WANTED" ] || continue
-		if grep -q ^$WANTED$ $PACKAGES_REPOSITORY/broken $tmp/cooklist.tmp; then		
+		if grep -q ^$WANTED$ $PACKAGES_REPOSITORY/broken $tmp/cooklist; then		
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
 		elif [ ! -d $WOK/$WANTED/install ]; then
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
@@ -1651,11 +1664,8 @@ check_for_incoming()
 		$(cat $PACKAGES_REPOSITORY/cooklist)" >&2
 		return
 	fi
+	pkg="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
 	if ! [ "$forced" ]; then
-		rm -f $WOK/*/md5
-		pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
-			grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
-			} | sort -u)"
 		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
@@ -1665,7 +1675,7 @@ check_for_incoming()
 	fi
 	report step "Moving incoming packages to main repository"
 	unset EXTRAVERSION
-	for PACKAGE in $(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc); do
+	for PACKAGE in $pkg; do
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
 			VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
 			remove_previous_package $PACKAGES_REPOSITORY
@@ -1753,24 +1763,9 @@ cook()
 	[ -s $tmp/cooklist ] && sed "/^$PACKAGE$/d" -i $tmp/cooklist
 	
 	if compile_package; then
+		remove_src
 		refresh_packages_from_compile
 		gen_package
-		remove_src
-
-		# Plan recook of reverse build depends if gen_package has detect
-		# a change in libraries.
-		if [ "$cook_rdep" ]; then
-			report step "Look for packages which need a refresh"
-			for rdep in $(scan $PACKAGE --look_for=rdep); do
-				sed "/^$rdep$/d" -i $PACKAGES_REPOSITORY/broken
-				if [ -f $WOK/$rdep/receipt ] && ! grep -q ^$rdep$ $tmp/cooklist; then
-					echo "Add $rdep in cooklist to avoid broke caused by library update in $PACKAGE"
-					echo $rdep >> $tmp/cooklist
-					regen_cooklist=yes
-				fi
-			done
-			report end-step
-		fi
 
 		# Update packages-incoming repository.
 		store_pkgname=$PACKAGE
@@ -1956,6 +1951,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 	build-depends)
 		# List dependencies to rebuild wok, or only a package
 		get_tazwok_config
+		report(){ : ; }
 		if [ "$PACKAGE" = toolchain-cooklist ]; then
 			scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
 				--cooklist
@@ -1968,9 +1964,10 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		fi
 	;;
 	gen-cooklist)
+		check_root
 		get_options_list="pkg"
 		get_tazwok_config
-		check_root
+		report(){ : ; }
 		if ! [ "$pkg" ]; then
 			cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
 		fi
@@ -2279,6 +2276,14 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		source_lib report
 		report start
+		update_wan_db
+		check_for_commit
+		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
+		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
+		if [ "$plan_regen_cookorder" ]; then
+			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt || \
+			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+		fi
 		cook
 	;;
 	sort-cooklist)
