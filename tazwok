@@ -357,7 +357,7 @@ remove_build_depends()
 	report step "Removing previous build dependencies"
 	echo "Removing theses packages : $@"
 	for pkg in $@; do
-		[ -d "$INSTALLED/$pkg" ] && echo y | tazpkg remove $pkg
+		[ -d "$INSTALLED/$pkg" ] && tazpkg remove $pkg --auto
 	done
 	report end-step
 }
@@ -1371,9 +1371,19 @@ look_for_rwanted()
 
 look_for_dev()
 {
-	[ -f "$WOK/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev && return
-	[ "$undigest" ] && [ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$PACKAGE-dev/receipt" ] && \
-		echo $PACKAGE-dev
+	WANTED=$(look_for_wanted)
+	if [ "$WANTED" ]; then
+		if [ "$undigest" ] && [ ! -f "$WOK/$WANTED/receipt" ]; then
+			[ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$WANTED-dev/receipt" ] && echo $WANTED-dev
+		else
+			[ -f "$WOK/$WANTED-dev/receipt" ] && echo $WANTED-dev
+		fi
+	fi
+	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
+		[ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
+	else
+		[ -f "$WOK/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
+	fi
 }
 
 with_dev()
@@ -1413,7 +1423,7 @@ done
 scan()
 {
 	# Get packages in argument.
-	local PACKAGE pkg_list=
+	local PACKAGE WANTED pkg_list=
 	for arg in $@; do
 		[ "$arg" = "${arg#--}" ] || continue
 		pkg_list="$pkg_list $arg"
