@@ -484,7 +484,7 @@ check_for_tarball()
 						*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
 					esac || return 1
 					
-					# Check if uncompressed tarbal is in a root dir or not.
+					# Check if uncompressed tarball is in a root dir or not.
 					if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ]; then
 						if check_for_var_modification src _pkg; then
 							mv $tmp_src $tmp_src-1
@@ -509,6 +509,11 @@ check_for_tarball()
 						[ "$prev_VERSION" != "$(get_pkg_version $PACKAGES_REPOSITORY)" ] && \
 							remove_previous_tarball
 
+					fi
+				fi
+				if [ "$1" = "get-src" ]; then
+					if [ -d "$tmp_src" ]; then
+						rm -r $tmp_src
 					fi
 				fi
 				if [ -d "$tmp_src" ]; then
@@ -2607,7 +2612,7 @@ EOF
 		if [ "$WGET_URL" ];then
 			source_lib report
 			report start
-			check_for_tarball
+			check_for_tarball get-src
 		else
 			echo "No tarball to download for $PACKAGE"
 		fi
