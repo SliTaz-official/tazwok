@@ -460,7 +460,7 @@ check_for_tarball()
 		
 		# Untaring source if necessary. We don't need to extract source if
 		# the package is built with a wanted source package.
-		if [ "$WANTED" ] || [ "$nounpack" ]; then
+		if [ "$WANTED" ]; then
 			return
 		fi
 
@@ -517,6 +517,10 @@ check_for_tarball()
 						remove_previous_tarball
 
 				fi
+			fi
+			if [ "$nounpack" ]; then
+				[ -d "$tmp_src" ] && rm -r $tmp_src
+				return
 			fi
 			if [ -d "$tmp_src" ]; then
 				if ! check_for_var_modification src _pkg; then
