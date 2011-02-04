@@ -424,7 +424,7 @@ remove_previous_package()
 check_for_tarball()
 {
 	if [ "$SRC_WANTED" ]; then
-		tazwok get-src "$SRC_WANTED" --target=$WOK/$PACKAGE/$PACKAGE-$VERSION || return 1
+		tazwok get-src "$SRC_WANTED" --target=$WOK/$PACKAGE/$PACKAGE-$VERSION ${nounpack:+--nounpack} || return 1
 		return
 	fi
 	if [ "$WGET_URL" ]; then
@@ -458,6 +458,10 @@ check_for_tarball()
 		fi
 		report end-step
 		
+		if [ -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
+			return
+		fi
+
 		# Untaring source if necessary. We don't need to extract source if
 		# the package is built with a wanted source package.
 		if [ "$WANTED" ]; then
@@ -470,58 +474,58 @@ check_for_tarball()
 		else
 			set_src_path
 		fi
+
+		# Log process.
+		echo "untaring source tarball" >> $LOG
+			
+		tmp_src=$WOK/$PACKAGE/tmp-src-$$
+		mkdir $tmp_src
+		if [ -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ]; then
+			lzma d $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma -so | \
+				tar xf - -C $tmp_src
+		else
+			case "$TARBALL" in
+				*zip|*xpi) { cd $tmp_src; unzip -o $SOURCES_REPOSITORY/$TARBALL; };;
+				*bz2) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+				*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+				*lzma) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*Z) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+			esac || return 1
+			
+			# Check if uncompressed tarball is in a root dir or not.
+			if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ]; then
+				if check_for_var_modification src _pkg; then
+					mv $tmp_src $tmp_src-1
+					mkdir $tmp_src
+					mv $tmp_src-1 $tmp_src/$PACKAGE-$VERSION
+				else
+					mv $tmp_src/* $WOK/$PACKAGE
+					repack_src=no
+					rm -r $tmp_src
+				fi
+			fi
+		
+			if [ "$repack_src" = yes ]; then
+				report step "Repacking sources in .tar.lzma format"
+				cd $tmp_src
+				tar -c * | lzma e $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma -si
+				rm $SOURCES_REPOSITORY/$TARBALL
+				prev_VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
+
+				# Remove previous tarball if it's not used either by
+				# incoming and legacy packages.
+				[ "$prev_VERSION" != "$(get_pkg_version $PACKAGES_REPOSITORY)" ] && \
+					remove_previous_tarball
+			fi
+		fi
+		if [ "$nounpack" ]; then
+			[ -d "$tmp_src" ] && rm -r $tmp_src
+			return
+		fi
+		
 		if [ ! -d "$src" ]; then
-			
-			# Log process.
-			echo "untaring source tarball" >> $LOG
-			
-			tmp_src=$WOK/$PACKAGE/tmp-src-$$
-			mkdir $tmp_src
-			if [ -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ]; then
-				lzma d $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma -so | \
-					tar xf - -C $tmp_src
-			else
-				case "$TARBALL" in
-					*zip|*xpi) { cd $tmp_src; unzip -o $SOURCES_REPOSITORY/$TARBALL; };;
-					*bz2) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-					*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-					*lzma) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-					*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-					*Z) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-					*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-				esac || return 1
-				
-				# Check if uncompressed tarball is in a root dir or not.
-				if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ]; then
-					if check_for_var_modification src _pkg; then
-						mv $tmp_src $tmp_src-1
-						mkdir $tmp_src
-						mv $tmp_src-1 $tmp_src/$PACKAGE-$VERSION
-					else
-						mv $tmp_src/* $WOK/$PACKAGE
-						repack_src=no
-						rm -r $tmp_src
-					fi
-				fi
-				
-				if [ "$repack_src" = yes ]; then
-					report step "Repacking sources in .tar.lzma format"
-					cd $tmp_src
-					tar -c * | lzma e $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma -si
-					rm $SOURCES_REPOSITORY/$TARBALL
-					prev_VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
-
-					# Remove previous tarball if it's not used either by
-					# incoming and legacy packages.
-					[ "$prev_VERSION" != "$(get_pkg_version $PACKAGES_REPOSITORY)" ] && \
-						remove_previous_tarball
-
-				fi
-			fi
-			if [ "$nounpack" ]; then
-				[ -d "$tmp_src" ] && rm -r $tmp_src
-				return
-			fi
 			if [ -d "$tmp_src" ]; then
 				if ! check_for_var_modification src _pkg; then
 					src="${src%/*}/$(ls $tmp_src)"
