@@ -424,6 +424,8 @@ remove_previous_package()
 check_for_tarball()
 {
 	if [ "$SRC_WANTED" ]; then
+		VERSION_SRCWANTED=$(grep  ^VERSION= $WOK/$SRC_WANTED/receipt | cut -d "=" -f2 | sed -e 's/"//g')
+		[ "$VERSION" != "$VERSION_SRCWANTED" ] || return
 		if [ "$SOURCE" ]; then
 			tazwok get-src "$SRC_WANTED"  --target=$WOK/$PACKAGE/$SOURCE-$VERSION ${nounpack:+--nounpack} || return 1
 		else
@@ -431,6 +433,7 @@ check_for_tarball()
 		fi
 		return
 	fi
+	
 	if [ "$WGET_URL" ]; then
 		report step "Checking for source tarball"
 			
@@ -1156,7 +1159,7 @@ source_receipt()
 	unset PACKAGE SOURCE VERSION EXTRAVERSION CATEGORY SHORT_DESC \
 		MAINTAINER WEB_SITE WGET_URL DEPENDS BUILD_DEPENDS WANTED \
 		PACKED_SIZE UNPACKED_SIZE COOK_OPT PROVIDE CONFIG_FILES TAGS \
-		src _pkg DESTDIR CONFIG_SITE
+		src _pkg DESTDIR SRC_WANTED CONFIG_SITE
 	. ${RECEIPT:-$PWD/receipt}
 }
 
