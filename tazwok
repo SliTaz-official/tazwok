@@ -424,7 +424,11 @@ remove_previous_package()
 check_for_tarball()
 {
 	if [ "$SRC_WANTED" ]; then
-		tazwok get-src "$SRC_WANTED" --target=$WOK/$PACKAGE/$PACKAGE-$VERSION ${nounpack:+--nounpack} || return 1
+		if [ "$SOURCE" ]; then
+			tazwok get-src "$SRC_WANTED"  --target=$WOK/$PACKAGE/$SOURCE-$VERSION ${nounpack:+--nounpack} || return 1
+		else
+			tazwok get-src "$SRC_WANTED" --target=$WOK/$PACKAGE/$PACKAGE-$VERSION ${nounpack:+--nounpack} || return 1
+		fi
 		return
 	fi
 	if [ "$WGET_URL" ]; then
