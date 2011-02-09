@@ -427,7 +427,7 @@ check_for_tarball()
 		report step "Checking for source tarball"
 			
 		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
-			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE-$VERSION.tar.lzma" ] ; then
+			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] ; then
 			cd $SOURCES_REPOSITORY
 			download $WGET_URL
 			
@@ -458,7 +458,7 @@ check_for_tarball()
 	fi
 	report end-step
 	
-	if [ -f "$SOURCES_REPOSITORY/$PACKAGE-${SOURCE:-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
+	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
 		return
 	fi
 
