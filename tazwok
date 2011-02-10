@@ -2198,7 +2198,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				fi
 			done
 			echo "================================================================================"
-			echo -e "$PACKAGEs packages in category $ASKED_CATEGORY.\n"
+			echo -e "$packages packages in category $ASKED_CATEGORY.\n"
 		else
 			# By default list all packages and version.
 			echo ""
@@ -2214,7 +2214,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				packages=$(($packages+1))
 			done
 			echo "================================================================================"
-			echo -e "$PACKAGEs packages available in the wok.\n"
+			echo -e "$packages packages available in the wok.\n"
 		fi
 		;;
 	info)
