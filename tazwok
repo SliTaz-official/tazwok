@@ -2289,7 +2289,7 @@ Maintainer : $MAINTAINER"
 			packages=$(($PACKAGEs+1))
 		done
 		echo "================================================================================"
-		echo "$PACKAGEs packages found for : $2"
+		echo "$packages packages found for : $2"
 		echo ""
 	;;
 	compile)
