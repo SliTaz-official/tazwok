@@ -2712,9 +2712,27 @@ EOF
 		check_root
 		get_tazwok_config
 		cd $PACKAGES_REPOSITORY
-		for i in commit cooklist incoming broken blocked; do
+		if [ "$2" ]; then
+			case $2 in
+				commit|cooklist|incoming|broken|blocked)
+					show="$2"
+				;;
+				*)
+					echo "usage : tazwok report [commit|cooklist|incoming|broken|blocked]" >&2
+					exit 1
+				;;
+			esac	
+		else
+			show="commit cooklist incoming broken blocked"
+		fi	
+		for i in $show; do
 			if [ -s $i ]; then
-				echo -e "\n********************* $i *********************\n$(cat $i)\n*********************"
+				echo ""	
+				echo -e "\033[1m$i\033[0m"
+				echo "================================================================================"
+				cat $i
+				echo "================================================================================"
+				echo ""
 			fi
 		done
 	;;
