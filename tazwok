@@ -31,7 +31,6 @@ usage()
   stats          Print Tazwok statistics from the config file and the wok.
   edit           Edit a package receipt in the current wok.
   build-depends  Generate a list of packages to build a wok.
-  cmp|compare*   Compare the wok and the cooked pkgs (--remove old pkgs).
   list           List all packages in the wok tree or by category.
   info           Get information about a package in the wok.
   check          Check every receipt for common errors.
@@ -46,16 +45,18 @@ usage()
   cook-commit    Cook all modified receipts.
   cook-all       Cook all packages excepted toolchain.
   cook-toolchain Cook the toolchain packages.
-  gen-cooklist   Generate a sorted cooklist using packages or list (--list) in argument.
+  gen-cooklist   Generate a sorted cooklist using packages or list.
   sort-cooklist  Sort the cooklist given in argument.
   get-src        Download the tarball of the package given in argument.
   clean          Clean all generated files in the package tree.
   new-tree       Prepare a new package tree and receipt (--interactive).
   gen-list       (Re-)Generate a packages list for a repository.
+  check-list     Update packages lists for a repository.
   gen-wok-db     (Re-)Generate wok lists with depends and wanted datas.
-  gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
+  gen-clean-wok  Generate a clean wok in a dir.
   clean-wok      Clean entirely the wok.
   remove         Remove a package from the wok.
+  webserver      Enable/disable webserver on localhost.
   hgup           Pull and update a wok under Hg.
   maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor.\n
@@ -199,7 +200,7 @@ check_for_pkg_in_wok()
 	[ -f $WOK/$PACKAGE/receipt ] && return
 	if [ "$undigest" ]; then
 		[ -f "$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
-		grep -q ^$PACKAGE$ $SLITAZ_VERSION/packages/packages.txt && return 1
+		grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/packages.txt && return 1
 	fi
 	echo "Can't find $PACKAGE in wok or mirror" >&2
 	return 2
@@ -1320,7 +1321,7 @@ sort_db()
 look_for_dep()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
+		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 2
 	else
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
@@ -1336,7 +1337,7 @@ look_for_bdep()
 look_for_all()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
+		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 2,3 | sed 's/ 	 / /'
 	else
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
@@ -1348,7 +1349,7 @@ look_for_rdep()
 {
 	fgrep ' '$PACKAGE' ' $INCOMING_REPOSITORY/wok-depends.txt | cut -f 1
 	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt | cut -f 1); do
+		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt | cut -f 1); do
 			if [ ! -f "WOK$/$rdep/receipt" ]; then
 				echo "$rdep"
 			fi
@@ -1361,7 +1362,7 @@ look_for_rbdep()
 	fgrep ' '$PACKAGE' ' $INCOMING_REPOSITORY/wok-depends.txt | \
 		cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1
 	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
+		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1); do
 			if [ ! -f "WOK$/$rdep/receipt" ]; then
 				echo "$rdep"
@@ -1374,7 +1375,7 @@ look_for_rbdep()
 look_for_wanted()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-wanted.txt | cut -f 2
+		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 2
 	else
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 2
 	fi
@@ -1385,7 +1386,7 @@ look_for_rwanted()
 {
 	grep $'\t'$PACKAGE$ $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 1
 	if [ "$undigest" ]; then
-		for rwanted in $(grep $'\t'$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-wanted.txt | cut -f 1); do
+		for rwanted in $(grep $'\t'$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 1); do
 			if [ ! -f "$WOK/$rwanted/receipt" ]; then
 				echo "$rwanted"
 			fi
@@ -1474,6 +1475,25 @@ scan()
 		{
 			echo $PACKAGE >> $tmp/dep
 		}
+		# If requested packages are not in dep_db, partial generation of this db is needed.
+		for p in $pkg_list; do
+			grep -q ^$p$'\t' $dep_db && continue
+			[ -d "$WOK/$p" ] || continue	
+			plan_check_for_missing=yes	
+			check_for_missing
+		done
+		if [ "$plan_check_for_missing" ]; then
+			append_to_dep()
+			{
+				if ! grep -q ^$PACKAGE$'\t' $dep_db; then
+					check_for_missing && echo $PACKAGE >> $tmp/dep
+				else
+					echo $PACKAGE >> $tmp/dep
+				fi
+			}
+			check_db_status=yes
+			unset plan_check_for_missing
+		fi
 	fi
 	
 	[ "$with_dev" ] && filter=with_dev
@@ -1512,12 +1532,37 @@ scan()
 		cat $tmp/dep | sort -u
 	fi
 	rm -f $tmp/dep $tmp/list
+	if [ "$check_db_status" ]; then
+		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
+		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
+		if [ "$plan_regen_cookorder" ]; then
+			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt || \
+			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+		fi
+	fi
 }
 
 ########################################################################
 # This section contains functions to check package repository and
 # find which packages to cook.
 ########################
+
+check_for_missing()
+{
+	local PACKAGE
+	if ! check_for_pkg_in_wok; then
+		[ "$?" = 2 ] && return 1
+		return
+	fi
+	source_receipt
+	PACKAGE=${WANTED:-$PACKAGE}
+	update_wan_db
+	for PACKAGE in $(look_for_rwanted) $PACKAGE; do
+		RECEIPT=$WOK/$PACKAGE/receipt
+		source_receipt
+		update_dep_db
+	done
+}
 
 check_for_commit()
 {
