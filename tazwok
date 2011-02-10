@@ -92,7 +92,18 @@ get_tazwok_config()
 	else
 		LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
 	fi
-
+	
+	if ! [ "$save_dir" ]; then
+		if [ -f $LOCAL_REPOSITORY/tazwok.conf ] || [ -f $LOCAL_REPOSITORY/slitaz.conf ]; then
+			save_dir=$LOCAL_REPOSITORY
+			[ -f $LOCAL_REPOSITORY/slitaz.conf ] && source $LOCAL_REPOSITORY/slitaz.conf
+			cd $save_dir
+			get_tazwok_config
+			unset save_dir
+			return
+		fi
+	fi
+	
 	# The path to the most important files/dir used by Tazwok.
 	PACKAGES_REPOSITORY=$LOCAL_REPOSITORY/packages
 	WOK=$LOCAL_REPOSITORY/wok
@@ -116,7 +127,7 @@ get_tazwok_config()
 		check_dir $INCOMING_REPOSITORY
 		check_dir $LOCAL_REPOSITORY/log
 	fi
-	
+
 	# Some files are needed by tazwok in PACKAGES_REPOSITORY. Create
 	# them if they are missing.
 	for file in broken blocked commit incoming cooklist; do
@@ -2747,6 +2758,91 @@ EOF
 			# in cooklist.
 		else
 			echo "The packages tazchroot need to be installed" >&2
+			exit 1
+		fi
+	;;
+	webserver)
+		check_root
+		get_tazwok_config
+		if [ "$ARG" = on ]; then
+			if [ "$WEBSERVER" ] && [ -f "$WEBSERVER/repositories.list" ] && \
+				grep -q ^"${undigest:-$SLITAZ_VERSION}"$ $WEBSERVER/repositories.list; then
+				echo "Webserver is already enabled at $WEBSERVER for ${undigest:-$SLITAZ_VERSION}." >&2
+				exit 1
+			fi
+			if ! [ -f $LOCAL_REPOSITORY/tazchroot.conf ]; then
+				tazwok configure-chroot ${undigest:+--undigest=$undigest} --SLITAZ_VERSION=$SLITAZ_VERSION --SLITAZ_DIR=$SLITAZ_DIR
+			fi
+			for pkg in php lighttpd; do
+				[ -d $INSTALLED/$pkg ] || missing="$missing $pkg"
+			done
+			if [ "$missing" ]; then
+				echo "You need to install those packages to start webserver: $missing." >&2
+				exit 1
+			fi
+			if [ ! -f "$LOCAL_REPOSITORY/tazwok.conf" ]; then
+				echo "Copying /etc/slitaz/tazwok.conf to $LOCAL_REPOSITORY/tazwok.conf: webserver is configured repository-by-repository."
+				cp /etc/slitaz/tazwok.conf $LOCAL_REPOSITORY
+			fi
+			if ! [ "$WEBSERVER" ]; then
+				echo -n "Where to store php pages (default: /var/www/vhosts/bb)? "
+				read WEBSERVER
+				[ "$WEBSERVER" ] || WEBSERVER="/var/www/vhosts/bb"
+			fi
+			if [ -f "$WEBSERVER/repositories.list" ] && \
+				grep -q ^"${undigest:-$SLITAZ_VERSION}"$ $WEBSERVER/repositories.list; then
+				echo "Webserver is already enabled at $WEBSERVER for ${undigest:-$SLITAZ_VERSION}." >&2
+				exit 1
+			fi
+			mkdir -p $WEBSERVER
+			echo "${undigest:-$SLITAZ_VERSION}" >> $WEBSERVER/repositories.list
+			for file in index.php log.php; do
+				[ -f "$WEBSERVER/$file" ] || ln -s /usr/share/slitaz/web-bb/$file $WEBSERVER
+			done
+			source $LOCAL_REPOSITORY/tazchroot.conf	
+			echo "<?php
+
+// Web interface configuration
+
+\$version=\"${undigest:-$SLITAZ_VERSION}\";
+\$chroot=\"$chroot_dir\";
+\$lockfile=\"\$chroot/proc/1\";
+\$db_dir=\"$PACKAGES_REPOSITORY\";
+\$log_dir=\"$LOCAL_REPOSITORY/log\";
+\$packages=\"$PACKAGES_REPOSITORY\";
+\$incoming=\"$INCOMING_REPOSITORY\";
+
+?>" > $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php
+			[ -L "$WEBSERVER/web" ] || ln -s /usr/share/slitaz/web $WEBSERVER
+			echo "WEBSERVER=\"$WEBSERVER\"" >> $LOCAL_REPOSITORY/tazwok.conf
+			if [ -L "$WEBSERVER/conf.php" ]; then
+				echo "Do yo want to make ${undigest:-$SLITAZ_VERSION} the default page (y/N) ? "
+				read answer
+				if [ "$answer" = y ]; then
+					rm $WEBSERVER/conf.php
+					ln -s $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php $WEBSERVER/conf.php
+				fi
+			else
+				ln -s $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php $WEBSERVER/conf.php
+			fi
+		elif [ "$ARG" = off ]; then
+			if ! [ "$WEBSERVER" ]; then
+				echo "No webserver running for ${undigest:-$SLITAZ_VERSION}" >&2
+				exit 1
+			fi
+			sed '/^WEBSERVER/d' -i $LOCAL_REPOSITORY/tazwok.conf
+			sed "/^${undigest:-$SLITAZ_VERSION}$/d" -i $WEBSERVER/repositories.list
+			rm $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php	
+			if ! [ -s "$WEBSERVER/repositories.list" ]; then
+				echo "$WEBSERVER/repositories.list is empty; tazwok doesn't remove the server automatically in case you have important stuff in it. If it's not the case, you can remove it using: rm -r $WEBSERVER"
+				rm $WEBSERVER/conf.php	
+			elif [ "$(readlink $WEBSERVER/conf.php)" = "$WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php" ]; then
+				echo "${undigest:-$SLITAZ_VERSION} was the default version to use; switched to : $(sed 1!d $WEBSERVER/repositories.list)"
+				rm $WEBSERVER/conf.php
+				ln -s $WEBSERVER/conf-$(sed 1!d $WEBSERVER/repositories.list).php $WEBSERVER/conf.php
+			fi
+		else
+			echo "Usage: tazwok webserver on/off" >&2
 			exit 1
 		fi
 	;;
