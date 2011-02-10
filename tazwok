@@ -1466,18 +1466,34 @@ scan()
 		gen_wan_db
 		look_for=all && with_args=yes && with_dev= && with_wanted=
 		filter=use_wanted
-		append_to_dep()
-		{
-			check_for_commit && echo $PACKAGE >> $tmp/dep
-		}
+		if [ "$COMMAND" = gen-cooklist ]; then
+   			for PACKAGE in $pkg_list; do
+				grep -q ^$PACKAGE$'\t' $dep_db && continue
+				[ -d "$WOK/$p" ] || continue
+				check_for_missing
+			done
+			append_to_dep()
+			{
+				if ! grep -q ^$PACKAGE$'\t' $dep_db; then
+					check_for_missing && echo $PACKAGE >> $tmp/dep
+				else
+					echo $PACKAGE >> $tmp/dep
+				fi
+			}
+		else
+			append_to_dep()
+			{
+				check_for_commit && echo $PACKAGE >> $tmp/dep
+			}
+		fi
 	else
 		append_to_dep()
 		{
 			echo $PACKAGE >> $tmp/dep
 		}
 		# If requested packages are not in dep_db, partial generation of this db is needed.
-		for p in $pkg_list; do
-			grep -q ^$p$'\t' $dep_db && continue
+		for PACKAGE in $pkg_list; do
+			grep -q ^$PACKAGE$'\t' $dep_db && continue
 			[ -d "$WOK/$p" ] || continue	
 			plan_check_for_missing=yes	
 			check_for_missing
@@ -1554,6 +1570,7 @@ check_for_missing()
 		[ "$?" = 2 ] && return 1
 		return
 	fi
+	RECEIPT=$WOK/$PACKAGE/receipt
 	source_receipt
 	PACKAGE=${WANTED:-$PACKAGE}
 	update_wan_db
@@ -1661,7 +1678,7 @@ gen_cook_list()
 		done
 	fi
 	
-	if [ -s $PACKAGES_REPOSITORY/commit ]; then
+	if [ -s $PACKAGES_REPOSITORY/commit ] && [ "$COMMAND" != gen-cooklist ]; then
 		cd $PACKAGES_REPOSITORY
 		for PACKAGE in $(cat commit); do
 			WANTED="$(look_for_wanted)"
