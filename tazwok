@@ -22,7 +22,7 @@ COMMAND=$1
 ########################
 # Print the usage (English).
 
-usage ()
+usage()
 {
 	echo -e "\nSliTaz sources compiler and packages generator - Version: $VERSION\n
 \033[1mUsage: \033[0m `basename $0` [command] [package|list|category|dir|id] [--option]
@@ -2258,6 +2258,13 @@ Maintainer : $MAINTAINER"
 			cat $LOG
 			echo "================================================================================"
 			echo ""
+			if [ -s "$WOK/$PACKAGE/warning.txt" ]; then
+				echo -e "\033[1mCook warning(s) for :\033[0m $PACKAGE"
+				echo "================================================================================"
+				cat "$WOK/$PACKAGE/warning.txt"
+				echo "================================================================================"
+				echo ""
+			fi
 		fi
 	;;
 	search)
