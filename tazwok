@@ -2047,10 +2047,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		# List dependencies to rebuild wok, or only a package
 		get_tazwok_config
 		report(){ : ; }
-		if [ "$PACKAGE" = toolchain-cooklist ]; then
-			scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
-				--cooklist
-		elif [ ! "$PACKAGE" ] || [ "$PACKAGE" = toolchain ]; then
+		if [ ! "$PACKAGE" ] || [ "$PACKAGE" = toolchain ]; then
 			scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
 				--look_for=dep --with_dev --with_args
 		else
@@ -2064,9 +2061,12 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		get_tazwok_config
 		report(){ : ; }
 		if ! [ "$pkg" ]; then
-			cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
+			if [ ! "$LIST" ] || [ "$LIST" = toolchain ]; then
+				pkg="$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA"
+			else
+				cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
+			fi
 		fi
-		forced=yes
 		gen_cook_list
 	;;
 	check-depends)
