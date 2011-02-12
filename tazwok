@@ -1808,10 +1808,10 @@ clean()
 	for f in `ls .`
 	do
 		case $f in
-			receipt|stuff|description.txt)
+			receipt|stuff|description.txt|md5)
 				continue ;;
 			*)
-				echo "Removing: $f"
+				[ "$COMMAND" = clean-wok ] || echo "Removing: $f"
 				rm -rf $f
 		esac
 	done
