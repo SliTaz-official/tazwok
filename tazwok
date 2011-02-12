@@ -2897,7 +2897,7 @@ EOF
 \$log_dir=\"$LOCAL_REPOSITORY/log\";
 \$packages=\"$PACKAGES_REPOSITORY\";
 \$incoming=\"$INCOMING_REPOSITORY\";
-\wok=\"$WOK\";
+\$wok=\"$WOK\";
 
 ?>" > $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php
 			[ -L "$WEBSERVER/web" ] || ln -s /usr/share/slitaz/web $WEBSERVER
