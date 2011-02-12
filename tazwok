@@ -502,6 +502,7 @@ check_for_tarball()
 			*lzma) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 			*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 			*Z) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+			*jar) mkdir $src && cp -f $SOURCES_REPOSITORY/$TARBALL $tmp_src ;;
 			*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
 		esac || return 1
 		
