@@ -22,7 +22,7 @@ COMMAND=$1
 ########################
 # Print the usage (English).
 
-usage ()
+usage()
 {
 	echo -e "\nSliTaz sources compiler and packages generator - Version: $VERSION\n
 \033[1mUsage: \033[0m `basename $0` [command] [package|list|category|dir|id] [--option]
@@ -31,7 +31,6 @@ usage ()
   stats          Print Tazwok statistics from the config file and the wok.
   edit           Edit a package receipt in the current wok.
   build-depends  Generate a list of packages to build a wok.
-  cmp|compare*   Compare the wok and the cooked pkgs (--remove old pkgs).
   list           List all packages in the wok tree or by category.
   info           Get information about a package in the wok.
   check          Check every receipt for common errors.
@@ -46,16 +45,18 @@ usage ()
   cook-commit    Cook all modified receipts.
   cook-all       Cook all packages excepted toolchain.
   cook-toolchain Cook the toolchain packages.
-  gen-cooklist   Generate a sorted cooklist using packages or list (--list) in argument.
+  gen-cooklist   Generate a sorted cooklist using packages or list.
   sort-cooklist  Sort the cooklist given in argument.
   get-src        Download the tarball of the package given in argument.
   clean          Clean all generated files in the package tree.
   new-tree       Prepare a new package tree and receipt (--interactive).
   gen-list       (Re-)Generate a packages list for a repository.
+  check-list     Update packages lists for a repository.
   gen-wok-db     (Re-)Generate wok lists with depends and wanted datas.
-  gen-clean-wok  Gen a clean wok in a dir ('clean-wok' cleans current wok).
+  gen-clean-wok  Generate a clean wok in a dir.
   clean-wok      Clean entirely the wok.
   remove         Remove a package from the wok.
+  webserver      Enable/disable webserver on localhost.
   hgup           Pull and update a wok under Hg.
   maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor.\n
@@ -92,7 +93,18 @@ get_tazwok_config()
 	else
 		LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
 	fi
-
+	
+	if ! [ "$save_dir" ]; then
+		if [ -f $LOCAL_REPOSITORY/tazwok.conf ] || [ -f $LOCAL_REPOSITORY/slitaz.conf ]; then
+			save_dir=$LOCAL_REPOSITORY
+			[ -f $LOCAL_REPOSITORY/slitaz.conf ] && source $LOCAL_REPOSITORY/slitaz.conf
+			cd $save_dir
+			get_tazwok_config
+			unset save_dir
+			return
+		fi
+	fi
+	
 	# The path to the most important files/dir used by Tazwok.
 	PACKAGES_REPOSITORY=$LOCAL_REPOSITORY/packages
 	WOK=$LOCAL_REPOSITORY/wok
@@ -116,7 +128,7 @@ get_tazwok_config()
 		check_dir $INCOMING_REPOSITORY
 		check_dir $LOCAL_REPOSITORY/log
 	fi
-	
+
 	# Some files are needed by tazwok in PACKAGES_REPOSITORY. Create
 	# them if they are missing.
 	for file in broken blocked commit incoming cooklist; do
@@ -188,7 +200,7 @@ check_for_pkg_in_wok()
 	[ -f $WOK/$PACKAGE/receipt ] && return
 	if [ "$undigest" ]; then
 		[ -f "$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
-		grep -q ^$PACKAGE$ $SLITAZ_VERSION/packages/packages.txt && return 1
+		grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/packages.txt && return 1
 	fi
 	echo "Can't find $PACKAGE in wok or mirror" >&2
 	return 2
@@ -423,22 +435,11 @@ remove_previous_package()
 # Check for src tarball and wget if needed.
 check_for_tarball()
 {
-	if [ "$SRC_WANTED" ]; then
-		VERSION_SRCWANTED=$(grep  ^VERSION= $WOK/$SRC_WANTED/receipt | cut -d "=" -f2 | sed -e 's/"//g')
-		[ "$VERSION" != "$VERSION_SRCWANTED" ] || return
-		if [ "$SOURCE" ]; then
-			tazwok get-src "$SRC_WANTED"  --target=$WOK/$PACKAGE/$SOURCE-$VERSION ${nounpack:+--nounpack} || return 1
-		else
-			tazwok get-src "$SRC_WANTED" --target=$WOK/$PACKAGE/$PACKAGE-$VERSION ${nounpack:+--nounpack} || return 1
-		fi
-		return
-	fi
-	
 	if [ "$WGET_URL" ]; then
 		report step "Checking for source tarball"
 			
 		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
-			[ ! -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ] ; then
+			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] ; then
 			cd $SOURCES_REPOSITORY
 			download $WGET_URL
 			
@@ -446,7 +447,11 @@ check_for_tarball()
 			# mirror.
 			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 				report step "Download failed, try with mirror copy... "
-				download http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-$VERSION.tar.lzma
+				if [ "$SOURCE" ]; then
+					download http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$SOURCE-$VERSION.tar.lzma
+				else
+					download http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-$VERSION.tar.lzma
+				fi
 			fi
 			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
 				[ ! -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ]; then
@@ -462,10 +467,10 @@ check_for_tarball()
 				return 1
 			fi
 		fi
+		report end-step
 	fi
-	report end-step
 	
-	if [ -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
+	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
 		return
 	fi
 
@@ -487,8 +492,8 @@ check_for_tarball()
 			
 	tmp_src=$WOK/$PACKAGE/tmp-src-$$
 	mkdir $tmp_src
-	if [ -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ]; then
-		lzma d $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma -so | \
+	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ]; then
+		lzma d $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -so | \
 			tar xf - -C $tmp_src
 	elif [ -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 		case "$TARBALL" in
@@ -506,7 +511,7 @@ check_for_tarball()
 			if check_for_var_modification src _pkg; then
 				mv $tmp_src $tmp_src-1
 				mkdir $tmp_src
-				mv $tmp_src-1 $tmp_src/$PACKAGE-$VERSION
+				mv $tmp_src-1 $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
 			else
 				mv $tmp_src/* $WOK/$PACKAGE
 				repack_src=no
@@ -517,7 +522,7 @@ check_for_tarball()
 		if [ "$repack_src" = yes ]; then
 			report step "Repacking sources in .tar.lzma format"
 			cd $tmp_src
-			tar -c * | lzma e $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma -si
+			tar -c * | lzma e $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -si
 			rm $SOURCES_REPOSITORY/$TARBALL
 			prev_VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
 
@@ -1159,7 +1164,7 @@ source_receipt()
 	unset PACKAGE SOURCE VERSION EXTRAVERSION CATEGORY SHORT_DESC \
 		MAINTAINER WEB_SITE WGET_URL DEPENDS BUILD_DEPENDS WANTED \
 		PACKED_SIZE UNPACKED_SIZE COOK_OPT PROVIDE CONFIG_FILES TAGS \
-		src _pkg DESTDIR SRC_WANTED CONFIG_SITE
+		src _pkg DESTDIR CONFIG_SITE
 	. ${RECEIPT:-$PWD/receipt}
 }
 
@@ -1317,7 +1322,7 @@ sort_db()
 look_for_dep()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
+		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 2
 	else
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
@@ -1333,7 +1338,7 @@ look_for_bdep()
 look_for_all()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
+		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 2,3 | sed 's/ 	 / /'
 	else
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
@@ -1345,7 +1350,7 @@ look_for_rdep()
 {
 	fgrep ' '$PACKAGE' ' $INCOMING_REPOSITORY/wok-depends.txt | cut -f 1
 	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt | cut -f 1); do
+		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt | cut -f 1); do
 			if [ ! -f "WOK$/$rdep/receipt" ]; then
 				echo "$rdep"
 			fi
@@ -1358,7 +1363,7 @@ look_for_rbdep()
 	fgrep ' '$PACKAGE' ' $INCOMING_REPOSITORY/wok-depends.txt | \
 		cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1
 	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-depends.txt \
+		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1); do
 			if [ ! -f "WOK$/$rdep/receipt" ]; then
 				echo "$rdep"
@@ -1371,7 +1376,7 @@ look_for_rbdep()
 look_for_wanted()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-wanted.txt | cut -f 2
+		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 2
 	else
 		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 2
 	fi
@@ -1382,7 +1387,7 @@ look_for_rwanted()
 {
 	grep $'\t'$PACKAGE$ $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 1
 	if [ "$undigest" ]; then
-		for rwanted in $(grep $'\t'$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/wok-wanted.txt | cut -f 1); do
+		for rwanted in $(grep $'\t'$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 1); do
 			if [ ! -f "$WOK/$rwanted/receipt" ]; then
 				echo "$rwanted"
 			fi
@@ -1462,15 +1467,50 @@ scan()
 		gen_wan_db
 		look_for=all && with_args=yes && with_dev= && with_wanted=
 		filter=use_wanted
-		append_to_dep()
-		{
-			check_for_commit && echo $PACKAGE >> $tmp/dep
-		}
+		if [ "$COMMAND" = gen-cooklist ]; then
+   			for PACKAGE in $pkg_list; do
+				grep -q ^$PACKAGE$'\t' $dep_db && continue
+				[ -d "$WOK/$p" ] || continue
+				check_for_missing
+			done
+			append_to_dep()
+			{
+				if ! grep -q ^$PACKAGE$'\t' $dep_db; then
+					check_for_missing && echo $PACKAGE >> $tmp/dep
+				else
+					echo $PACKAGE >> $tmp/dep
+				fi
+			}
+		else
+			append_to_dep()
+			{
+				check_for_commit && echo $PACKAGE >> $tmp/dep
+			}
+		fi
 	else
 		append_to_dep()
 		{
 			echo $PACKAGE >> $tmp/dep
 		}
+		# If requested packages are not in dep_db, partial generation of this db is needed.
+		for PACKAGE in $pkg_list; do
+			grep -q ^$PACKAGE$'\t' $dep_db && continue
+			[ -d "$WOK/$p" ] || continue	
+			plan_check_for_missing=yes	
+			check_for_missing
+		done
+		if [ "$plan_check_for_missing" ]; then
+			append_to_dep()
+			{
+				if ! grep -q ^$PACKAGE$'\t' $dep_db; then
+					check_for_missing && echo $PACKAGE >> $tmp/dep
+				else
+					echo $PACKAGE >> $tmp/dep
+				fi
+			}
+			check_db_status=yes
+			unset plan_check_for_missing
+		fi
 	fi
 	
 	[ "$with_dev" ] && filter=with_dev
@@ -1509,12 +1549,38 @@ scan()
 		cat $tmp/dep | sort -u
 	fi
 	rm -f $tmp/dep $tmp/list
+	if [ "$check_db_status" ]; then
+		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
+		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
+		if [ "$plan_regen_cookorder" ]; then
+			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt || \
+			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+		fi
+	fi
 }
 
 ########################################################################
 # This section contains functions to check package repository and
 # find which packages to cook.
 ########################
+
+check_for_missing()
+{
+	local PACKAGE
+	if ! check_for_pkg_in_wok; then
+		[ "$?" = 2 ] && return 1
+		return
+	fi
+	RECEIPT=$WOK/$PACKAGE/receipt
+	source_receipt
+	PACKAGE=${WANTED:-$PACKAGE}
+	update_wan_db
+	for PACKAGE in $(look_for_rwanted) $PACKAGE; do
+		RECEIPT=$WOK/$PACKAGE/receipt
+		source_receipt
+		update_dep_db
+	done
+}
 
 check_for_commit()
 {
@@ -1613,7 +1679,7 @@ gen_cook_list()
 		done
 	fi
 	
-	if [ -s $PACKAGES_REPOSITORY/commit ]; then
+	if [ -s $PACKAGES_REPOSITORY/commit ] && [ "$COMMAND" != gen-cooklist ]; then
 		cd $PACKAGES_REPOSITORY
 		for PACKAGE in $(cat commit); do
 			WANTED="$(look_for_wanted)"
@@ -1982,10 +2048,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		# List dependencies to rebuild wok, or only a package
 		get_tazwok_config
 		report(){ : ; }
-		if [ "$PACKAGE" = toolchain-cooklist ]; then
-			scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
-				--cooklist
-		elif [ ! "$PACKAGE" ] || [ "$PACKAGE" = toolchain ]; then
+		if [ ! "$PACKAGE" ] || [ "$PACKAGE" = toolchain ]; then
 			scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
 				--look_for=dep --with_dev --with_args
 		else
@@ -1999,9 +2062,12 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		get_tazwok_config
 		report(){ : ; }
 		if ! [ "$pkg" ]; then
-			cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
+			if [ ! "$LIST" ] || [ "$LIST" = toolchain ]; then
+				pkg="$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA"
+			else
+				cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
+			fi
 		fi
-		forced=yes
 		gen_cook_list
 	;;
 	check-depends)
@@ -2195,7 +2261,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				fi
 			done
 			echo "================================================================================"
-			echo -e "$PACKAGEs packages in category $ASKED_CATEGORY.\n"
+			echo -e "$packages packages in category $ASKED_CATEGORY.\n"
 		else
 			# By default list all packages and version.
 			echo ""
@@ -2211,7 +2277,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				packages=$(($packages+1))
 			done
 			echo "================================================================================"
-			echo -e "$PACKAGEs packages available in the wok.\n"
+			echo -e "$packages packages available in the wok.\n"
 		fi
 		;;
 	info)
@@ -2255,6 +2321,13 @@ Maintainer : $MAINTAINER"
 			cat $LOG
 			echo "================================================================================"
 			echo ""
+			if [ -s "$WOK/$PACKAGE/warning.txt" ]; then
+				echo -e "\033[1mCook warning(s) for :\033[0m $PACKAGE"
+				echo "================================================================================"
+				cat "$WOK/$PACKAGE/warning.txt"
+				echo "================================================================================"
+				echo ""
+			fi
 		fi
 	;;
 	search)
@@ -2279,7 +2352,7 @@ Maintainer : $MAINTAINER"
 			packages=$(($PACKAGEs+1))
 		done
 		echo "================================================================================"
-		echo "$PACKAGEs packages found for : $2"
+		echo "$packages packages found for : $2"
 		echo ""
 	;;
 	compile)
@@ -2702,9 +2775,27 @@ EOF
 		check_root
 		get_tazwok_config
 		cd $PACKAGES_REPOSITORY
-		for i in commit cooklist incoming broken blocked; do
+		if [ "$2" ]; then
+			case $2 in
+				commit|cooklist|incoming|broken|blocked)
+					show="$2"
+				;;
+				*)
+					echo "usage : tazwok report [commit|cooklist|incoming|broken|blocked]" >&2
+					exit 1
+				;;
+			esac	
+		else
+			show="commit cooklist incoming broken blocked"
+		fi	
+		for i in $show; do
 			if [ -s $i ]; then
-				echo -e "\n********************* $i *********************\n$(cat $i)\n*********************"
+				echo ""	
+				echo -e "\033[1m$i\033[0m"
+				echo "================================================================================"
+				cat $i
+				echo "================================================================================"
+				echo ""
 			fi
 		done
 	;;
@@ -2755,6 +2846,91 @@ EOF
 			# in cooklist.
 		else
 			echo "The packages tazchroot need to be installed" >&2
+			exit 1
+		fi
+	;;
+	webserver)
+		check_root
+		get_tazwok_config
+		if [ "$ARG" = on ]; then
+			if [ "$WEBSERVER" ] && [ -f "$WEBSERVER/repositories.list" ] && \
+				grep -q ^"${undigest:-$SLITAZ_VERSION}"$ $WEBSERVER/repositories.list; then
+				echo "Webserver is already enabled at $WEBSERVER for ${undigest:-$SLITAZ_VERSION}." >&2
+				exit 1
+			fi
+			if ! [ -f $LOCAL_REPOSITORY/tazchroot.conf ]; then
+				tazwok configure-chroot ${undigest:+--undigest=$undigest} --SLITAZ_VERSION=$SLITAZ_VERSION --SLITAZ_DIR=$SLITAZ_DIR
+			fi
+			for pkg in php lighttpd; do
+				[ -d $INSTALLED/$pkg ] || missing="$missing $pkg"
+			done
+			if [ "$missing" ]; then
+				echo "You need to install those packages to start webserver: $missing." >&2
+				exit 1
+			fi
+			if [ ! -f "$LOCAL_REPOSITORY/tazwok.conf" ]; then
+				echo "Copying /etc/slitaz/tazwok.conf to $LOCAL_REPOSITORY/tazwok.conf: webserver is configured repository-by-repository."
+				cp /etc/slitaz/tazwok.conf $LOCAL_REPOSITORY
+			fi
+			if ! [ "$WEBSERVER" ]; then
+				echo -n "Where to store php pages (default: /var/www/vhosts/bb)? "
+				read WEBSERVER
+				[ "$WEBSERVER" ] || WEBSERVER="/var/www/vhosts/bb"
+			fi
+			if [ -f "$WEBSERVER/repositories.list" ] && \
+				grep -q ^"${undigest:-$SLITAZ_VERSION}"$ $WEBSERVER/repositories.list; then
+				echo "Webserver is already enabled at $WEBSERVER for ${undigest:-$SLITAZ_VERSION}." >&2
+				exit 1
+			fi
+			mkdir -p $WEBSERVER
+			echo "${undigest:-$SLITAZ_VERSION}" >> $WEBSERVER/repositories.list
+			for file in index.php log.php; do
+				[ -f "$WEBSERVER/$file" ] || ln -s /usr/share/slitaz/web-bb/$file $WEBSERVER
+			done
+			source $LOCAL_REPOSITORY/tazchroot.conf	
+			echo "<?php
+
+// Web interface configuration
+
+\$version=\"${undigest:-$SLITAZ_VERSION}\";
+\$chroot=\"$chroot_dir\";
+\$lockfile=\"\$chroot/proc/1\";
+\$db_dir=\"$PACKAGES_REPOSITORY\";
+\$log_dir=\"$LOCAL_REPOSITORY/log\";
+\$packages=\"$PACKAGES_REPOSITORY\";
+\$incoming=\"$INCOMING_REPOSITORY\";
+
+?>" > $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php
+			[ -L "$WEBSERVER/web" ] || ln -s /usr/share/slitaz/web $WEBSERVER
+			echo "WEBSERVER=\"$WEBSERVER\"" >> $LOCAL_REPOSITORY/tazwok.conf
+			if [ -L "$WEBSERVER/conf.php" ]; then
+				echo "Do yo want to make ${undigest:-$SLITAZ_VERSION} the default page (y/N) ? "
+				read answer
+				if [ "$answer" = y ]; then
+					rm $WEBSERVER/conf.php
+					ln -s $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php $WEBSERVER/conf.php
+				fi
+			else
+				ln -s $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php $WEBSERVER/conf.php
+			fi
+		elif [ "$ARG" = off ]; then
+			if ! [ "$WEBSERVER" ]; then
+				echo "No webserver running for ${undigest:-$SLITAZ_VERSION}" >&2
+				exit 1
+			fi
+			sed '/^WEBSERVER/d' -i $LOCAL_REPOSITORY/tazwok.conf
+			sed "/^${undigest:-$SLITAZ_VERSION}$/d" -i $WEBSERVER/repositories.list
+			rm $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php	
+			if ! [ -s "$WEBSERVER/repositories.list" ]; then
+				echo "$WEBSERVER/repositories.list is empty; tazwok doesn't remove the server automatically in case you have important stuff in it. If it's not the case, you can remove it using: rm -r $WEBSERVER"
+				rm $WEBSERVER/conf.php	
+			elif [ "$(readlink $WEBSERVER/conf.php)" = "$WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php" ]; then
+				echo "${undigest:-$SLITAZ_VERSION} was the default version to use; switched to : $(sed 1!d $WEBSERVER/repositories.list)"
+				rm $WEBSERVER/conf.php
+				ln -s $WEBSERVER/conf-$(sed 1!d $WEBSERVER/repositories.list).php $WEBSERVER/conf.php
+			fi
+		else
+			echo "Usage: tazwok webserver on/off" >&2
 			exit 1
 		fi
 	;;
