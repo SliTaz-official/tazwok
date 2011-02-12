@@ -530,6 +530,7 @@ check_for_tarball()
 			# incoming and legacy packages.
 			[ "$prev_VERSION" != "$(get_pkg_version $PACKAGES_REPOSITORY)" ] && \
 				remove_previous_tarball
+			report end-step
 		fi
 	fi
 	if [ "$nounpack" ]; then
@@ -548,7 +549,6 @@ check_for_tarball()
 				# Permissions settings.
 				chown -R root.root "$src"
 			fi
-			report end-step
 		else
 			echo "There's already something at $src. Abort." >&2
 		fi
