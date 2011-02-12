@@ -1837,7 +1837,7 @@ clean()
 			receipt|stuff|description.txt|md5)
 				continue ;;
 			*)
-				rm -rf $f
+				rm -rf $f ;;
 		esac
 	done
 	[ "$COMMAND" != clean-wok ] && report end-step
