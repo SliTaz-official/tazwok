@@ -101,7 +101,8 @@ Flavors/Iso build log are named iso-?flavor <br />
 Temporary toolchain log are named tmp-toolchain-?package <br />
 </p>
 
-<pre>
+<h2>Summary</h2>
+<pre class="package">
 <?php
 // Check curent status (update in real time) and display summary.
 if (file_exists($lockfile)) {
@@ -113,6 +114,18 @@ else {
 include("$db_dir/summary");
 ?>
 </pre>
+<p>
+Packages in the wok: <?php
+system("cd $wok && ls -1 | wc -l"); ?><br />
+Commited packages: <?php
+system("wc -l $packages/commit | cut -f 1 -d ' '"); ?><br />
+Packages to cook: <?php
+system("wc -l $packages/cooklist | cut -f 1 -d ' '"); ?><br />
+Broken packages: <?php
+system("wc -l $packages/broken | cut -f 1 -d ' '"); ?><br />
+Blocked packages: <?php
+system("wc -l $packages/blocked | cut -f 1 -d ' '"); ?>
+</p>
 
 <h3>Commit</h3>
 <pre class="package">
