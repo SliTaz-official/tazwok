@@ -435,7 +435,7 @@ remove_previous_package()
 # Check for src tarball and wget if needed.
 check_for_tarball()
 {
-	[ "$WGET_URL" ] || return
+	[ "$WGET_URL" ] || return 0
 	report step "Checking for source tarball"
 	
 	if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
@@ -496,14 +496,31 @@ check_for_tarball()
 			tar xf - -C $tmp_src
 	elif [ -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 		case "$TARBALL" in
-			*zip|*xpi) { cd $tmp_src; unzip -o $SOURCES_REPOSITORY/$TARBALL; };;
-			*bz2) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+			*zip|*xpi)
+				cur_dir=$PWD	
+				cd $tmp_src
+				unzip -o $SOURCES_REPOSITORY/$TARBALL
+				cd $cur_dir
+				unset cur_dir
+			 ;;
+			*bz2|*tbz|*gem) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
 			*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-			*lzma) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+			*lzma|*lz) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 			*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-			*Z) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-			*jar) mkdir $src && cp -f $SOURCES_REPOSITORY/$TARBALL $tmp_src ;;
-			*) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+			*Z|*taz) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+			*gz) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+			*rpm)
+				cur_dir=$PWD
+				cd $tmp_src
+				rpm2cpio $SOURCES_REPOSITORY/$TARBALL | cpio -idm --quiet
+				cd $cur_dir
+				unset cur_dir
+			;;
+			# It's a plain file or something receipt unpack itself.	
+			*)
+				mkdir $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
+				cp $SOURCES_REPOSITORY/$TARBALL $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
+			;;
 		esac || return 1
 		
 		# Check if uncompressed tarball is in a root dir or not.
