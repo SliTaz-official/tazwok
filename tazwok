@@ -634,7 +634,17 @@ check_for_deps_loop()
 download()
 {
 	for file in $@; do
+		case "$file" in
+			[Hh][Tt][Tt][Pp][Ss]*)
+				if [ -d $INSTALLED/wget ]; then
+					wget --no-check-certificate -O $(basename $file) $file && break
+				else
+					tazwok_warning "$PACKAGE need wget to download the source tarball from $file, please add it as build-depend."
+					return 1
+				fi
+		esac
 		wget -q $file && break
+		wget -O $(basename $file) $file && break
 	done
 }
 
