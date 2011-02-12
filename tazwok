@@ -454,14 +454,14 @@ check_for_tarball()
 				fi
 			fi
 			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
-				[ ! -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ]; then
+				[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-PACKAGE}-$VERSION.tar.lzma" ]; then
 				report step "Download failed, try with mirror copy (again)... "
 				file=$(basename $WGET_URL)
 				download http://mirror.slitaz.org/sources/packages/${file:0:1}/$file
 			fi
 
 			# Exit if download failed to avoid errors.
-			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
+			if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && [ ! -f "$SOURCES_REPOSITORY/${SOURCE:-PACKAGE}-$VERSION.tar.lzma" ; then
 				echo -e "\nDownload failed, exiting. Please check WGET_URL variable.\n" >&2
 				report end-step
 				return 1
