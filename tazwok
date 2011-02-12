@@ -1799,7 +1799,7 @@ clean()
 	ls -A $WOK/$PACKAGE | grep -q -v -e ^receipt$ -e ^description.txt$ \
 		-e ^stuff$ || return
 	
-	report step "Cleaning $PACKAGE"
+	[ "$COMMAND" = clean-wok ] || report step "Cleaning $PACKAGE"
 	# Check for clean_wok function.
 	if grep -q ^clean_wok $RECEIPT; then
 		clean_wok
@@ -1815,7 +1815,7 @@ clean()
 				rm -rf $f
 		esac
 	done
-	report end-step
+	[ "$COMMAND" = clean-wok ] || report end-step
 }
 
 # Configure and make a package with the receipt.
@@ -2462,14 +2462,12 @@ Maintainer : $MAINTAINER"
 		source_lib report
 		report start
 		report step "Cleaning wok"
-		report open-bloc
 		for PACKAGE in `ls -1 $WOK`
 		do
 			set_common_path
 			source_receipt
 			clean
 		done
-		report close-bloc
 		echo "`ls -1 $WOK | wc -l` packages cleaned."
 	;;
 	gen-list)
