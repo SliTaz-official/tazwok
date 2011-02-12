@@ -467,8 +467,8 @@ check_for_tarball()
 				return 1
 			fi
 		fi
+		report end-step
 	fi
-	report end-step
 	
 	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
 		return
