@@ -1775,7 +1775,6 @@ check_for_incoming()
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
 			VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
 			remove_previous_package $PACKAGES_REPOSITORY
-			remove_previous_tarball
 			echo "Moving $PACKAGE..."
 			mv -f $INCOMING_REPOSITORY/$PACKAGE-$VERSION.tazpkg $PACKAGES_REPOSITORY
 			touch $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
