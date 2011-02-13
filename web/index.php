@@ -114,18 +114,22 @@ else {
 include("$db_dir/summary");
 ?>
 </pre>
-<p>
-Packages in the wok: <?php
-system("cd $wok && ls -1 | wc -l"); ?><br />
-Commited packages: <?php
-system("wc -l $packages/commit | cut -f 1 -d ' '"); ?><br />
-Packages to cook: <?php
-system("wc -l $packages/cooklist | cut -f 1 -d ' '"); ?><br />
-Broken packages: <?php
-system("wc -l $packages/broken | cut -f 1 -d ' '"); ?><br />
-Blocked packages: <?php
-system("wc -l $packages/blocked | cut -f 1 -d ' '"); ?>
-</p>
+<ul>
+<li>Packages in the wok: <?php
+system("cd $wok && ls -1 | wc -l"); ?></li>
+<li>Packages in the main repository: <?php
+system("cd $packages  && ls -1t *.tazpkg | wc -l"); ?></li>
+<li>Packages in the incoming repository: <?php
+system("cd $incoming  && ls -1t *.tazpkg | wc -l"); ?></li>
+<li>Commited packages: <?php
+system("wc -l $packages/commit | cut -f 1 -d ' '"); ?></li>
+<li>Packages to cook: <?php
+system("wc -l $packages/cooklist | cut -f 1 -d ' '"); ?></li>
+<li>Broken packages: <?php
+system("wc -l $packages/broken | cut -f 1 -d ' '"); ?></li>
+<li>Blocked packages: <?php
+system("wc -l $packages/blocked | cut -f 1 -d ' '"); ?></li>
+</ul>
 
 <h3>Commit</h3>
 <pre class="package">
