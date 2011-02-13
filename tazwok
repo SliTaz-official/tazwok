@@ -55,6 +55,7 @@ usage()
   gen-wok-db     (Re-)Generate wok lists with depends and wanted datas.
   gen-clean-wok  Generate a clean wok in a dir.
   clean-wok      Clean entirely the wok.
+  clean-src       Remove old/unrelated-to-wok sources.
   remove         Remove a package from the wok.
   webserver      Enable/disable webserver on localhost.
   hgup           Pull and update a wok under Hg.
@@ -134,6 +135,7 @@ get_tazwok_config()
 	for file in broken blocked commit incoming cooklist; do
 		[ ! -f $PACKAGES_REPOSITORY/$file ] && touch $PACKAGES_REPOSITORY/$file
 	done
+	touch $SOURCES_REPOSITORY/sources.list
 	
 	# Limit memory usage.
 	ulimit -v $(awk '/MemTotal/ { print int(($2*80)/100) }' < /proc/meminfo)
@@ -395,6 +397,7 @@ set_src_path()
 	if check_for_var_modification src _pkg; then
 		src=$WOK/${WANTED:-$PACKAGE}/${WANTED:-$PACKAGE}-$VERSION
 	else
+		tazwok_warning "Use original name or tarball root directory because src/_pkg are defined into the receipt (this is no more needed!)."
 		src=$WOK/${WANTED:-$PACKAGE}/${SOURCE:-${WANTED:-$PACKAGE}}-$VERSION
 	fi
 }
@@ -415,14 +418,6 @@ get_pkg_version()
 	grep -m1 -A1 -sh ^$PACKAGE$ $1/packages.txt | tail -1 | sed 's/ *//'
 }
 
-remove_previous_tarball()
-{
-	[ "$prev_VERSION" ] || return
-	if [ "$VERSION" != "$prev_VERSION" ]; then
-		rm -f $SOURCES_REPOSITORY/$PACKAGE-$prev_VERSION.tar.lzma
-	fi
-}
-
 remove_previous_package()
 {
 	[ "$prev_VERSION" ] || return
@@ -437,94 +432,82 @@ check_for_tarball()
 {
 	[ "$WGET_URL" ] || return 0
 	report step "Checking for source tarball"
-	
+	local repack_src TARBALL
+	if [ "$repack_src" = yes ] && look_for_cookopt !repack_src; then
+			repack_src=no
+	fi
+	if [ "$target" ]; then
+		src="$target"
+	else
+		set_src_path
+	fi
+	tmp_src=$tmp/tarball-$$
 	if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
 		[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] ; then
 		cd $SOURCES_REPOSITORY
-		download $WGET_URL
-		
-		# If source tarball is unreachable, try to find it on SliTaz
-		# mirror.
-		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
-			report step "Download failed, try with mirror copy... "
-			if [ "$SOURCE" ]; then
-				download http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$SOURCE-$VERSION.tar.lzma
-			else
-				download http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-$VERSION.tar.lzma
-			fi
+		if [ "$SOURCE" ]; then
+			alt_url="http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$SOURCE-$VERSION.tar.lzma"
+		else
+			alt_url="http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-$VERSION.tar.lzma"
 		fi
+		download $WGET_URL $alt_url http://mirror.slitaz.org/sources/packages/${file:0:1}/$file
+		unset alt_url
 		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
-			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-PACKAGE}-$VERSION.tar.lzma" ]; then
-			report step "Download failed, try with mirror copy (again)... "
-			file=$(basename $WGET_URL)
-			download http://mirror.slitaz.org/sources/packages/${file:0:1}/$file
-		fi
-
-		# Exit if download failed to avoid errors.
-		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && [ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ; then
+			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && \
+			[ ! -d $tmp_src ]; then
 			echo -e "\nDownload failed, exiting. Please check WGET_URL variable.\n" >&2
 			report end-step
 			return 1
 		fi
 	fi
 	report end-step
-	
 	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
+		[ -d "$tmp_src" ] && rm -r $tmp_src
 		return
 	fi
 
 	# Untaring source if necessary. We don't need to extract source if
 	# the package is built with a wanted source package.
 	if [ "$WANTED" ]; then
+		[ -d "$tmp_src" ] && rm -r $tmp_src
 		return
 	fi
 
 	report step "Untaring source tarball"
-	if [ "$target" ]; then
-		src="$target"
-	else
-		set_src_path
-	fi
 
 	# Log process.
 	echo "untaring source tarball" >> $LOG
-			
-	tmp_src=$WOK/$PACKAGE/tmp-src-$$
-	mkdir $tmp_src
-	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ]; then
-		lzma d $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -so | \
-			tar xf - -C $tmp_src
-	elif [ -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
-		case "$TARBALL" in
-			*zip|*xpi)
-				cur_dir=$PWD	
-				cd $tmp_src
-				unzip -o $SOURCES_REPOSITORY/$TARBALL
-				cd $cur_dir
-				unset cur_dir
-			 ;;
-			*bz2|*tbz|*gem) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-			*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-			*lzma|*lz) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-			*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-			*Z|*taz) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
-			*gz) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-			*rpm)
-				cur_dir=$PWD
-				cd $tmp_src
-				rpm2cpio $SOURCES_REPOSITORY/$TARBALL | cpio -idm --quiet
-				cd $cur_dir
-				unset cur_dir
-			;;
-			# It's a plain file or something receipt unpack itself.	
-			*)
-				mkdir $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
-				cp $SOURCES_REPOSITORY/$TARBALL $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
-			;;
-		esac || { rm -f $TARBALL && return 1; }
-		
+
+	# If $tmp_src exists, there's already the unpacked tarball into it.
+	if ! [ -d $tmp_src ]; then
+		mkdir $tmp_src
+		if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$repack_src" = yes ]; then
+			lzma d $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -so | \
+				tar xf - -C $tmp_src
+			repack_src=no
+			TARBALL=${SOURCE:-$PACKAGE}-$VERSION.tar.lzma
+		elif [ -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
+			case "$TARBALL" in
+				*zip|*xpi) cd $tmp_src && unzip -o $SOURCES_REPOSITORY/$TARBALL ;;
+				*bz2|*tbz|*gem) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+				*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+				*lzma|*lz) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*Z|*taz) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*gz) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
+				*rpm) cd $tmp_src && rpm2cpio $SOURCES_REPOSITORY/$TARBALL | cpio -idm --quiet;;
+
+				# It's a plain file or something receipt unpack itself.	
+				*)
+					mkdir $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
+					cp $SOURCES_REPOSITORY/$TARBALL $tmp_src/${src##*/}
+				;;
+
+			esac || { rm -f $SOURCES_REPOSITORY/$TARBALL; rm -r $tmp_src; return 1; }
+		fi
+
 		# Check if uncompressed tarball is in a root dir or not.
-		if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ]; then
+		if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ] || [ -f $(echo $tmp_src/*) ]; then
 			if check_for_var_modification src _pkg; then
 				mv $tmp_src $tmp_src-1
 				mkdir $tmp_src
@@ -533,42 +516,49 @@ check_for_tarball()
 				mv $tmp_src/* $WOK/$PACKAGE
 				repack_src=no
 				rm -r $tmp_src
+				tazwok_warning "Put all files into $WOK/$PACKAGE; not sure about how to handle this tarball (no root dir)... Please try to remove src/_pkg definition from receipt if you encounter a problem."
 			fi
 		fi
-	
-		if [ "$repack_src" = yes ]; then
-			report step "Repacking sources in .tar.lzma format"
-			cd $tmp_src
-			tar -c * | lzma e $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -si
-			rm $SOURCES_REPOSITORY/$TARBALL
-			prev_VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
+	fi
 
-			# Remove previous tarball if it's not used either by
-			# incoming and legacy packages.
-			[ "$prev_VERSION" != "$(get_pkg_version $PACKAGES_REPOSITORY)" ] && \
-				remove_previous_tarball
-			report end-step
+	if [ "$repack_src" = yes ]; then
+			report step "Repacking sources in .tar.lzma format"
+			[ "$TARBALL" ] && rm -f $SOURCES_REPOSITORY/$TARBALL
+			TARBALL=${SOURCE:-$PACKAGE}-$VERSION.tar.lzma
+			cd $tmp_src
+			tar -c * | lzma e $SOURCES_REPOSITORY/$TARBALL -si
+	fi
+
+	# Remove previous tarball if no other package needs it. We take care to
+	# keep tarball if the same package use it into main repository.
+	if [ "$TARBALL" ]; then
+		previous_tarball=$(grep ^$PACKAGE:incoming $SOURCES_REPOSITORY/sources.list | cut -f2)
+		if [ "$previous_tarball" ]; then
+			sed "/^$PACKAGE:incoming/ s/.*/$PACKAGE:incoming\t$TARBALL/" \
+				-i $SOURCES_REPOSITORY/sources.list
+			grep -q $'\t'$previous_tarball$ $SOURCES_REPOSITORY/sources.list || \
+				rm -f $SOURCES_REPOSITORY/$previous_tarball
+		else
+			echo -e "$PACKAGE:incoming\t$TARBALL" >> $SOURCES_REPOSITORY/sources.list
 		fi
 	fi
+
 	if [ "$nounpack" ]; then
 		[ -d "$tmp_src" ] && rm -r $tmp_src
 		return
 	fi
-	if [ "$TARBALL" ]; then
-		if [ ! -d "$src" ]; then
-			if [ -d "$tmp_src" ]; then
-				if ! check_for_var_modification src _pkg; then
-					src="${src%/*}/$(ls $tmp_src)"
-				fi
-				mv $(echo $tmp_src/*) "$src"
-				rm -r $tmp_src
-						
-				# Permissions settings.
-				chown -R root.root "$src"
-			fi
-		else
-			echo "There's already something at $src. Abort." >&2
+	if [ ! -d "$src" ]; then
+		if ! check_for_var_modification src _pkg; then
+			src="${src%/*}/$(ls $tmp_src)"
 		fi
+		mv $(echo $tmp_src/*) "$src"
+		rm -r $tmp_src
+
+		# Permissions settings.
+		chown -R root.root "$src"
+	else
+		[ -d "$tmp_src" ] && rm -r $tmp_src
+		echo "There's already something at $src. Abort." >&2
 	fi
 }
 
@@ -648,20 +638,88 @@ check_for_deps_loop()
 	done
 }
 
+# Function used by download().
+revert_vcs_failure()
+{
+	cd $SOURCES_REPOSITORY
+	rm -r $tmp_src
+}
+
 download()
 {
 	for file in $@; do
+		echo "Downloading from ${file#*|}..."
 		case "$file" in
-			[Hh][Tt][Tt][Pp][Ss]*)
-				if [ -d $INSTALLED/wget ]; then
-					wget --no-check-certificate -O $(basename $file) $file && break
+			git\|*)
+				file=${file#git|}
+				if [ -d $INSTALLED/git ]; then
+					mkdir $tmp_src
+					cd $tmp_src
+					if [ "$BRANCH" ]; then
+						git clone $file ${src##*/} && cd ${src##*/} && \
+							git checkout $BRANCH && rm -rf .git* && break
+					else
+						git clone $file ${src##*/} && rm -rf ${src##*/}/.git* && break
+					fi
+					revert_vcs_failure
 				else
-					tazwok_warning "$PACKAGE need wget to download the source tarball from $file, please add it as build-depend."
-					return 1
+					tazwok_warning "Needs git to download the source tarball from $file, please add it as build-depend."
+					continue
 				fi
+			;;
+			subversion\|*)
+				file=${file#subversion|}
+				if [ -d $INSTALLED/subversion ]; then
+					mkdir $tmp_src
+					cd $tmp_src
+					if [ "$BRANCH" ]; then
+						echo t | svn co $file -r $BRANCH ${src##*/} && rm -rf ${src##*/}/.svn* && break
+					else
+						echo t | svn co $file ${src##*/} && rm -rf ${src##*/}/.svn* && break
+					fi
+					revert_vcs_failure
+				else
+					tazwok_warning "Needs subversion to download the source tarball from $file, please add it as build-depend."
+					continue
+				fi
+			;;
+			mercurial\|*)
+				file=${file#mercurial|}
+				if [ -d $INSTALLED/mercurial ]; then
+					mkdir $tmp_src
+					cd $tmp_src
+					if [ "$BRANCH" ]; then
+						hg clone $file --rev $BRANCH ${src##*/} && rm -rf ${src##*/}/.hg* && break
+					else
+						hg clone $file ${src##*/} && rm -rf ${src##*/}/.hg* && break
+					fi
+					revert_vcs_failure
+				else
+					tazwok_warning "Needs mercurial to download the source tarball from $file, please add it as build-depend."
+					continue
+				fi
+			;;
+			https*)
+				if [ -d $INSTALLED/wget ]; then
+					if [ "${WGET_URL%$TARBALL}" = "$WGET_URL" ] && [ "$file" = "$WGET_URL" ]; then
+						wget -q --no-check-certificate -O $TARBALL $file && break
+					else
+						wget -q $file && break						
+					fi
+				else
+					tazwok_warning "Needs wget to download the source tarball from $file, please add it as build-depend."
+					continue
+				fi
+			;;
+			http*|ftp*)
+				# Handle crappy URL.	
+				if [ "${WGET_URL%$TARBALL}" = "$WGET_URL" ] && [ "$file" = "$WGET_URL" ]; then
+					wget -q -O $TARBALL $file && break
+				else
+					wget -q $file && break
+				fi
+			;;
 		esac
-		wget -q $file && break
-		wget -O $(basename $file) $file && break
 	done
 }
 
@@ -846,8 +904,8 @@ gen_package()
 	[ -d "taz" ] &&	rm -rf taz
 	
 	# Create the package tree and set useful variables.
-	mkdir -p taz/$PACKAGE-$VERSION/fs
-	fs=taz/$PACKAGE-$VERSION/fs
+	mkdir -p $WOK/$PACKAGE/taz/$PACKAGE-$VERSION/fs
+	fs=$WOK/$PACKAGE/taz/$PACKAGE-$VERSION/fs
 	
 	# Set $src for standard package and $_pkg variables.
 	set_src_path && set_pkg_path
@@ -1082,6 +1140,23 @@ update_packages_db()
 			if [ "$pkg" -nt "packages.list" ]; then
 				updated_pkg="$updated_pkg
 $PACKAGE $pkg"
+			elif [ ! -f $WOK/$PACKAGE/receipt ] && \
+				[ "$COMMAND" = check-incoming -o "$pkg_repository" = "$INCOMING_REPOSITORY" ]; then
+				erase_package_info
+				echo "Removing $PACKAGE from $pkg_repository."	
+				rm $pkg
+				[ -d $WOK/$PACKAGE ] && rm -r $WOK/$PACKAGE
+				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ]; then
+					sed "/^$PACKAGE\t/d" -i $wan_db $dep_db
+					for i in cookorder.txt cooklist commit blocked broken; do
+						sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/$i
+					done	
+					sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+					regen_cooklist=yes
+				else
+					echo "$PACKAGE" >> $PACKAGES_REPOSITORY/removed
+					sed -n '1,10p' -i $PACKAGES_REPOSITORY/removed
+				fi
 			fi
 		fi
 	done
@@ -1191,7 +1266,7 @@ source_receipt()
 	unset PACKAGE SOURCE VERSION EXTRAVERSION CATEGORY SHORT_DESC \
 		MAINTAINER WEB_SITE WGET_URL DEPENDS BUILD_DEPENDS WANTED \
 		PACKED_SIZE UNPACKED_SIZE COOK_OPT PROVIDE CONFIG_FILES TAGS \
-		src _pkg DESTDIR CONFIG_SITE
+		src _pkg DESTDIR CONFIG_SITE BRANCH TARBALL
 	. ${RECEIPT:-$PWD/receipt}
 }
 
@@ -1693,10 +1768,6 @@ gen_cook_list()
 	report end-step
 	
 	[ -s $tmp/checked ] || [ -s $tmp/cooklist ] || return
-	if [ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ]; then
-		sed 1d -i $PACKAGES_REPOSITORY/cookorder.txt
-		plan_regen_cookorder=yes
-	fi
 	
 	# Core toolchain should not be cooked unless cook-toolchain is used.
 	if ! [ -f /etc/config.site.tmptoolchain ] ; then
@@ -1717,13 +1788,17 @@ gen_cook_list()
 			echo $PACKAGE >> cooklist
 		done
 	fi
-	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
-	[ "$plan_regen_cookorder" ] && sort_db
 	sort_cooklist
 }
 
 sort_cooklist()
 {
+	if [ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ]; then
+		sed 1d -i $PACKAGES_REPOSITORY/cookorder.txt
+		plan_regen_cookorder=yes
+	fi
+	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
+	[ "$plan_regen_cookorder" ] && sort_db
 	report step "Sorting cooklist"
 	if [ -f "$tmp/checked" ]; then
 		rm -f $tmp/cooklist
@@ -1805,6 +1880,14 @@ check_for_incoming()
 			echo "Moving $PACKAGE..."
 			mv -f $INCOMING_REPOSITORY/$PACKAGE-$VERSION.tazpkg $PACKAGES_REPOSITORY
 			touch $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
+			previous_tarball=$(grep ^$PACKAGE:main $SOURCES_REPOSITORY/sources.list | cut -f2)
+			sed -e "/^$PACKAGE:main/d" \
+				-e "s/^$PACKAGE:incoming/$PACKAGE:main/"
+				-i $SOURCES_REPOSITORY/sources.list
+			if [ "$previous_tarball" ]; then
+				grep -q $'\t'$previous_tarball$ $SOURCES_REPOSITORY/sources.list || \
+					rm -f $SOURCES_REPOSITORY/$previous_tarball
+			fi
 	done
 	report end-step
 	for file in packages.list packages.equiv packages.md5 packages.desc \
@@ -2494,6 +2577,36 @@ Maintainer : $MAINTAINER"
 			clean
 		done
 		echo "`ls -1 $WOK | wc -l` packages cleaned."
+	;;
+	clean-src)
+		# Remove tarball unrelated to wok receipts from src repo.
+		check_root
+		get_options_list="forced"
+		get_tazwok_config
+		cd $SOURCES_REPOSITORY
+		echo -n "Checking $SOURCES_REPOSITORY..."	
+		for TARBALL in *; do
+		[ "$TARBALL" = sources.list ] && continue
+		grep -q $'\t'$TARBALL$ $SOURCES_REPOSITORY/sources.list || \
+			echo $TARBALL >> $tmp/obsolete
+		done
+		status
+		echo ""	
+		echo -e "\033[1mObsolete/unrelated-to-wok sourcess :\033[0m"
+   		horizontal_line
+		cat $tmp/obsolete
+		horizontal_line
+		echo "$(wc -l $tmp/obsolete | cut -f1 -d' ') tarballs to remove."
+		echo ""
+		echo -n "Please confirm removing (type uppercase YES): "
+		read answer
+		if [ "$answer" = YES ]; then
+			echo -n "Removing old sources..."	
+			cat $tmp/obsolete | while read i; do
+				rm -f $SOURCES_REPOSITORY/$i
+			done
+			status
+		fi
 	;;
 	gen-list)
 		get_tazwok_config

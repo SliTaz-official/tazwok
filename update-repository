@@ -1,0 +1,57 @@
+#!/bin/sh
+
+if ! [ "$1" ]; then
+	echo "Usage: update-repository LOCAL_REPOSITORY (i.e.: /home/slitaz/experimental)"
+	exit
+fi
+
+WOK=$1/wok
+SOURCES_REPOSITORY=$1/src
+LOG_DIR=$1/log
+
+if [ -d "$WOK" ] && [ -d "$SOURCES_REPOSITORY" ] && [ -d "$LOG_DIR" ]; then
+	rm -f $SOURCES_REPOSITORY/sources.list
+else
+	echo "$1 doesn't looks like a LOCAL_REPOSITORY: it doesn't contains one or several of theses directories:
+	* $WOK
+	* $SOURCES_REPOSITORY
+	* $LOG_DIR"
+	exit
+fi
+
+echo "Updating logs files..."
+cd $LOG_DIR
+for i in *.html; do
+	sed 's~file:///usr/share/slitaz/web~web~' -i $i
+done
+[ -L web ] || ln -s /usr/share/slitaz/web web
+echo "Update done: you can now use 'tazwok webserver on' to add you're repository to webinterface.
+If you use the path by default, it will be available at: http://localhost/vhosts/bb
+This command need lighttpd & php installed to be used."
+
+echo "
+Changing sources pathes according new changes into tazwok-experimental and generating $SOURCES_REPOSITORY/sources.list."
+cd $WOK
+for i in *; do
+	unset PACKAGE SOURCE VERSION WGET_URL TARBALL
+	source $i/receipt
+	[ "$WGET_URL" ] || continue
+	# Check that source is at the good location; if not move it or remove it if it's a duplicate.
+	if [ "$SOURCE" ]; then
+		if [ -f "$SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma" ]; then
+			if [ -f "$SOURCES_REPOSITORY/$SOURCE-$VERSION.tar.lzma" ]; then
+				rm $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma
+			else
+				mv $SOURCES_REPOSITORY/$PACKAGE-$VERSION.tar.lzma $SOURCES_REPOSITORY/$SOURCE-$VERSION.tar.lzma
+			fi
+		fi
+	fi
+	if [ -f $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
+		echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $SOURCES_REPOSITORY/sources.list
+ 	elif [ -f "SOURCES_REPOSITORY/$TARBALL" ]; then
+		echo -e "$PACKAGE:incoming\t$TARBALL" >> $SOURCES_REPOSITORY/sources.list
+	fi
+done
+echo "Done."
+echo "
+You can check/purge old sources tarball and sources tarball unrelated to wok receipts using 'tazwok clean-src'"
