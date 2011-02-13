@@ -404,7 +404,7 @@ set_src_path()
 
 set_pkg_path()
 {
-	if	[ -d $WOK/${WANTED:-$PACKAGE}/install ] ; then
+	if [ -d $WOK/${WANTED:-$PACKAGE}/install ] ; then
 		_pkg=$WOK/${WANTED:-$PACKAGE}/install
 	else
 		_pkg=$src/_pkg
