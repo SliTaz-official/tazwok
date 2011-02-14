@@ -2597,6 +2597,10 @@ Maintainer : $MAINTAINER"
 			echo $TARBALL >> $tmp/obsolete
 		done
 		status
+		if ! [ -f $tmp/obsolete ]; then
+			echo "No sources need to be removed."
+			exit 1
+		fi
 		echo ""	
 		echo -e "\033[1mObsolete/unrelated-to-wok sourcess :\033[0m"
    		horizontal_line
