@@ -1891,7 +1891,7 @@ check_for_incoming()
 			touch $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
 			previous_tarball=$(grep ^$PACKAGE:main $SOURCES_REPOSITORY/sources.list | cut -f2)
 			sed -e "/^$PACKAGE:main/d" \
-				-e "s/^$PACKAGE:incoming/$PACKAGE:main/"
+				-e "s/^$PACKAGE:incoming/$PACKAGE:main/" \
 				-i $SOURCES_REPOSITORY/sources.list
 			if [ "$previous_tarball" ]; then
 				grep -q $'\t'$previous_tarball$ $SOURCES_REPOSITORY/sources.list || \
