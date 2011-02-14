@@ -8,13 +8,15 @@ fi
 WOK=$1/wok
 SOURCES_REPOSITORY=$1/src
 LOG_DIR=$1/log
+PACKAGES_REPOSITORY=$1/packages
 
-if [ -d "$WOK" ] && [ -d "$SOURCES_REPOSITORY" ] && [ -d "$LOG_DIR" ]; then
+if [ -d "$WOK" ] && [ -d "$SOURCES_REPOSITORY" ] && [ -d "$LOG_DIR" ] && [ -d "$PACKAGES_REPOSITORY" ]; then
 	rm -f $SOURCES_REPOSITORY/sources.list
 else
 	echo "$1 doesn't looks like a LOCAL_REPOSITORY: it doesn't contains one or several of theses directories:
 	* $WOK
 	* $SOURCES_REPOSITORY
+	* $PACKAGES_REPOSITORY
 	* $LOG_DIR"
 	exit
 fi
@@ -46,10 +48,18 @@ for i in *; do
 			fi
 		fi
 	fi
-	if [ -f $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
-		echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $SOURCES_REPOSITORY/sources.list
- 	elif [ -f "SOURCES_REPOSITORY/$TARBALL" ]; then
-		echo -e "$PACKAGE:incoming\t$TARBALL" >> $SOURCES_REPOSITORY/sources.list
+	if [ -f $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg ]; then
+		if [ -f $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
+			echo -e "$PACKAGE:main\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $SOURCES_REPOSITORY/sources.list
+ 		elif [ -f "SOURCES_REPOSITORY/$TARBALL" ]; then
+			echo -e "$PACKAGE:main\t$TARBALL" >> $SOURCES_REPOSITORY/sources.list
+		fi
+	else
+		if [ -f $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
+			echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $SOURCES_REPOSITORY/sources.list
+ 		elif [ -f "SOURCES_REPOSITORY/$TARBALL" ]; then
+			echo -e "$PACKAGE:incoming\t$TARBALL" >> $SOURCES_REPOSITORY/sources.list
+		fi
 	fi
 done
 echo "Done."
