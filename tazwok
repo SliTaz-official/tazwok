@@ -1166,11 +1166,12 @@ $PACKAGE $pkg"
 				echo "Removing $PACKAGE from $pkg_repository."	
 				rm $pkg
 				[ -d $WOK/$PACKAGE ] && rm -r $WOK/$PACKAGE
+				sed "/^$PACKAGE\t/d" -i $wan_db $dep_db
+				for i in cookorder.txt cooklist commit blocked broken; do
+					sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/$i
+				done	
+				rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html	
 				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ]; then
-					sed "/^$PACKAGE\t/d" -i $wan_db $dep_db
-					for i in cookorder.txt cooklist commit blocked broken; do
-						sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/$i
-					done	
 					sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
 					regen_cooklist=yes
 				else
