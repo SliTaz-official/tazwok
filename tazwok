@@ -292,6 +292,7 @@ check_for_build_depends()
 {
 	[ "$WANTED" ] && return
 	[ "$CATEGORY" = meta ] && ! fgrep -q compile_rules $RECEIPT && return
+	[ ! "$BUILD_DEPENDS" ] && ! fgrep -q compile_rules $RECEIPT && return
 	report step "Looking for build dependencies"
 
 	# Keep the list of previously installed build_depends then compare
