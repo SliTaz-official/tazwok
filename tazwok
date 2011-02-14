@@ -33,6 +33,7 @@ usage()
   build-depends  Generate a list of packages to build a wok.
   list           List all packages in the wok tree or by category.
   info           Get information about a package in the wok.
+  report         Display commit/cooklist/broken/blocked.
   check          Check every receipt for common errors.
   check-log      Check the process log file of a package.
   check-depends* Check every receipt for DEPENDS - doesn't scan ELF files.
@@ -2950,7 +2951,6 @@ EOF
 		gen_wok_db
 	;;
 	report)
-		check_root
 		get_tazwok_config
 		cd $PACKAGES_REPOSITORY
 		if [ "$2" ]; then
