@@ -1869,28 +1869,48 @@ sort_cooklist()
 	report end-step
 }
 
+look_for_missing_pkg()
+{
+	for pkg in $(cat $PACKAGES_REPOSITORY/$1); do
+		grep -q ^$pkg$ $INCOMING_REPOSITORY/packages.txt \
+			$PACKAGES_REPOSITORY/packages.txt || \
+			continue
+		echo $pkg
+	done
+}
+
 check_for_incoming()
 {
 	[ -s $INCOMING_REPOSITORY/packages.desc ] || {
 	echo "No packages in $INCOMING_REPOSITORY."
 	return; }
 	if [ -s $PACKAGES_REPOSITORY/broken ]; then
-		echo "Don't move incoming packages to main repository because theses ones are broken:
-		$(cat $PACKAGES_REPOSITORY/broken)" >&2
-		return
+		missingpkg=$(look_for_missing_pkg broken)
+		if [ "$missingpkg" ]; then
+			echo "Don't move incoming packages to main repository because theses ones are broken:" >&2
+			echo "$missingpkg"
+			return 1
+		fi
 	fi
 	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
-		echo "Don't move incoming packages to main repository because some of them need to be cooked:
-		$(cat $PACKAGES_REPOSITORY/cooklist)" >&2
-		return
+		missingpkg=$(look_for_missing_pkg cooklist)
+		if [ "$missingpkg" ]; then
+			echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
+			echo "$missingpkg"
+			return 1
+		fi
 	fi
 	pkg="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
 	if ! [ "$forced" ]; then
 		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
-			echo "Don't move incoming packages to main repository because some of them need to be cooked." >&2
-			return
+			missingpkg=$(look_for_missing_pkg cooklist)
+			if [ "$missingpkg" ]; then
+				echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
+				echo "$missingpkg"
+				return 1
+			fi
 		fi
 	fi
 	report step "Moving incoming packages to main repository"
