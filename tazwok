@@ -60,8 +60,8 @@ usage()
   webserver      Enable/disable webserver on localhost.
   hgup           Pull and update a wok under Hg.
   maintainers    List all maintainers in the wok.
-  maintained-by  List packages maintained by a contributor.\n
-  tags           List all tags used in wok receipts.
+  maintained-by  List packages maintained by a contributor.
+  tags           List all tags used in wok receipts.\n
  
  You can use `basename $0` command --help to list avaible options.
  \033[1mImportant - *: \033[0m Commands which need a rewrite."
