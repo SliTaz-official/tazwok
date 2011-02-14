@@ -1444,10 +1444,10 @@ sort_db()
 look_for_dep()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
+		grep -m1 ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 2
 	else
-		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
+		grep -m1 ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
 			cut -f 2
 	fi
 }
@@ -1460,10 +1460,10 @@ look_for_bdep()
 look_for_all()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
+		grep -m1 ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
 			| cut -f 2,3 | sed 's/ 	 / /'
 	else
-		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
+		grep -m1 ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
 			cut -f 2,3 | sed 's/ 	 / /'
 	fi
 }
@@ -1498,9 +1498,9 @@ look_for_rbdep()
 look_for_wanted()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 2
+		grep -m1 ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 2
 	else
-		grep ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 2
+		grep -m1 ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 2
 	fi
 }
 
