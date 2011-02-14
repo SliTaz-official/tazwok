@@ -720,7 +720,7 @@ download()
 					if [ "${WGET_URL%$TARBALL}" = "$WGET_URL" ] && [ "$file" = "$WGET_URL" ]; then
 						wget -q --no-check-certificate -O $TARBALL $file && break
 					else
-						wget -q $file && break						
+						wget -q --no-check-certificate $file && break						
 					fi
 				else
 					tazwok_warning "Needs wget to download the source tarball from $file, please add it as build-depend."
