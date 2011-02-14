@@ -653,12 +653,17 @@ revert_vcs_failure()
 
 download()
 {
+	if [ "$COMMAND" = get-src ]; then
+		if [ "${DEPENDS/tar}" != "$DEPENDS" ] || [ "${BUILD_DEPENDS/tar}" != "$BUILD_DEPENDS" ]; then
+			[ -f $INSALLED/tar/receipt ] || tazpkg get-install tar --forced
+		fi
+	fi
 	for file in $@; do
 		echo "Downloading from ${file#*|}..."
 		case "$file" in
 			git\|*)
 				file=${file#git|}
-				[ ! -f $INSTALLED/git/receipt ] && tazpkg get-install git --forced
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/git/receipt ] && tazpkg get-install git --forced
 				if [ -f $INSTALLED/git/receipt ]; then
 					mkdir $tmp_src
 					cd $tmp_src
@@ -676,7 +681,7 @@ download()
 			;;
 			subversion\|*)
 				file=${file#subversion|}
-				[ ! -f $INSTALLED/subversion/receipt ] && tazpkg get-install subversion --forced
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/subversion/receipt ] && tazpkg get-install subversion --forced
 				if [ -f $INSTALLED/subversion/receipt ]; then
 					mkdir $tmp_src
 					cd $tmp_src
@@ -693,7 +698,7 @@ download()
 			;;
 			mercurial\|*)
 				file=${file#mercurial|}
-				[ ! -f $INSTALLED/mercurial/receipt ] && tazpkg get-install mercurial --forced
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/mercurial/receipt ] && tazpkg get-install mercurial --forced
 				if [ -f $INSTALLED/mercurial/receipt ]; then
 					mkdir $tmp_src
 					cd $tmp_src
@@ -709,6 +714,7 @@ download()
 				fi
 			;;
 			https*)
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/wget/receipt ] && tazpkg get-install wget --forced
 				if [ -d $INSTALLED/wget ]; then
 					if [ "${WGET_URL%$TARBALL}" = "$WGET_URL" ] && [ "$file" = "$WGET_URL" ]; then
 						wget -q --no-check-certificate -O $TARBALL $file && break
@@ -722,6 +728,11 @@ download()
 			;;
 			http*|ftp*)
 				# Handle crappy URL.	
+				if [ "$COMMAND" = get-src ]; then
+					if [ "${DEPENDS/wget}" != "$DEPENDS" ] || [ "${BUILD_DEPENDS/wget}" != "$BUILD_DEPENDS" ]; then
+						[ -f $INSALLED/wget/receipt ] || tazpkg get-install wget --forced
+					fi
+				fi
 				if [ "${WGET_URL%$TARBALL}" = "$WGET_URL" ] && [ "$file" = "$WGET_URL" ]; then
 					wget -q -O $TARBALL $file && break
 				else
