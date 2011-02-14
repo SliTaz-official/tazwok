@@ -656,7 +656,7 @@ download()
 {
 	if [ "$COMMAND" = get-src ]; then
 		if [ "${DEPENDS/tar}" != "$DEPENDS" ] || [ "${BUILD_DEPENDS/tar}" != "$BUILD_DEPENDS" ]; then
-			[ -f $INSALLED/tar/receipt ] || tazpkg get-install tar --forced
+			[ -f $INSTALLED/tar/receipt ] || tazpkg get-install tar --forced
 		fi
 	fi
 	for file in $@; do
