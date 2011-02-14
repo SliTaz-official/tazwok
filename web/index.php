@@ -10,6 +10,29 @@ else {
 		include("conf.php");
 	}
 }
+
+function include_and_link($file)
+{
+	global $log_dir, $version;
+	if (($fp = fopen($file,"r")) === false) return;
+	while (($pkg = fgets($fp)) !== false) {
+		$pkg = chop($pkg);
+		if (file_exists("$log_dir/$pkg.html"))
+			echo "<a href=\"log.php?version=$version&package=$pkg\">$pkg</a>\n";
+		else	echo "$pkg\n";
+	}
+	fclose($fp);
+}
+
+function list_last_cooked($dir, $suffix)
+{
+	global $version;
+	$path=basename($dir);
+	system("cd $dir && ls -1t *.$suffix | head -20 | \
+		while read file; do echo -n \$(stat -c '%y' $dir/\$file | \
+		cut -d. -f1); echo '   <a href=\"download.php?version=$version&package=$path/'\$file'\">'\$file'</a>'; done");
+}
+
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -148,23 +171,22 @@ include("$db_dir/cooklist");
 <h3>Broken</h3>
 <pre class="package">
 <?php
-include("$db_dir/broken");
+include_and_link("$db_dir/broken");
 ?>
 </pre>
 
 <h3>Blocked</h3>
 <pre class="package">
 <?php
-include("$db_dir/blocked");
+include_and_link("$db_dir/blocked");
 ?>
 </pre>
 
 <h3>Last cooked packages</h3>
 <pre class="package">
 <?php
-system("cd $incoming && ls -1t *.tazpkg | head -20 | \
-	while read file; do echo -n \$(stat -c '%y' $incoming/\$file | \
-	cut -d. -f1); echo '   '\$file; done"); ?>
+list_last_cooked($incoming, "tazpkg");
+?>
 </pre>
 
 <h3>Last removed packages</h3>
@@ -177,9 +199,8 @@ include("$db_dir/removed");
 <h3>Last cooked flavors</h3>
 <pre class="package">
 <?php
-system("cd $packages && ls -1t *.flavor | head -20 | \
-	while read file; do echo -n \$(stat -c '%y' $packages/\$file | \
-	cut -d. -f1); echo '   '\$file; done"); ?>
+list_last_cooked($packages, "flavor");
+?>
 </pre>
 
 <!-- End of content -->

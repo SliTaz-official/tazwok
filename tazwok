@@ -3020,8 +3020,11 @@ EOF
 			fi
 			mkdir -p $WEBSERVER
 			echo "${undigest:-$SLITAZ_VERSION}" >> $WEBSERVER/repositories.list
-			for file in index.php log.php; do
+			for file in index.php log.php download.php; do
 				[ -f "$WEBSERVER/$file" ] || ln -s /usr/share/slitaz/web-bb/$file $WEBSERVER
+			done
+			for dir in $PACKAGES_REPOSITORY $INCOMING_REPOSITORY; do
+				ln -s $dir $WEBSERVER/${undigest:-$SLITAZ_VERSION}-${dir##*/}
 			done
 			source $LOCAL_REPOSITORY/tazchroot.conf	
 			echo "<?php
@@ -3058,6 +3061,9 @@ EOF
 			sed '/^WEBSERVER/d' -i $LOCAL_REPOSITORY/tazwok.conf
 			sed "/^${undigest:-$SLITAZ_VERSION}$/d" -i $WEBSERVER/repositories.list
 			rm $WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php	
+			for dir in $PACKAGES_REPOSITORY $INCOMING_REPOSITORY; do
+				rm $WEBSERVER/${undigest:-$SLITAZ_VERSION}-${dir##*/}
+			done
 			if ! [ -s "$WEBSERVER/repositories.list" ]; then
 				echo "$WEBSERVER/repositories.list is empty; tazwok doesn't remove the server automatically in case you have important stuff in it. If it's not the case, you can remove it using: rm -r $WEBSERVER"
 				rm $WEBSERVER/conf.php	
