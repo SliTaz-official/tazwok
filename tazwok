@@ -61,6 +61,7 @@ usage()
   hgup           Pull and update a wok under Hg.
   maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor.\n
+  tags           List all tags used in wok receipts.
  
  You can use `basename $0` command --help to list avaible options.
  \033[1mImportant - *: \033[0m Commands which need a rewrite."
@@ -2806,6 +2807,22 @@ EOF
 		echo "Packages maintained by $2: $PACKAGEs"
 		echo ""
 	;;
+	tags)
+		get_tazwok_config
+		echo -e "\n\033[1mTags list :\033[0m"
+		horizontal_line
+		cd $WOK
+		for i in */receipt; do
+			unset TAGS
+			source $i
+			for t in $TAGS; do
+				grep -q ^$t$ $tmp/tags && continue
+				echo $t | tee -a $tmp/tags
+			done
+		done
+		horizontal_line
+		echo "$(wc -l $tmp/tags | cut -f1 -d ' ') tags listed."
+	;;		
 	check-src)
 		# Verify if upstream package is still available
 		#
