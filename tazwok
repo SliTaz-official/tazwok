@@ -658,7 +658,8 @@ download()
 		case "$file" in
 			git\|*)
 				file=${file#git|}
-				if [ -d $INSTALLED/git ]; then
+				[ ! -f $INSTALLED/git/receipt ] && tazpkg get-install git --forced
+				if [ -f $INSTALLED/git/receipt ]; then
 					mkdir $tmp_src
 					cd $tmp_src
 					if [ "$BRANCH" ]; then
@@ -675,7 +676,8 @@ download()
 			;;
 			subversion\|*)
 				file=${file#subversion|}
-				if [ -d $INSTALLED/subversion ]; then
+				[ ! -f $INSTALLED/subversion/receipt ] && tazpkg get-install subversion --forced
+				if [ -f $INSTALLED/subversion/receipt ]; then
 					mkdir $tmp_src
 					cd $tmp_src
 					if [ "$BRANCH" ]; then
@@ -691,7 +693,8 @@ download()
 			;;
 			mercurial\|*)
 				file=${file#mercurial|}
-				if [ -d $INSTALLED/mercurial ]; then
+				[ ! -f $INSTALLED/mercurial/receipt ] && tazpkg get-install mercurial --forced
+				if [ -f $INSTALLED/mercurial/receipt ]; then
 					mkdir $tmp_src
 					cd $tmp_src
 					if [ "$BRANCH" ]; then
@@ -2864,6 +2867,7 @@ EOF
 			source_lib report
 			report start
 			check_for_tarball
+			[ -x /usr/bin/clean-chroot ] && clean-chroot
 		else
 			echo "No tarball to download for $PACKAGE"
 		fi
