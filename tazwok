@@ -504,7 +504,11 @@ check_for_tarball()
 					cp $SOURCES_REPOSITORY/$TARBALL $tmp_src/${src##*/}
 				;;
 
-			esac || { rm -f $SOURCES_REPOSITORY/$TARBALL; rm -r $tmp_src; return 1; }
+			esac || { report end-step
+				rm -f $SOURCES_REPOSITORY/$TARBALL
+				rm -r $tmp_src
+				return 1
+			}
 		fi
 
 		# Check if uncompressed tarball is in a root dir or not.
