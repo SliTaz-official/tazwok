@@ -434,7 +434,7 @@ remove_previous_package()
 check_for_tarball()
 {
 	[ "$WGET_URL" ] || return 0
-	report step "Checking for source tarball"
+	report step "Checking for source tarball: $PACKAGE"
 	local repack_src TARBALL
 	if [ "$repack_src" = yes ] && look_for_cookopt !repack_src; then
 			repack_src=no
@@ -728,7 +728,7 @@ download()
 					if [ "${WGET_URL%$TARBALL}" = "$WGET_URL" ] && [ "$file" = "$WGET_URL" ]; then
 						wget -q --no-check-certificate -O $TARBALL $file && break
 					else
-						wget -q --no-check-certificate $file && break						
+						wget -q --no-check-certificate $file && break
 					fi
 				else
 					tazwok_warning "Needs wget to download the source tarball from $file, please add it as build-depend."
@@ -1893,22 +1893,32 @@ check_for_incoming()
 	echo "No packages in $INCOMING_REPOSITORY."
 	return; }
 	if [ -s $PACKAGES_REPOSITORY/broken ]; then
-		echo "Don't move incoming packages to main repository because theses ones are broken:
-		$(cat $PACKAGES_REPOSITORY/broken)" >&2
-		return
+		missingpkg=$(look_for_missing_pkg broken)
+		if [ "$missingpkg" ]; then
+			echo "Don't move incoming packages to main repository because theses ones are broken:" >&2
+			echo "$missingpkg"
+			return 1
+		fi
 	fi
 	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
-		echo "Don't move incoming packages to main repository because some of them need to be cooked:
-		$(cat $PACKAGES_REPOSITORY/cooklist)" >&2
-		return
+		missingpkg=$(look_for_missing_pkg cooklist)
+		if [ "$missingpkg" ]; then
+			echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
+			echo "$missingpkg"
+			return 1
+		fi
 	fi
 	pkg="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
 	if ! [ "$forced" ]; then
 		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
-			echo "Don't move incoming packages to main repository because some of them need to be cooked." >&2
-			return
+			missingpkg=$(look_for_missing_pkg cooklist)
+			if [ "$missingpkg" ]; then
+				echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
+				echo "$missingpkg"
+				return 1
+			fi
 		fi
 	fi
 	report step "Moving incoming packages to main repository"
@@ -2898,7 +2908,6 @@ EOF
 			source_lib report
 			report start
 			check_for_tarball
-			[ -x /usr/bin/clean-chroot ] && clean-chroot
 		else
 			echo "No tarball to download for $PACKAGE"
 		fi
