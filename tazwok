@@ -552,21 +552,29 @@ check_for_tarball()
 
 	if [ "$nounpack" ]; then
 		[ -d "$tmp_src" ] && rm -r $tmp_src
+		report end-step	
 		return
 	fi
-	if [ ! -d "$src" ]; then
-		if ! check_for_var_modification src _pkg; then
-			src="${src%/*}/$(ls $tmp_src)"
-		fi
-		mv $(echo $tmp_src/*) "$src"
-		rm -r $tmp_src
-
+	if [ ! -d "$src" ]|| [ "$target" ]; then
 		# Permissions settings.
-		chown -R root.root "$src"
+		chown -R root.root "$tmp_src"
+		if [ -d "$src" ]; then
+			mkdir -p $src
+			for f in $tmp_src/*/*; do
+				cp -a $f $src || { report end-step; rm -r $tmp_src; return 1; }
+			done
+		else
+			if ! check_for_var_modification src _pkg && ! [ "$target" ]; then
+				src="${src%/*}/$(ls $tmp_src)"
+			fi
+			mv $(echo $tmp_src/*) "$src" || { report end-step; rm -r $tmp_src; return 1; }
+		fi
+		rm -r $tmp_src
 	else
 		[ -d "$tmp_src" ] && rm -r $tmp_src
 		echo "There's already something at $src. Abort." >&2
 	fi
+	report end-step
 }
 
 # Log and execute compile_rules function if it exists, to configure and
@@ -1867,6 +1875,16 @@ sort_cooklist()
 	fi
 	
 	report end-step
+}
+
+look_for_missing_pkg()
+{
+	for pkg in $(cat $PACKAGES_REPOSITORY/$1); do
+		grep -q ^$pkg$ $INCOMING_REPOSITORY/packages.txt \
+			$PACKAGES_REPOSITORY/packages.txt || \
+			continue
+		echo $pkg
+	done
 }
 
 check_for_incoming()
