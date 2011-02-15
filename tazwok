@@ -1648,7 +1648,7 @@ scan()
 	[ "$with_dev" ] && filter=with_dev
 	[ "$with_wanted" ] && filter=with_wanted
 	if [ "$filter" ]; then
-		pkg_list=$(echo $pkg_list | $filter)
+		pkg_list=$(echo $pkg_list | $filter | sort -u)
 		scan_pkg()
 		{
 			look_for_$look_for | $filter
