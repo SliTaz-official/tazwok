@@ -119,9 +119,6 @@ get_tazwok_config()
 	# Basically, get theses files from the net if they are missing.
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
-	[ -f $dep_db ] || touch $dep_db
-	[ -f $wan_db ] || touch $wan_db
-	[ -f $PACKAGES_REPOSITORY/cookorder.txt ] || touch $PACKAGES_REPOSITORY/cookorder.txt
 
 	# Check commons directories, create them if user is root.
 	if test $(id -u) = 0 ; then
@@ -130,14 +127,15 @@ get_tazwok_config()
 		check_dir $SOURCES_REPOSITORY
 		check_dir $INCOMING_REPOSITORY
 		check_dir $LOCAL_REPOSITORY/log
+		[ -f $dep_db ] || touch $dep_db
+		[ -f $wan_db ] || touch $wan_db
+		[ -f $PACKAGES_REPOSITORY/cookorder.txt ] || touch $PACKAGES_REPOSITORY/cookorder.txt
+		for file in broken blocked commit incoming cooklist; do
+			[ ! -f $PACKAGES_REPOSITORY/$file ] && touch $PACKAGES_REPOSITORY/$file
+		done
+		touch $SOURCES_REPOSITORY/sources.list
 	fi
 
-	# Some files are needed by tazwok in PACKAGES_REPOSITORY. Create
-	# them if they are missing.
-	for file in broken blocked commit incoming cooklist; do
-		[ ! -f $PACKAGES_REPOSITORY/$file ] && touch $PACKAGES_REPOSITORY/$file
-	done
-	touch $SOURCES_REPOSITORY/sources.list
 	
 	# Limit memory usage.
 	ulimit -v $(awk '/MemTotal/ { print int(($2*80)/100) }' < /proc/meminfo)
