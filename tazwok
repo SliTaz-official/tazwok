@@ -936,7 +936,8 @@ gen_package()
 	fs=$WOK/$PACKAGE/taz/$PACKAGE-$VERSION/fs
 	
 	# Set $src for standard package and $_pkg variables.
-	set_src_path && set_pkg_path
+	set_src_path
+	set_pkg_path
 	
 	# Execute genpkg_rules, check package and copy generic files to build
 	# the package.
