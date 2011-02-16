@@ -617,7 +617,6 @@ check_for_compile_rules()
 		#	tazwok_warning "config.site hasn't been used during \
 #configuration process."
 		#fi
-
 		report end-step
 	fi
 }
@@ -1005,14 +1004,14 @@ gen_package()
 	
 	# Next, check if something has changed in lib files.
 	if fgrep -q '.so' files.list; then
-		report step "Look for major/minor update in libraries"
 		for rep in $INCOMING_REPOSITORY $PACKAGES_REPOSITORY \
-			$([ "$undigest" ] && echo SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming && \
+			$([ "$undigest" ] && echo $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming && \
 			echo $SLITAZ_DIR/$SLITAZ_VERSION/packages); do
 			prev_VERSION=$(get_pkg_version $rep)
 			[ "$prev_VERSION" ] && pkg_file=$rep/$PACKAGE-$prev_VERSION.tazpkg && break
 		done
 		if [ "$pkg_file" ]; then
+			report step "Look for major/minor update in libraries"
 			get_pkg_files $pkg_file
 			cd $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
 			fgrep ".so" files.list | egrep -v "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" | \
@@ -1029,9 +1028,10 @@ gen_package()
 				break
 			done
 			rm -r $pkg_files_dir
-		fi
-		report end-step
-	fi
+			unset pkg_file
+			report end-step		
+   		fi
+   	fi
 	if [ ! "$EXTRAVERSION" ]; then
 		case "$PACKAGE" in
 		linux*);;
