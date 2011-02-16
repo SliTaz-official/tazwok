@@ -1843,7 +1843,7 @@ sort_cooklist()
 	for PACKAGE in $(cat $tmp/cooklist); do
 		WANTED="$(look_for_wanted)"
 		[ "$WANTED" ] || continue
-		if grep -q ^$WANTED$ $PACKAGES_REPOSITORY/broken $tmp/cooklist; then		
+		if grep -q ^$WANTED$ $PACKAGES_REPOSITORY/broken $tmp/cooklist; then
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
 		elif [ ! -d $WOK/$WANTED/install ]; then
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
@@ -2546,16 +2546,19 @@ Maintainer : $MAINTAINER"
 		cook
 	;;
 	sort-cooklist)
-		if [ ! "$LIST" ]; then
-			echo "Usage : tazwok sort-cooklist cooklist" >&2\
+		if [ ! -f "$LIST" ]; then
+			echo "Usage : tazwok sort-cooklist cooklist" >&2
 			exit 1
 		fi
+		check_root
 		get_tazwok_config
-		source_lib report
-		report start
+		report(){ : ; }
+		# When using sort-cooklist, the script should behave as for gen-cooklist
+		# The only difference between theses two is where the output is sended.
+		COMMAND=gen-cooklist
 		cooklist=$LIST
-		sort_cooklist
-		cp -af $tmp/cooklist $cooklist
+		gen_cook_list
+		cp -af $tmp/cooklist > $cooklist
 	;;
 	cook-list)
 		# Cook all packages listed in a file or in default cooklist.
