@@ -2560,7 +2560,7 @@ Maintainer : $MAINTAINER"
 		COMMAND=gen-cooklist
 		cooklist=$LIST
 		gen_cook_list
-		cp -af $tmp/cooklist > $cooklist
+		cp -af $tmp/cooklist $cooklist
 	;;
 	cook-list)
 		# Cook all packages listed in a file or in default cooklist.
