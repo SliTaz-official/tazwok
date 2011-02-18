@@ -1,0 +1,173 @@
+#!/bin/bash
+#
+# An attempt to cook a new toolchain from scratch.
+
+# Important settings and variables.
+source /usr/lib/slitaz/libtaz
+source /etc/slitaz/tazwok.conf
+source_lib report
+report start
+
+report step "Cooking temporary toolchain"
+report open-bloc
+
+report step "Initializing tools & environment"
+
+# Theses fours packages will be needed later.
+for p in libtaz tazwok-experimental slitaz-base-files tazpkg; do
+	tazwok cook $p
+done
+
+set +h
+umask 022
+PS1='\u:\w\$ '
+LANG=POSIX
+LC_ALL=POSIX
+
+# Set BUILD_HOST to something like $ARCH-tmp-linux-gnu to enable
+# of the temporary toolchain.
+BUILD_HOST=$(echo $BUILD_HOST | sed 's/\(.*\)-\(.*\)-linux-gnu/\1-tmp-linux-gnu/')
+
+PATH=/tools/bin:/tools/usr/bin:/tools/sbin:/tools/usr/sbin:/bin:/usr/bin:/sbin:/usr/sbin
+CONFIG_SITE="/etc/config.site.tmptoolchain"
+echo 'prefix=/tools' > /etc/config.site.tmptoolchain
+
+export LANG LC_ALL PATH PS1 MAKEFLAGS CONFIG_SITE
+unset CC CXX CPP CFLAGS CXXFLAGS LD_LIBRARY_PATH LD_PRELOAD DESTDIR
+
+# Create the dir for the temporary toolchain and link in root of host 
+# system.
+[ -d /tools ] && rm -r /tools
+mkdir /tools
+
+# Use some tweaked code from tazwok.
+prepare_package()
+{
+	tazwok clean $PACKAGE
+	tazwok get-src $PACKAGE
+	unset SOURCE VERSION EXTRAVERSION CATEGORY SHORT_DESC \
+		MAINTAINER WEB_SITE WGET_URL DEPENDS BUILD_DEPENDS WANTED
+	. $WOK/$PACKAGE/receipt
+	src=$WOK/$PACKAGE/$PACKAGE-$VERSION
+	cd $WOK/$PACKAGE
+}
+LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
+[ "$undigest" ] && LOCAL_REPOSITORY=$SLITAZ_DIR/$undigest
+WOK=$LOCAL_REPOSITORY/wok
+
+report end-step
+
+# Binutils and gcc need to be compiled twice.
+for PACKAGE in binutils gcc; do
+	rm $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE-firstpass.html 2>/dev/null
+	report sublog $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE-firstpass.html
+	report step "Compiling $PACKAGE, first pass"
+	report open-bloc
+	prepare_package
+	report step "Running compilation rules"
+	precook_tmp_toolchain
+	report end-step || exit 1
+	report close-bloc
+	report end-sublog
+done
+
+# Compile temporary toolchain using the $TOOLCHAIN variable.
+for PACKAGE in $SLITAZ_TOOLCHAIN; do
+	rm $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE.html 2>/dev/null
+	report sublog $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE.html
+	report step "Compiling $PACKAGE"
+	report open-bloc
+	prepare_package
+	report step "Running compilation rules"
+	
+	# Use compile_rules if there's not function cook_tmp_toolchain in
+	# the receipt. Works well if both functions are the same, as
+	# cook-toolchain use it's own config.site to set different defaults
+	# pathes.
+	if grep -q ^cook_tmp_toolchain\(\)$ $WOK/$PACKAGE/receipt; then
+		cook_tmp_toolchain
+	else
+		compile_rules
+	fi
+	
+	report end-step || exit 1
+	report close-bloc
+	report end-sublog
+done
+
+# Now we erase previous chroot tools and we switch to temporary
+# toolchain.
+
+report step "Setting up temporary toolchain environnment"
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin:/tools/bin:/tools/usr/bin:/tools/sbin:/tools/usr/sbin
+export PATH
+
+# Ajout manuel de libtaz et tazwok dans ce chroot.
+cp -a /etc/slitaz/tazpkg.conf /tmp/tazpkg.conf
+mkdir -p /tmp/backup/var/lib/tazpkg
+cp -a /var/lib/tazpkg/* /tmp/backup/var/lib/tazpkg
+sed 's/^AUTO_INSTALL_DEPS="yes"/AUTO_INSTALL_DEPS="no"/' -i \
+	/etc/slitaz/tazpkg.conf
+BASE_PKGS="tazpkg tazwok-experimental slitaz-base-files libtaz"
+for i in $BASE_PKGS; do
+	echo N | tazpkg get-install $i --root=/tmp/backup --forced
+done
+mkdir -p /tmp/backup/var/log/slitaz /tmp/backup/etc/slitaz 
+if [ -d /var/log/slitaz ]; then
+	cp -a /var/log/slitaz/* /tmp/backup/var/log/slitaz
+fi
+cp -a /etc/slitaz/* /tmp/backup/etc/slitaz
+cp -a /tmp/tazpkg.conf /tmp/backup/etc/slitaz
+cp -a /etc/resolv.conf /tmp/backup/etc
+# make sure that if /bin/sh link is not delete we use bash in tools for sh
+# otherwise you may get sigment fail
+mkdir -p /tmp/backup/bin
+ln -s /tools/bin/bash /tmp/backup/bin/sh
+
+rm -r /bin /etc /lib /sbin /usr /var
+cp -a /tmp/backup/* /
+#rm -r /tmp/backup
+
+case $ARCH in
+ x86_64) ln -sv lib /lib64 && ln -sv lib /usr/lib64 ;;
+esac
+
+mkdir -p /bin /usr/bin /usr/lib
+# doing a loop so we don't get {bash,cat,echo,pwd,stty} softlink
+BASIC_APPS="bash cat echo pwd stty"
+for i in $BASIC_APPS; do
+	ln -s /tools/bin/$i /bin/$i
+done
+BASIC_LIBS="libgcc_s.so libgcc_s.so.1 libstdc++.so libstdc++.so.6"
+for i in $BASIC_LIBS; do
+	ln -sf /tools/lib/$i /usr/lib/$i
+done
+
+ln -s /tools/bin/perl /usr/bin
+ln -s /tools/bin/gettext.sh /usr/bin
+
+report end-step
+
+# Finally, cook final* version of the toolchain packages.
+# * : recook toolchain against itself minus linux-api-headers
+# glibc binutils & gcc can be a good idea to make things
+# more robust & stable; in some cases it solves dependencies
+# loops.
+
+# Incoming packages as the only source for packages.
+rm -r /var/lib/tazpkg/undigest
+tazpkg setup-mirror $SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}/packages-incoming
+tazpkg recharge
+
+# Get toolchain cooklist.
+tazwok gen-cooklist ${undigest:+--undigest=$undigest} > /tmp/toolchain.list
+
+# Next cook packages one by one.
+# Cooking the list doesn't works because sh wouldn't take care
+# of the presence of new executables even if they're first in
+# $PATH.
+
+cat /tmp/toolchain.list | while read PACKAGE; do
+	tazwok cook $PACKAGE || exit 1
+done

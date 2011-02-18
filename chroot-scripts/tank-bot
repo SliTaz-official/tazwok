@@ -1,0 +1,15 @@
+#!/bin/sh
+# Automate common management tasks.
+
+# Update repositories
+tazpkg get-install mercurial
+tazwok update-wok
+source /etc/slitaz/slitaz.conf
+source /etc/slitaz/tazwok.conf
+LOCAL_REPOSITORY="SLITAZ_DIR/${undigest:-SLITAZ_VERSION}"
+cd $LOCAL_REPOSITORY/flavors
+hg pull -u
+clean-chroot
+
+tazwok cook-commit --missing
+tazwok check-incoming

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Remove packages which was not in the chroot at creation time.
+for pkg in $(ls /var/lib/tazpkg/installed); do
+	[ -d /var/lib/tazpkg/installed/$pkg ] || continue	
+	[ "$(grep ^$pkg$ /var/lib/tazpkg/chroot-pkgs)" ] || tazpkg remove $pkg --auto
+done
+exit 0
