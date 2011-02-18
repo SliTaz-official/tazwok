@@ -1891,15 +1891,17 @@ look_for_missing_pkg()
 
 check_for_incoming()
 {
+	report step "Check that all packages were cooked fine"
 	[ -s $INCOMING_REPOSITORY/packages.desc ] || {
 	echo "No packages in $INCOMING_REPOSITORY."
-	return; }
+	report end-step; return; }
 	if [ -s $PACKAGES_REPOSITORY/broken ]; then
 		missingpkg=$(look_for_missing_pkg broken)
 		if [ "$missingpkg" ]; then
 			echo "Don't move incoming packages to main repository because theses ones are broken:" >&2
 			echo "$missingpkg"
-			exit 1
+			report end-step	
+			return 1
 		fi
 	fi
 	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
@@ -1907,7 +1909,8 @@ check_for_incoming()
 		if [ "$missingpkg" ]; then
 			echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
 			echo "$missingpkg"
-			exit 1
+			report end-step	
+			return 1
 		fi
 	fi
 	incoming_pkgs="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
@@ -1919,7 +1922,8 @@ check_for_incoming()
 			if [ "$missingpkg" ]; then
 				echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
 				echo "$missingpkg"
-				exit 1
+				report end-step	
+				return 1
 			fi
 		fi
 	fi
@@ -3056,7 +3060,13 @@ EOF
 		get_tazwok_config
 		source_lib report
 		report start
+		[ -f $LOCAL_RESOSITORY/incoming ] && rm [ -f $LOCAL_REPOSITORY/incoming ]
+		report step "Checking $INCOMING_REPOSITORY"
+		report open-bloc
+		report sublog $LOCAL_REPOSITORY/log/incoming.html
 		check_for_incoming
+		report end-sublog
+		report close-bloc
 	;;
 	configure-chroot)
 		check_root
