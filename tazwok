@@ -2823,6 +2823,7 @@ EOF
 		# Pull and update a Hg wok.
 		get_options_list="local"
 		get_tazwok_config
+		source_lib report
 		clean_wok=$LOCAL_REPOSITORY/clean-wok
 		cd $clean_wok
 		if ! [ "$local" ]; then
@@ -2839,13 +2840,16 @@ EOF
 					fi
 
 				fi
+				report step "Getting wok changes using hg"
 				if [ -d .hg ]; then
 					hg pull -u || exit 1
 				else
 					hg clone $HG_WOK . || exit 1
 				fi
+				report end-step
 				[ -x /usr/bin/clean-chroot ] && clean-chroot
 			else
+				report step "Getting wok changes using tarball"
 				{ mkdir .tmp && cd .tmp
 					wget "$TARBALL_WOK" &&
 					case $TARBALL_WOK in
@@ -2858,9 +2862,12 @@ EOF
 					cd .. &&
 					rm -r .tmp
 				} || { echo "That's not cool: it fails!" >&2
+				report end-step
 				exit 1; }
+				report end-step
 			fi
 		fi
+		report step "Appending changes to wok"
 
 		# Handle removed files/dir.
 		cd $WOK	
@@ -2875,6 +2882,7 @@ EOF
 		done
 
 		cp -a $clean_wok/* $WOK
+		report end-step
 	;;
 	maintainers)
 		get_tazwok_config
