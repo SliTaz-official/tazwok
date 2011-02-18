@@ -2873,7 +2873,7 @@ EOF
 		# Handle removed files/dir.
 		cd $WOK	
 		for dir in $(ls -d *); do
-			[ -d "$clean_wok/$dir" ] || rm -r $dir
+			[ -d "$clean_wok/$dir" ] || rm -rf $dir
 		done
 		for file in */receipt */description.txt; do
 			[ -f "$clean_wok/$file" ] || rm -rf $file
