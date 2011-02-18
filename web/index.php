@@ -120,8 +120,9 @@ echo "$version";
 		<!-- <input type="submit" value="Show" /> -->
 	</form><br />
 Note:<br />
-Flavors/Iso build log are named iso-?flavor <br />
-Temporary toolchain log are named tmp-toolchain-?package <br />
+Flavors/Iso build logs are named: iso-?flavor <br />
+Temporary toolchain logs are named: tmp-toolchain-?package <br />
+Check-incoming log is named: incoming
 </p>
 
 <h2>Summary</h2>
