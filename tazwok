@@ -2824,6 +2824,7 @@ EOF
 		get_options_list="local"
 		get_tazwok_config
 		source_lib report
+		report start
 		clean_wok=$LOCAL_REPOSITORY/clean-wok
 		cd $clean_wok
 		if ! [ "$local" ]; then
