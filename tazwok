@@ -1899,7 +1899,7 @@ check_for_incoming()
 		if [ "$missingpkg" ]; then
 			echo "Don't move incoming packages to main repository because theses ones are broken:" >&2
 			echo "$missingpkg"
-			return 1
+			exit 1
 		fi
 	fi
 	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
@@ -1907,10 +1907,10 @@ check_for_incoming()
 		if [ "$missingpkg" ]; then
 			echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
 			echo "$missingpkg"
-			return 1
+			exit 1
 		fi
 	fi
-	incomming_pkgs="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
+	incoming_pkgs="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
 	if ! [ "$forced" ]; then
 		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
@@ -1919,13 +1919,13 @@ check_for_incoming()
 			if [ "$missingpkg" ]; then
 				echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
 				echo "$missingpkg"
-				return 1
+				exit 1
 			fi
 		fi
 	fi
 	report step "Moving incoming packages to main repository"
 	unset EXTRAVERSION
-	for PACKAGE in $incomming_pkgs; do
+	for PACKAGE in $incoming_pkgs; do
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
 			VERSION=$(get_pkg_version $INCOMING_REPOSITORY)
 			remove_previous_package $PACKAGES_REPOSITORY
