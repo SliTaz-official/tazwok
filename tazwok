@@ -1808,7 +1808,7 @@ gen_cook_list()
 				echo $PACKAGE >> $PACKAGES_REPOSITORY/blocked
 		done
 	fi
-	
+
 	if [ -s $PACKAGES_REPOSITORY/commit ] && [ "$COMMAND" != gen-cooklist ]; then
 		cd $PACKAGES_REPOSITORY
 		for PACKAGE in $(cat commit); do
@@ -1831,7 +1831,7 @@ sort_cooklist()
 	fi
 	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
 	[ "$plan_regen_cookorder" ] && sort_db
-	report step "Sorting cooklist"
+	report step "Generating cooklist"
 	if [ -f "$tmp/checked" ]; then
 		rm -f $tmp/cooklist
 		cat $tmp/checked | while read PACKAGE; do
@@ -1843,7 +1843,10 @@ sort_cooklist()
 			sed "/^$PACKAGE/d" -i $tmp/cooklist
 		done
 	fi
+	report end-step
+	[ -s $tmp/cooklist ] || return
 
+	report step "Sorting cooklist"
 	for PACKAGE in $(cat $tmp/cooklist); do
 		WANTED="$(look_for_wanted)"
 		[ "$WANTED" ] || continue
@@ -1916,6 +1919,7 @@ check_for_incoming()
 	incoming_pkgs="$(cut -f 1 -d '|' $INCOMING_REPOSITORY/packages.desc)"
 	if ! [ "$forced" ]; then
 		cooklist=$PACKAGES_REPOSITORY/cooklist
+		pkg="$incoming_pkgs"
 		gen_cook_list
 		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
 			missingpkg=$(look_for_missing_pkg cooklist)
@@ -1927,6 +1931,7 @@ check_for_incoming()
 			fi
 		fi
 	fi
+
 	report step "Moving incoming packages to main repository"
 	unset EXTRAVERSION
 	for PACKAGE in $incoming_pkgs; do
@@ -1945,13 +1950,41 @@ check_for_incoming()
 					rm -f $SOURCES_REPOSITORY/$previous_tarball
 			fi
 	done
-	report end-step
 	for file in packages.list packages.equiv packages.md5 packages.desc \
 		packages.txt; do
 		echo -n "" > $INCOMING_REPOSITORY/$file
 	done
 	rm -r $INCOMING_REPOSITORY/files.list.lzma
 	pkg_repository=$PACKAGES_REPOSITORY && update_packages_db
+
+	report step "Updating flavors"
+	if [ -x /usr/bin/tazlito ] || [ -x /usr/bin/clean-chroot ]; then
+		if ! [ -x /usr/bin/tazlito ]; then
+			tazpkg get-install tazlito
+		fi
+
+		# Handle cases where tazwok is used into main system;
+		# Handle cases where SLITAZ_DIR is not /home/slitaz.
+		[ -L /home/slitaz/flavors ] && rm /home/slitaz/flavors
+		mkdir -p /home/slitaz
+		ln -s $LOCAL_REPOSITORY/flavors /home/slitaz/flavors
+
+		cd $LOCAL_REPOSITORY/packages
+		for i in $LOCAL_REPOSITORY/flavors/*; do
+			[ -d "$i" ] continue	
+			tazlito pack-flavor ${i##*/}
+		done
+
+		noheader=""
+		for i in *.flavor; do
+			tazlito show-flavor $i --brief $noheader
+			noheader="--noheader"
+		done > flavors.list
+		[ -x /usr/bin/clean-chroot ] && clean-chroot
+	else
+		echo "Can't create up-to-date flavors because tazlito package is missing." >&2
+	fi
+	report end-step
 }
 
 ########################################################################
@@ -2834,7 +2867,7 @@ EOF
 					# Auto-install only if we are in a cook chroot.
 					if [ -x /usr/bin/clean-chroot ]; then
 						echo "" >&2
-						echo "You need to install mercurial	to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold >&2
+						echo "You need to install mercurial	to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold -s >&2
 						echo "">&2
 					else
 						tazpkg get-install mercurial
@@ -2872,7 +2905,8 @@ EOF
 
 		# Handle removed files/dir.
 		cd $WOK	
-		for dir in $(ls -d *); do
+		for dir in *; do
+			[ -d $dir ] || continue
 			[ -d "$clean_wok/$dir" ] || rm -rf $dir
 		done
 		for file in */receipt */description.txt; do
@@ -3079,6 +3113,7 @@ EOF
 		[ -f $LOCAL_RESOSITORY/incoming ] && rm [ -f $LOCAL_REPOSITORY/incoming ]
 		report step "Checking $INCOMING_REPOSITORY"
 		report open-bloc
+		[ -f $LOCAL_REPOSITORY/log/incoming.html ] && rm $LOCAL_REPOSITORY/log/incoming.html	
 		report sublog $LOCAL_REPOSITORY/log/incoming.html
 		check_for_incoming
 		report end-sublog
@@ -3225,4 +3260,5 @@ EOF
 	;;
 esac
 
-report stop 2>/dev/null || exit 0
+report stop 2>/dev/null
+exit 0
