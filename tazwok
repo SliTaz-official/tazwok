@@ -2862,12 +2862,19 @@ EOF
 			fi
 		fi
 
-		# Handle removed packages (removing receipt from wok is enough).
-		for dir in $(ls -d $WOK/*); do
-			[ -d "$dir" ] || rm $WOK/$dir/receipt
+		# Handle removed files/dir.
+		cd $WOK	
+		for dir in $(ls -d *); do
+			[ -d "$clean_wok/$dir" ] || rm -r $dir
+		done
+		for file in */receipt */description.txt; do
+			[ -f "$clean_wok/$file" ] || rm -rf $file
+		done
+		for i in $(find */stuff); do
+			[ -e "$clean_wok/$i" ] || rm -rf $i
 		done
 
-		cp -a * $WOK
+		cp -a $clean_wok/* $WOK
 	;;
 	maintainers)
 		get_tazwok_config
