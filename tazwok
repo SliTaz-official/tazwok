@@ -2143,10 +2143,10 @@ chroot_dir=\$LOCAL_REPOSITORY/chroot
 
 # Default scripts path (theses scripts are added in the
 # $chroot_dir/usr/bin and can be called with tazchroot script)
-script_dir=/var/lib/tazchroot
+script_dir=/usr/lib/slitaz/chroot-scripts/tazwok
 
 # List of directories to mount.
-list_dir="$(for dir in packages wok src packages-incoming log flavors iso; do echo $LOCAL_REPOSITORY/$dir; done)
+list_dir="$(for dir in packages wok src packages-incoming log flavors iso clean-chroot; do echo $LOCAL_REPOSITORY/$dir; done)
 $SLITAZ_LOG$( [ "$undigest" ] && echo -e "\n$SLITAZ_DIR/$SLITAZ_VERSION/packages" )"
 
 create_chroot()
