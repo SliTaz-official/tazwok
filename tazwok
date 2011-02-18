@@ -59,7 +59,7 @@ usage()
   clean-src       Remove old/unrelated-to-wok sources.
   remove         Remove a package from the wok.
   webserver      Enable/disable webserver on localhost.
-  hgup           Pull and update a wok under Hg.
+  update-wok     Update the wok.
   maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor.
   tags           List all tags used in wok receipts.\n
@@ -123,6 +123,7 @@ get_tazwok_config()
 	# Check commons directories, create them if user is root.
 	if test $(id -u) = 0 ; then
 		check_dir $WOK || chmod 777 $WOK
+		check_dir $LOCAL_REPOSITORY/clean-wok || chmod 777 $LOCAL_REPOSITORY/clean-wok
 		check_dir $PACKAGES_REPOSITORY
 		check_dir $SOURCES_REPOSITORY
 		check_dir $INCOMING_REPOSITORY
@@ -2814,14 +2815,55 @@ EOF
 			echo ""
 		fi
 	;;
-	hgup)
+	update-wok)
 		# Pull and update a Hg wok.
+		get_options_list="local"
 		get_tazwok_config
-		if ls -l $WOK/.hg/hgrc | fgrep -q "root"; then
-			check_root
+		clean_wok=$LOCAL_REPOSITORY/clean-wok
+		cd $clean_wok
+		if ! [ "$local" ]; then
+			if [ "$WOK_UPDATE_METHOD" = hg ]; then
+				if ! [ -f "$INSTALLED/mercurial/receipt" ]; then
+
+					# Auto-install only if we are in a cook chroot.
+					if [ -x /usr/bin/clean-chroot ]; then
+						echo "" >&2
+						echo "You need to install mercurial	to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold >&2
+						echo "">&2
+					else
+						tazpkg get-install mercurial
+					fi
+
+				fi
+				if [ -d .hg ]; then
+					hg pull -u || exit 1
+				else
+					hg clone $HG_WOK . || exit 1
+				fi
+				[ -x /usr/bin/clean-chroot ] && clean-chroot
+			else
+				{ mkdir .tmp && cd .tmp
+					wget "$TARBALL_WOK" &&
+					case $TARBALL_WOK in
+						*bz2) tar xjf *.bz2 -C wok; rm *.bz2;;
+						*lzma) unlzma -c *.lzma | tar xf - -C wok; rm *.lzma ;;
+						*gz) tar xzf *.gz -C wok; rm*.gz ;;
+					esac &&
+					rm -r $(ls -d $clean_wok/*) &&
+					cp -a wok/* $clean_wok &&
+					cd .. &&
+					rm -r .tmp
+				} || { echo "That's not cool: it fails!" >&2
+				exit 1; }
+			fi
 		fi
-		cd $WOK
-		hg pull && hg update
+
+		# Handle removed packages (removing receipt from wok is enough).
+		for dir in $(ls -d $WOK/*); do
+			[ -d "$dir" ] || rm $WOK/$dir/receipt
+		done
+
+		cp -a * $WOK
 	;;
 	maintainers)
 		get_tazwok_config
