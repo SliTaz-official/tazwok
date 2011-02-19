@@ -2299,8 +2299,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		# Check for ELF file
 		is_elf()
 		{
-			[ "$(dd if=$1 bs=1 skip=1 count=3 2> /dev/null)" \
-				= "ELF" ]
+			[ "$(dd if=$1 bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ]
 		}
 
 		# Print shared library dependencies
