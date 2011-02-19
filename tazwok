@@ -436,7 +436,7 @@ check_for_tarball()
 {
 	[ "$WGET_URL" ] || return 0
 	report step "Checking for source tarball: $PACKAGE"
-	local repack_src TARBALL
+	local repack_src=$repack_src TARBALL=$TARBALL
 	if [ "$repack_src" = yes ] && look_for_cookopt !repack_src; then
 			repack_src=no
 	fi
@@ -1369,7 +1369,7 @@ gen_wan_db()
 
 update_wan_db()
 {
-	local PACKAGE
+	local PACKAGE=$PACKAGE
 	for RECEIPT in $(fgrep WANTED $WOK/*/receipt | \
 		fgrep $PACKAGE | cut -f1 -d ':'); do
 		WANTED=
@@ -1583,7 +1583,7 @@ done
 scan()
 {
 	# Get packages in argument.
-	local PACKAGE WANTED pkg_list=
+	local PACKAGE=$PACKAGE WANTED=$WANTED pkg_list=
 	for arg in $@; do
 		[ "$arg" = "${arg#--}" ] || continue
 		pkg_list="$pkg_list $arg"
@@ -1700,7 +1700,7 @@ scan()
 
 check_for_missing()
 {
-	local PACKAGE
+	local PACKAGE=$PACKAGE
 	if ! check_for_pkg_in_wok; then
 		[ "$?" = 2 ] && return 1
 		return
