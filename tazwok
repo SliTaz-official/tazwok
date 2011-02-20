@@ -2866,18 +2866,19 @@ EOF
 					# Auto-install only if we are in a cook chroot.
 					if [ -x /usr/bin/clean-chroot ]; then
 						echo "" >&2
-						echo "You need to install mercurial	to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold -s >&2
+						echo "You need to install mercurial to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold -s >&2
 						echo "">&2
 					else
 						tazpkg get-install mercurial
 					fi
 
-				fi
-				report step "Getting wok changes using hg"
-				if [ -d .hg ]; then
-					hg pull -u || exit 1
 				else
-					hg clone $HG_WOK . || exit 1
+					report step "Getting wok changes using hg"
+					if [ -d .hg ]; then
+						hg pull -u || exit 1
+					else
+						clone $HG_WOK . || exit 1
+					fi
 				fi
 				report end-step
 				[ -x /usr/bin/clean-chroot ] && clean-chroot
@@ -2906,13 +2907,15 @@ EOF
 		cd $WOK	
 		for dir in *; do
 			[ -d $dir ] || continue
-			[ -d "$clean_wok/$dir" ] || rm -rf $dir
+			[ ! -d "$clean_wok/$dir" ] || rm -rf $dir
 		done
 		for file in */receipt */description.txt; do
-			[ -f "$clean_wok/$file" ] || rm -rf $file
+			[ -f $file ] || continue
+			[ ! -f "$clean_wok/$file" ] || rm -rf $file
 		done
 		for i in $(find */stuff); do
-			[ -e "$clean_wok/$i" ] || rm -rf $i
+			[ -e $i ] || continue
+			[ ! -e "$clean_wok/$file" ] || rm -rf $i
 		done
 
 		cp -a $clean_wok/* $WOK
