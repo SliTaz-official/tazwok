@@ -61,9 +61,7 @@ Toute les infos d'utilisation du wok sont décrites sur la page Forge du site :
 Cooklists - Liste de cuisson
 ----------------------------
 Pour compiler plusieurs paquets en une seule commande, on peut utiliser des 
-listes de cuisson. Il y a des listes exemples dans le répertoire examples/
-de cette archive et dans le répertoire /usr/share/examples/tazwok/cooklists
-sur SliTaz.
+listes de cuisson. Voir le manuel, commande cooklist.
 
 
 Structure d'un paquet dans le wok - $WOK/$PACKAGE/*
