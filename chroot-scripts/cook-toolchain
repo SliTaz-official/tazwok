@@ -106,7 +106,6 @@ export PATH
 # Ajout manuel de libtaz et tazwok dans ce chroot.
 cp -a /etc/slitaz/tazpkg.conf /tmp/tazpkg.conf
 mkdir -p /tmp/backup/var/lib/tazpkg
-cp -a /var/lib/tazpkg/* /tmp/backup/var/lib/tazpkg
 sed 's/^AUTO_INSTALL_DEPS="yes"/AUTO_INSTALL_DEPS="no"/' -i \
 	/etc/slitaz/tazpkg.conf
 BASE_PKGS="tazpkg tazwok-experimental slitaz-base-files libtaz"
@@ -117,17 +116,15 @@ mkdir -p /tmp/backup/var/log/slitaz /tmp/backup/etc/slitaz
 if [ -d /var/log/slitaz ]; then
 	cp -a /var/log/slitaz/* /tmp/backup/var/log/slitaz
 fi
+cp -a /var/lib/tazpkg/* /tmp/backup/var/lib/tazpkg
 cp -a /etc/slitaz/* /tmp/backup/etc/slitaz
 cp -a /tmp/tazpkg.conf /tmp/backup/etc/slitaz
 cp -a /etc/resolv.conf /tmp/backup/etc
-# make sure that if /bin/sh link is not delete we use bash in tools for sh
-# otherwise you may get sigment fail
-mkdir -p /tmp/backup/bin
-ln -s /tools/bin/bash /tmp/backup/bin/sh
 
+# Switch to temp toolchain tools entirely.
 rm -r /bin /etc /lib /sbin /usr /var
 cp -a /tmp/backup/* /
-#rm -r /tmp/backup
+rm -r /tmp/backup
 
 case $ARCH in
  x86_64) ln -sv lib /lib64 && ln -sv lib /usr/lib64 ;;
@@ -146,6 +143,7 @@ done
 
 ln -s /tools/bin/perl /usr/bin
 ln -s /tools/bin/gettext.sh /usr/bin
+ln -s /tools/bin/busybox /bin/sh
 
 report end-step
 
