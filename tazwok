@@ -1971,7 +1971,7 @@ check_for_incoming()
 
 		cd $LOCAL_REPOSITORY/packages
 		for i in $LOCAL_REPOSITORY/flavors/*; do
-			[ -d "$i" ] continue	
+			[ -d "$i" ] || continue	
 			tazlito pack-flavor ${i##*/}
 		done
 
