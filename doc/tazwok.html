@@ -23,7 +23,7 @@
 </head>
 <body bgcolor="#ffffff">
 <div id="header">
-<h1><font color="#3e1220">Tazwok Manual</h1>
+<h1>Tazwok Manual</h1>
 </div>
 <hr />
 <!-- Start content -->
@@ -102,10 +102,9 @@ l'utilisation d'undigest ou de SLITAZ_VERSION donne le même résultat.
 <pre>
  #tazwok build-depends linux --SLITAZ_DIR=/home/pas-slitaz --SLITAZ_VERSION=cooking --undigest=undigest
 </pre>
-
 <h2>COMMANDES</h2>
 <a name="usage"></a>
-<h3><font color="#6c0023">usage</h3>
+<h3>usage</h3>
 <p>
 La commande 'usage' affiche la liste des commandes diponibles avec une petite
 description en English :
@@ -114,7 +113,7 @@ description en English :
  # tazwok usage
 </pre>
 <a name="stats"></a>
-<h3><font color="#6c0023">stats</h3>
+<h3>stats</h3>
 <p>
 Stats affiche les informations contenues dans le fichier de configuration et
 le nombre de paquets disponibles dans le wok :
@@ -123,7 +122,7 @@ le nombre de paquets disponibles dans le wok :
  # tazwok stats
 </pre>
 <a name="list"></a>
-<h3><font color="#6c0023">list</h3>
+<h3>list</h3>
 <p>
 La commande 'list' permet de lister l'ensemble des paquets contenus dans le
 wok ou de lister les catégories par défaut (vous pouvez créer la votre). Elle
@@ -134,7 +133,7 @@ permet aussi de lister les paquets d'une catégorie :
  # tazwok list category
 </pre>
 <a name="info"></a>
-<h3><font color="#6c0023">info</h3>
+<h3>info</h3>
 <p>
 Cette commande donne des informations sur le paquet, nom, version, etc. Info
 se base sur la recette du paquet pour connaître les informations, se sont les
@@ -144,7 +143,7 @@ mêmes infos affichées par Tazpkg et les paquets installés :
  # tazwok info package
 </pre>
 <a name="check-log"></a>
-<h3><font color="#6c0023">check-log</h3>
+<h3>check-log</h3>
 <p>
 Lors de la compilation et génération du paquet binaire, Tazwok génére quelques
 messages de log stockés dans un fichier 'process.log'. Pour les afficher :
@@ -153,7 +152,7 @@ messages de log stockés dans un fichier 'process.log'. Pour les afficher :
  # tazwok check-log package
 </pre>
 <a name="search"></a>
-<h3><font color="#6c0023">search</h3>
+<h3>search</h3>
 <p>
 Search permet de faire une recherche de paquet dans le wok. Vous pouvez
 spécifier un terme ou un nom de paquet :
@@ -162,7 +161,7 @@ spécifier un terme ou un nom de paquet :
  # tazwok search name
 </pre>
 <a name="compile"></a>
-<h3><font color="#6c0023">compile</h3>
+<h3>compile</h3>
 <p>
 Compile va compiler. Cette commande utilise les régles de compilation
 (compile_rules) spécifiées dans la recette du paquet en question, pour
@@ -175,7 +174,7 @@ en une seule fois. Exemple :
  # tazwok compile package
 </pre>
 <a name="genpkg"></a>
-<h3><font color="#6c0023">genpkg</h3>
+<h3>genpkg</h3>
 <p>
 Genpkg pour <em>Generate package</em>, va générer le paquet (.tazpkg) en
 utilisant la fonction 'genpkg_rules' trouvée dans sa recette et compresser
@@ -193,7 +192,7 @@ si le fichier existe dans /stuff. Utilisation de 'genpkg' :
  # tazwok genpkg package
 </pre>
 <a name="cook"></a>
-<h3><font color="#6c0023">cook</h3>
+<h3>cook</h3>
 <p>
 Cook va simplement compiler et empaqueter le paquet en une seule fois :
 </p>
@@ -304,6 +303,15 @@ et lire la documentation du Cookbook. Exemple d'utilisation :
  # tazwok new-tree package
  # tazwok new-tree package --interactive
 </pre>
+<a name="edit"></a>
+<h3>edit</h3>
+<p>
+Lance l'éditeur définit dans la configuration de tazwok (variable
+EDITOR) pour éditer la recette du paquet précisé en argument.
+</p>
+<pre>
+ # tazwok edit sylpheed
+</pre>
 <a name="gen-list"></a>
 <h3>gen-list</h3>
 <p>
@@ -348,6 +356,17 @@ automatiquement ces fichiers).
 </p>
 <pre>
  # tazwok gen-wok-db
+</pre>
+<a name="report"></a>
+<h3>report</h3>
+<p>
+Affiche le contenue des listes:
+commit/cooklist/broken/blocked, ou seulement de la liste demandée en
+argument.
+</p>
+<pre>
+ # tazwok report
+ # tazwok report cooklist
 </pre>
 <a name="gen-clean-wok"></a>
 <h3>gen-clean-wok et clean-wok</h3>
