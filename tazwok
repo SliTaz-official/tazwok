@@ -2877,7 +2877,7 @@ EOF
 					if [ -d .hg ]; then
 						hg pull -u || exit 1
 					else
-						clone $HG_WOK . || exit 1
+						hg clone $HG_WOK . || exit 1
 					fi
 				fi
 				report end-step
@@ -2915,7 +2915,7 @@ EOF
 		done
 		for i in $(find */stuff); do
 			[ -e $i ] || continue
-			[ ! -e "$clean_wok/$file" ] || rm -rf $i
+			[ ! -e "$clean_wok/$i" ] || rm -rf $i
 		done
 
 		cp -a $clean_wok/* $WOK
