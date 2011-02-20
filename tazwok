@@ -2907,15 +2907,15 @@ EOF
 		cd $WOK	
 		for dir in *; do
 			[ -d $dir ] || continue
-			[ ! -d "$clean_wok/$dir" ] || rm -rf $dir
+			[ -d "$clean_wok/$dir" ] || rm -rf $dir
 		done
 		for file in */receipt */description.txt; do
 			[ -f $file ] || continue
-			[ ! -f "$clean_wok/$file" ] || rm -rf $file
+			[ -f "$clean_wok/$file" ] || rm -rf $file
 		done
 		for i in $(find */stuff); do
 			[ -e $i ] || continue
-			[ ! -e "$clean_wok/$i" ] || rm -rf $i
+			[ -e "$clean_wok/$i" ] || rm -rf $i
 		done
 
 		cp -a $clean_wok/* $WOK
