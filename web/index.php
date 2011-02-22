@@ -116,7 +116,7 @@ echo "$version";
 ?>
 " />
 		Show pkg log:<br />
-		 <input type="text" name="package" />
+		 <input type="text" name="package" style="width: 320px;" />
 		<!-- <input type="submit" value="Show" /> -->
 	</form><br />
 Note:<br />
