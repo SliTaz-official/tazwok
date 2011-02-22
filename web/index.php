@@ -142,13 +142,13 @@ Check-incoming log is named: incoming
 	<li>Packages in the incoming repository: <?php
 	system("cd $incoming && ls -1t *.tazpkg | wc -l"); ?></li>
 	<li>Commited packages: <?php
-	system("wc -l $packages/commit | cut -f 1 -d ' '"); ?></li>
+	system("wc -l < $db_dir/commit"); ?></li>
 	<li>Packages to cook: <?php
-	system("wc -l $packages/cooklist | cut -f 1 -d ' '"); ?></li>
+	system("wc -l < $db_dir/cooklist"); ?></li>
 	<li>Broken packages: <?php
-	system("wc -l $packages/broken | cut -f 1 -d ' '"); ?></li>
+	system("wc -l < $db_dir/broken"); ?></li>
 	<li>Blocked packages: <?php
-	system("wc -l $packages/blocked | cut -f 1 -d ' '"); ?></li>
+	system("wc -l < $db_dir/blocked"); ?></li>
 </ul>
 
 <h3>Commit</h3>
