@@ -2,10 +2,12 @@
 # Automate common management tasks.
 
 # Update repositories
-tazpkg get-install mercurial
+if [ ! -d /var/lib/tazpkg/installed/mercurial ]; then
+	tazpkg get-install mercurial
+fi
 tazwok update-wok
-source /etc/slitaz/slitaz.conf
-source /etc/slitaz/tazwok.conf
+. /etc/slitaz/slitaz.conf
+. /etc/slitaz/tazwok.conf
 LOCAL_REPOSITORY="$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}"
 cd $LOCAL_REPOSITORY/flavors
 hg pull -u
