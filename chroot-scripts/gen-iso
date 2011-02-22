@@ -1,5 +1,5 @@
 #!/bin/sh
-# Little script to cook flavor in tazwok-experimental' chroot waiting
+# Little script to cook flavor in tazwok chroot waiting
 # for something more consistent into tazlito.
 
 [ "$1" ] || { echo "Usage: gen-iso flavorname [gzip]" >&2; exit 1; }

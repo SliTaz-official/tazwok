@@ -14,7 +14,7 @@ report open-bloc
 report step "Initializing tools & environment"
 
 # Theses fours packages will be needed later.
-for p in libtaz tazwok-experimental slitaz-base-files tazpkg; do
+for p in libtaz tazwok slitaz-base-files tazpkg; do
 	tazwok cook $p
 done
 
@@ -108,7 +108,7 @@ cp -a /etc/slitaz/tazpkg.conf /tmp/tazpkg.conf
 mkdir -p /tmp/backup/var/lib/tazpkg
 sed 's/^AUTO_INSTALL_DEPS="yes"/AUTO_INSTALL_DEPS="no"/' -i \
 	/etc/slitaz/tazpkg.conf
-BASE_PKGS="tazpkg tazwok-experimental slitaz-base-files libtaz"
+BASE_PKGS="tazpkg tazwok slitaz-base-files libtaz"
 for i in $BASE_PKGS; do
 	echo N | tazpkg get-install $i --root=/tmp/backup --forced
 done
@@ -166,6 +166,6 @@ tazwok gen-cooklist ${undigest:+--undigest=$undigest} > /tmp/toolchain.list
 # of the presence of new executables even if they're first in
 # $PATH.
 
-cat /tmp/toolchain.list | while read PACKAGE; do
+cat /tmp/cooklist | while read PACKAGE; do
 	tazwok cook $PACKAGE || exit 1
 done

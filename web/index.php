@@ -92,7 +92,7 @@ function list_last_cooked($dir, $suffix)
 	<div id="block_top">
 		<h1>Build Bot</h1>
 		<p>
-			Tazwok-experimental is a <a href="http://www.slitaz.org/">SliTaz GNU/Linux</a>
+			Tazwok is a <a href="http://www.slitaz.org/">SliTaz GNU/Linux</a>
 			Build Bot, it automatically cooks and tests packages commited in
 			the wok. SliTaz <a href="http://pkgs.slitaz.org/">packages</a> are
 			cooked on the project main server: code name 
