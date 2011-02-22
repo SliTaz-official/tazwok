@@ -2049,6 +2049,7 @@ cook()
 	# Define log path and start report.
 	[ -f $LOCAL_REPOSITORY/log/$PACKAGE.html ] && rm $LOCAL_REPOSITORY/log/$PACKAGE.html
 	report sublog $LOCAL_REPOSITORY/log/$PACKAGE.html
+	echo "$PACKAGE" > $LOCAL_REPOSITORY/log/package
 	report step "Cooking $PACKAGE"
 	report open-bloc
 

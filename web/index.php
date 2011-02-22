@@ -127,12 +127,20 @@ echo "$version";
 <ul>
 <?php
 	// Check curent status (update in real time) and display summary.
+	$status = "Chroot is not mounted";
 	if (file_exists($lockfile)) {
-		echo "<li>Status: Chroot is mounted</li>\n";
+		$status = "Chroot is mounted"";
 	}
-	else {
-		echo "<li>Status: Chroot is not mounted</li>\n";
+	if (file_exists("$log_dir/step")) {
+		$status .= ", ".file_get_contents("$log_dir/step");
+		if (file_exists("$log_dir/package")) {
+			$pkg = file_get_contents("$log_dir/package");
+			if (file_exists("$log_dir/$pkg.html"))
+				$status .= " <a href=\"log.php?version=$version&package=$pkg\">$pkg</a>";
+			else	$status .= "$pkg";
+		}
 	}
+	echo "<li>Status: $status</li>\n";
 	//include("$db_dir/summary");
 ?>
 	<li>Packages in the wok: <?php
