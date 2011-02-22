@@ -133,14 +133,14 @@ Check-incoming log is named: incoming
 	else {
 		echo "<li>Status: Chroot is not mounted</li>\n";
 	}
-	include("$db_dir/summary");
+	//include("$db_dir/summary");
 ?>
 	<li>Packages in the wok: <?php
 	system("cd $wok && ls -1 | wc -l"); ?></li>
 	<li>Packages in the main repository: <?php
-	system("cd $packages  && ls -1t *.tazpkg | wc -l"); ?></li>
+	system("cd $packages && ls -1t *.tazpkg | wc -l"); ?></li>
 	<li>Packages in the incoming repository: <?php
-	system("cd $incoming  && ls -1t *.tazpkg | wc -l"); ?></li>
+	system("cd $incoming && ls -1t *.tazpkg | wc -l"); ?></li>
 	<li>Commited packages: <?php
 	system("wc -l $packages/commit | cut -f 1 -d ' '"); ?></li>
 	<li>Packages to cook: <?php
@@ -214,6 +214,7 @@ list_last_cooked($packages, "flavor");
 			<li><a href="http://scn.slitaz.org/">Community Network</a></li>
 			<li><a href="http://labs.slitaz.org/">Laboratories</a></li>
 			<li><a href="http://twitter.com/slitaz">SliTaz on Twitter</a></li>
+			<li><a href="http://www.facebook.com/slitaz">SliTaz on Facebook</a></li>
 		</ul>
 	</div>
 	<h4>SliTaz Website</h4>
