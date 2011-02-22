@@ -91,14 +91,18 @@ function list_last_cooked($dir, $suffix)
 		<h1>Build Bot</h1>
 		<p>
 			Tazwok is a <a href="http://www.slitaz.org/">SliTaz GNU/Linux</a>
-			Build Bot, it automatically cooks and tests packages commited in
-			the wok. SliTaz <a href="http://pkgs.slitaz.org/">packages</a> are
-			cooked on the project main server: code name 
-			<a href="http://tank.slitaz.org">Tank</a>. This web interface gives
-			the current status of the build bot and the last report
-			about any packages modified by the SliTaz contributors in 
-			the Mercurial repositories, aka 
+			Build Bot, it automatically cooks and tests packages. SliTaz 
+			<a href="http://pkgs.slitaz.org/">packages</a> are cooked on
+			<a href="http://tank.slitaz.org">Tank</a>, the project main
+			server. This web interface gives the current status of the 
+			build bot and the last report about any packages modified by
+			contributors in the Mercurial repositories, aka 
 			<a href="http://hg.slitaz.org/">Hg repos</a>.
+		</p>
+		<p>
+			Note: Flavors/Iso build logs are named "iso-?flavor",
+			Temporary toolchain logs are named "tmp-toolchain-?package"
+			and check-incoming log is named "incoming".
 		</p>
 	<!-- Top block end -->
 	</div>
@@ -116,11 +120,7 @@ echo "$version";
 		Show pkg log:<br />
 		 <input type="text" name="package" style="width: 320px;" />
 		<!-- <input type="submit" value="Show" /> -->
-	</form><br />
-Note:<br />
-Flavors/Iso build logs are named: iso-?flavor <br />
-Temporary toolchain logs are named: tmp-toolchain-?package <br />
-Check-incoming log is named: incoming
+	</form>
 </p>
 
 <h2>Summary</h2>
