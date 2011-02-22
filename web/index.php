@@ -1,5 +1,3 @@
-
-
 <?php
 $version=$_GET["version"];
 if (file_exists("conf-$version.php")) {
@@ -126,33 +124,31 @@ Check-incoming log is named: incoming
 </p>
 
 <h2>Summary</h2>
-<pre class="package">
-<?php
-// Check curent status (update in real time) and display summary.
-if (file_exists($lockfile)) {
-	echo "Status   : Chroot is mounted\n";
-}
-else {
-	echo "Status   : Chroot is not mounted\n";
-}
-include("$db_dir/summary");
-?>
-</pre>
 <ul>
-<li>Packages in the wok: <?php
-system("cd $wok && ls -1 | wc -l"); ?></li>
-<li>Packages in the main repository: <?php
-system("cd $packages  && ls -1t *.tazpkg | wc -l"); ?></li>
-<li>Packages in the incoming repository: <?php
-system("cd $incoming  && ls -1t *.tazpkg | wc -l"); ?></li>
-<li>Commited packages: <?php
-system("wc -l $packages/commit | cut -f 1 -d ' '"); ?></li>
-<li>Packages to cook: <?php
-system("wc -l $packages/cooklist | cut -f 1 -d ' '"); ?></li>
-<li>Broken packages: <?php
-system("wc -l $packages/broken | cut -f 1 -d ' '"); ?></li>
-<li>Blocked packages: <?php
-system("wc -l $packages/blocked | cut -f 1 -d ' '"); ?></li>
+<?php
+	// Check curent status (update in real time) and display summary.
+	if (file_exists($lockfile)) {
+		echo "<li>Status: Chroot is mounted</li>\n";
+	}
+	else {
+		echo "<li>Status: Chroot is not mounted</li>\n";
+	}
+	include("$db_dir/summary");
+?>
+	<li>Packages in the wok: <?php
+	system("cd $wok && ls -1 | wc -l"); ?></li>
+	<li>Packages in the main repository: <?php
+	system("cd $packages  && ls -1t *.tazpkg | wc -l"); ?></li>
+	<li>Packages in the incoming repository: <?php
+	system("cd $incoming  && ls -1t *.tazpkg | wc -l"); ?></li>
+	<li>Commited packages: <?php
+	system("wc -l $packages/commit | cut -f 1 -d ' '"); ?></li>
+	<li>Packages to cook: <?php
+	system("wc -l $packages/cooklist | cut -f 1 -d ' '"); ?></li>
+	<li>Broken packages: <?php
+	system("wc -l $packages/broken | cut -f 1 -d ' '"); ?></li>
+	<li>Blocked packages: <?php
+	system("wc -l $packages/blocked | cut -f 1 -d ' '"); ?></li>
 </ul>
 
 <h3>Commit</h3>
