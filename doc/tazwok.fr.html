@@ -43,7 +43,7 @@ Tazwok - Outils SliTaz pour compiler les sources et préparer les paquets.
 <h2>AVERTISSEMENT</h2>
 <p>
 Cette version de tazwok (tazwok-3.9.*) est actuellement sujette
-à un développement actif et certaine parties de programme n'ont pas
+à un développement actif et certaines parties de programme n'ont pas
 encore été complétement revues et corrigées. Dans son état actuel,
 vous ne devriez cependant pas rencontrer de problème majeur durant son
 utilisation. Toutes suggestions/commentaires/contribution sont les
@@ -61,7 +61,7 @@ recette est aussi utilisée par Tazpkg et se compose de différentes variables
 et fonctions. Tazwok utilise un fichier de configuration (/etc/slitaz/tazwok.conf)
 pour connaître le chemin vers le wok, les paquets sources et les paquets
 (.tazpkg) générés. Il est aussi capable de générer une liste paquets avec
-leurs sommes md5, des créer un nouveau paquet de manière interactive, de faire
+leurs sommes md5, de créer un nouveau paquet de manière interactive, de faire
 une recherche, de nettoyer les fichiers générés ou encore de cuire plusieurs
 paquets en une seule fois (Voir les commandes disponibles). Tazwok peut être
 utilisé pour recompiler SliTaz entièrement depuis les sources.
@@ -76,7 +76,7 @@ de Tazwok et du développement de SliTaz.
 
 <h2>OPTIONS GÉNÉRALES</h2>
 <p>
-Trois options peuvent être utilisées avec presques toutes les
+Trois options peuvent être utilisées avec presque toutes les
 commandes de tazwok. Elles permettent de définir le dépôt auquel
 appliquer la commande, c'est à dire le dossier contenant les
 sous-dossiers clean-wok, wok, packages, packages-incoming, src, log,
@@ -85,7 +85,7 @@ sous-dossiers clean-wok, wok, packages, packages-incoming, src, log,
 (par défaut: /home/slitaz tel que définit dans
 /etc/slitaz/slitaz.conf)
 <em>SLITAZ_VERSION</em>: nom de la version de référence, par exemple stable,
-cooking, ... (par défault: la version que vous utilisez telle que définit dans
+cooking, ... (par défaut: la version que vous utilisez telle que définie dans
 /etc/slitaz-release)
 <em>undigest</em>: Indique l'utilisation d'un dépôt secondaire, pour lequel
 SLITAZ_VERSION est la référence.
@@ -107,8 +107,8 @@ l'utilisation d'undigest ou de SLITAZ_VERSION donne le même résultat.
 <a name="usage"></a>
 <h3>usage</h3>
 <p>
-La commande 'usage' affiche la liste des commandes diponibles avec une petite
-description en English :
+La commande 'usage' affiche la liste des commandes disponibles avec une petite
+description en English&nbsp;:
 </p>
 <pre>
  # tazwok usage
@@ -117,7 +117,7 @@ description en English :
 <h3>stats</h3>
 <p>
 Stats affiche les informations contenues dans le fichier de configuration et
-le nombre de paquets disponibles dans le wok :
+le nombre de paquets disponibles dans le wok&nbsp;:
 </p>
 <pre>
  # tazwok stats
@@ -127,7 +127,7 @@ le nombre de paquets disponibles dans le wok :
 <p>
 La commande 'list' permet de lister l'ensemble des paquets contenus dans le
 wok ou de lister les catégories par défaut (vous pouvez créer la votre). Elle
-permet aussi de lister les paquets d'une catégorie :
+permet aussi de lister les paquets d'une catégorie&nbsp;:
 </p>
 <pre>
  # tazwok list
@@ -207,12 +207,12 @@ Cette commande va lancer 'tazwok cook' sur tous les paquets contenus dans la
 liste spécifiée en argument, ainsi que leurs dépendances de cuisson si elles
 sont manquantes ou ont besoin d'une mise à jour. Cook-list est utilisée par
 exemple, pour cuire le système de base, les applications de base, le système
-X, les paquets d'une saveur, etc. Cooklist peut aussi être utilisé sur une
-seul paquet grâve à l'option --pkg. L'option --forced peut être utilisée pour
+X, les paquets d'une saveur, etc. Cooklist peut aussi être utilisé sur un
+seul paquet grâce à l'option --pkg. L'option --forced peut être utilisée pour
 recuire l'ensemble des dépendances de cuisson nécéssaires, même si elles sont
 déjà disponible et à jour, exepté la chaîne d'outils (voir
-SLITAZ_CORE_TOOLCHAIN dans /etc/slitaz/tazwok.conf) Sans argument, cook-list
-utilise la liste de cuisson par défault, située dans le dossier 'package'
+SLITAZ_CORE_TOOLCHAIN dans /etc/slitaz/tazwok.conf). Sans argument, cook-list
+utilise la liste de cuisson par défaut, située dans le dossier 'package'.
 </p>
 <pre>
  # tazwok cook-list
@@ -230,7 +230,7 @@ mesurant différentes caractéristiques des fichiers) des éléments utilisés lors
 de la précédente cuisson des paquets. Ces informations sont conservés dans le
 wok, si elles sont absentes elles sont obtenus depuis les paquets déjà
 préparés. L'option --forced oblige check-commit à utiliser les données md5
-depuis les paquets, ce qui est utile pour récupérer des information cohérentes
+depuis les paquets, ce qui est utile pour récupérer des informations cohérentes
 si vous aviez modifié les listes commit/cooklist manuellement (cas rare). Par
 défaut, check-commit ne cible que les paquets qui sont déjà présents dans les
 dépôts de paquets. L'option --missing permet de scanner la totalité du wok, et
@@ -271,7 +271,7 @@ préparation de la chaîne d'outils est particulier, et utilise le script
 'cook-toolchain' de 'tazchroot'. La méthode employée est une adaptation de
 celle présentée dans le livre <i lang="us">Linux From Scratch</i>: une
 première chaîne d'outils temporaire et sans lien avec le matériel/système
-utilisé est préparée, puis sert à la cuisson des paquets de la "verritable"
+utilisé est préparée, puis sert à la cuisson des paquets de la "véritable"
 chaîne d'outils. Il est à noter que cette opération est assez longue
 (plusieurs heures à plusieurs dizaines d'heures selon le matériel
 utilisé). C'est la première étape à réaliser pour compiler SliTaz entièrement
@@ -339,7 +339,7 @@ recherche les paquets dont les informations doivent être mises à jour. Pour
 cette raison elle est généralement plus rapide, en particulier quand peu de
 paquets ont été modifiés. Les commandes cook l'utilisent
 automatiquement. Comme pour 'gen-list', si vous ne précisez pas de cible,
-'packages' et 'packages-incoming' seront tout deux mise à jour.
+'packages' et 'packages-incoming' seront toutes deux mises à jour.
 </p>
 <pre>
  # tazwok check-list
@@ -361,7 +361,7 @@ automatiquement ces fichiers).
 <a name="report"></a>
 <h3>report</h3>
 <p>
-Affiche le contenue des listes:
+Affiche le contenu des listes:
 commit/cooklist/broken/blocked, ou seulement de la liste demandée en
 argument.
 </p>
@@ -387,7 +387,7 @@ générés. Pour récupérer un wok propre ou nettoyer le wok actuel :
 <h3>remove</h3>
 <p>
 Supprime le paquet spécifié du wok, avec tous les fichiers, stuff et recette
-y compris :
+compris :
 </p>
 <pre>
  # tazwok remove package
@@ -406,8 +406,8 @@ dépendances de cuisson de ce paquet.
 <a name="check-commit"></a>
 <h3>check-commit</h3>
 <p>
-'check-commit' scanne le wok pour trouver les recettes qui ont été modifiée et
-les ajoute à la cooklist par défault. Les options --forced et --missing jouent
+'check-commit' scanne le wok pour trouver les recettes qui ont été modifiées et
+les ajoute à la cooklist par défaut. Les options --forced et --missing jouent
 ici le même rôle que pour cook-commit.
 </p>
 <pre>
@@ -428,13 +428,13 @@ Recherche les erreurs courantes dans les receipts :
 <p>
 'update-wok' télécharge ou met à jour le wok contenu dans le dossier
 clean-wok du dépôt. Ensuite, il copie les éléments nouveaux dans le
-wok de cuisson (dossier wok) et retirer ceux qui n'existent plus dans
+wok de cuisson (dossier wok) et retire ceux qui n'existent plus dans
 la nouvelle version. Les adresses et la méthode (tarball ou hg)
-utilisée par cette commande sont définie dans tazwok.conf. L'option
+utilisée par cette commande sont définies dans tazwok.conf. L'option
 --local permet d'effectuer seulement la seconde opération (copie des
 fichiers dans le wok). Cela est utile si vous avez apporté des
 modifications locales dans le clean-wok et voulez les ajouter à votre
-wok de cuisson. Ceci est praticulièrement pratique pour les
+wok de cuisson. Ceci est particulièrement pratique pour les
 utilisateurs de mercurial (hg), puisque cet outils est beaucoup plus
 rapide avec un wok qui ne contient aucun fichiers liés à la
 compilation. Dans ce cas, effectuer les modifications dans le
@@ -447,7 +447,7 @@ clean-wok puis: tazwok update-wok --local.
 <a name="webserver"></a>
 <p>
 <h3>webserver</h3> 'webserver' est la commande qui permet de créer une
-interface php qui informe sur l'états des dépôts. Plusieurs dépôts
+interface php qui informe sur l'état des dépôts. Plusieurs dépôts
 peuvent être ajoutés/retirés en utilisant les options
 --SLITAZ_VERSION/--undigest. L'argument 'on' permet d'ajouter un dépôt
 à l'interface web, tandis que l'option 'off' le retire (au cas par
