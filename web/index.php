@@ -129,7 +129,7 @@ echo "$version";
 	// Check curent status (update in real time) and display summary.
 	$status = "Chroot is not mounted";
 	if (file_exists($lockfile)) {
-		$status = "Chroot is mounted"";
+		$status = "Chroot is mounted";
 	}
 	if (file_exists("$log_dir/step")) {
 		$status .= ", ".file_get_contents("$log_dir/step");
