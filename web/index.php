@@ -135,9 +135,10 @@ echo "$version";
 		$status .= ", ".file_get_contents("$log_dir/step");
 		if (file_exists("$log_dir/package")) {
 			$pkg = file_get_contents("$log_dir/package");
+			$pkg = chop($pkg);
 			if (file_exists("$log_dir/$pkg.html"))
 				$status .= " <a href=\"log.php?version=$version&package=$pkg\">$pkg</a>";
-			else	$status .= "$pkg";
+			else	$status .= " $pkg";
 		}
 	}
 	echo "<li>Status: $status</li>\n";

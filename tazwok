@@ -2104,6 +2104,7 @@ cook()
 	report_return_code=$cook_code
 	report close-bloc
 	report end-sublog
+	rm -f $LOCAL_REPOSITORY/log/package
 	return $cook_code
 }
 
