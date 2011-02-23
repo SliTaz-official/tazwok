@@ -3262,6 +3262,39 @@ EOF
 			exit 1
 		fi
 	;;
+	list-blocked)
+		# List all blocked packages
+		echo ""
+		cat $PACKAGES_REPOSITORY/blocked
+		echo "" ;;
+	block)
+		# Add a pkg name to the list of blocked packages.
+		echo ""
+		if grep -qs "^$2$" $PACKAGES_REPOSITORY/blocked; then
+			echo -e "$2 is already in the blocked packages list."
+		else
+			echo -n "Adding $2 to     : $PACKAGES_REPOSITORY/blocked... "
+			echo "$2" >> $PACKAGES_REPOSITORY/blocked && echo "Done"
+			if grep -q "^$2$" $PACKAGES_REPOSITORY/cooklist; then
+				echo -n "Removing $2 from : $DB_DIR/cooklist... "
+				sed -i /"^$2$"/d $PACKAGES_REPOSITORY/cooklist && echo "Done"
+			fi
+		fi
+		echo "" ;;
+	unblock)
+		# Remove a pkg name from the list of blocked packages.
+		echo ""
+		if grep -qs "^$2$" $PACKAGES_REPOSITORY/blocked; then
+			echo -n "Removing $2 from : $PACKAGES_REPOSITORY/blocked... "
+			sed -i /"^$2$"/d $PACKAGES_REPOSITORY/blocked
+			sed -i '/^$/d' $PACKAGES_REPOSITORY/blocked && echo "Done"
+			echo -n "Adding $2 to     : $DB_DIR/cooklist... "
+			echo "$2" >> $DB_DIR/cooklist && echo "Done"
+			sort_cooklist
+		else
+			echo -e "$2 is not in the blocked packages list."
+		fi
+		echo "" ;;
 	usage|*)
 		# Print usage also for all unknown commands.
 		#
