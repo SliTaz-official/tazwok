@@ -62,7 +62,10 @@ usage()
   update-wok     Update the wok.
   maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor.
-  tags           List all tags used in wok receipts.\n
+  tags           List all tags used in wok receipts.
+  list-blocked   List all blocked packages.
+  block          Add package from the blocked list to prevent cooking it.
+  unblock        Remove package from the blocked list.\n
  
  You can use `basename $0` command --help to list avaible options.
  \033[1mImportant - *: \033[0m Commands which need a rewrite."
