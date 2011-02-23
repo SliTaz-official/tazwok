@@ -5,6 +5,13 @@
 # Important settings and variables.
 source /usr/lib/slitaz/libtaz
 source /etc/slitaz/tazwok.conf
+
+# Report progress on webserver.
+log_step="$LOCAL_REPOSITORY/log/step"
+run_on_exit="$run_on_exit
+rm -f $LOCAL_REPOSITORY/log/step
+rm -f $LOCAL_REPOSITORY/log/package"
+
 source_lib report
 report start
 
@@ -61,6 +68,7 @@ report end-step
 for PACKAGE in binutils gcc; do
 	rm $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE-firstpass.html 2>/dev/null
 	report sublog $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE-firstpass.html
+	echo "tmp-toolchain-$PACKAGE-firstpass" > $LOCAL_REPOSITORY/log/package
 	report step "Compiling $PACKAGE, first pass"
 	report open-bloc
 	prepare_package
@@ -75,6 +83,7 @@ done
 for PACKAGE in $SLITAZ_TOOLCHAIN; do
 	rm $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE.html 2>/dev/null
 	report sublog $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE.html
+	echo "tmp-toolchain-$PACKAGE" > $LOCAL_REPOSITORY/log/package
 	report step "Compiling $PACKAGE"
 	report open-bloc
 	prepare_package

@@ -5,11 +5,18 @@
 [ "$1" ] || { echo "Usage: gen-iso flavorname [gzip]" >&2; exit 1; }
 source /usr/lib/slitaz/libtaz
 
+# Report progress on webserver.
+log_step="$LOCAL_REPOSITORY/log/step"
+run_on_exit="$run_on_exit
+rm -f $LOCAL_REPOSITORY/log/step
+rm -f $LOCAL_REPOSITORY/log/package"
+
 [ -d "$SLITAZ_DIR/flavors" ] || ln -s $LOCAL_REPOSITORY/flavors $SLITAZ_DIR
 if [ -d "$SLITAZ_DIR/flavors/$1" ]; then
 	source_lib report
 	export log_opt=$LOCAL_REPOSITORY/log/iso-$1.html
 	rm -f $log_opt
+	echo "iso-$1" > $LOCAL_REPOSITORY/log/package
 	report start
 	if ! [ -x /usr/bin/tazlito ]; then
 		report step "Installing tazlito"
