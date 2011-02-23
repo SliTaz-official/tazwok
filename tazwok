@@ -63,7 +63,6 @@ usage()
   maintainers    List all maintainers in the wok.
   maintained-by  List packages maintained by a contributor.
   tags           List all tags used in wok receipts.
-  list-blocked   List all blocked packages.
   block          Add package from the blocked list to prevent cooking it.
   unblock        Remove package from the blocked list.\n
  
@@ -3265,11 +3264,6 @@ EOF
 			exit 1
 		fi
 	;;
-	list-blocked)
-		# List all blocked packages
-		echo ""
-		cat $PACKAGES_REPOSITORY/blocked
-		echo "" ;;
 	block)
 		# Add a pkg name to the list of blocked packages.
 		echo ""
