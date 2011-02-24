@@ -3220,7 +3220,7 @@ EOF
 
 \$version=\"${undigest:-$SLITAZ_VERSION}\";
 \$chroot=\"$chroot_dir\";
-\$lockfile=\"\$chroot/proc/1\";
+\$lockfile=\"\$chroot/proc/1/status\";
 \$db_dir=\"$PACKAGES_REPOSITORY\";
 \$log_dir=\"$LOCAL_REPOSITORY/log\";
 \$packages=\"$PACKAGES_REPOSITORY\";
