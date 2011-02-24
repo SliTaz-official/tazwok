@@ -2766,13 +2766,14 @@ Maintainer : $MAINTAINER"
 		#
 		get_tazwok_config
 		check_for_package_on_cmdline
-		if [ -d $WOK/$PACKAGE ]; then
+		clean_wok=$LOCAL_REPOSITORY/clean-wok
+		if [ -d $clean_wok/$PACKAGE ]; then
 			echo -e "\n$PACKAGE package tree already exists.\n" >&2
 			exit 1
 		fi
 		echo "Creating : $WOK/$PACKAGE"
-		mkdir $WOK/$PACKAGE
-		cd $WOK/$PACKAGE
+		mkdir $clean_wok/$PACKAGE
+		cd $clean_wok/$PACKAGE
 		echo -n "Preparing the receipt..."
 		#
 		# Default receipt begin.
