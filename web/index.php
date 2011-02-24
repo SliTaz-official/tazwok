@@ -39,7 +39,12 @@ function list_last_cooked($dir, $suffix)
     <title>SliTaz Build Bot</title>
     <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
     <meta name="description" content="Tazbb web interface" />
-    <meta name="robots" content="index nofollow" />
+<?php
+	if (isset($_GET["refresh"]))
+		echo "    <meta http-equiv=\"refresh\" content=\""
+			.$_GET["refresh"]."; URL=\""
+			.$_SERVER["REQUEST_URI"].">\n";
+?>    <meta name="robots" content="index nofollow" />
     <link rel="shortcut icon" href="web/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="web/slitaz.css" />
 </head>
@@ -141,7 +146,7 @@ echo "$version";
 			else	$status .= " $pkg";
 		}
 	}
-	echo "<li>Status: $status</li>\n";
+	echo "<li>".date(DATE_RFC822).": $status</li>\n";
 	//include("$db_dir/summary");
 ?>
 	<li>Packages in the wok: <?php
@@ -160,6 +165,9 @@ echo "$version";
 	system("wc -l < $db_dir/blocked"); ?></li>
 </ul>
 
+<?php
+if (!isset($_GET["summary"])) {
+?>
 <h3>Commit</h3>
 <pre class="package">
 <?php
@@ -209,6 +217,9 @@ list_last_cooked($packages, "flavor");
 ?>
 </pre>
 
+<?php
+} // isset summary
+?>
 <!-- End of content -->
 </div>
 
