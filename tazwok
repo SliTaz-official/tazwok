@@ -93,11 +93,7 @@ get_tazwok_config()
 	get_options_list="$get_options_list SLITAZ_DIR SLITAZ_VERSION undigest"
 	get_options
 
-	if [ "$undigest" ]; then
-		LOCAL_REPOSITORY=$SLITAZ_DIR/$undigest
-	else
-		LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
-	fi
+	LOCAL_REPOSITORY=$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}
 	
 	if ! [ "$save_dir" ]; then
 		if [ -f $LOCAL_REPOSITORY/tazwok.conf ] || [ -f $LOCAL_REPOSITORY/slitaz.conf ]; then
@@ -442,6 +438,7 @@ remove_previous_package()
 check_for_tarball()
 {
 	[ "$WGET_URL" ] || return 0
+	look_for_cookopt !unpack && nounpack=yes
 	report step "Checking for source tarball: $PACKAGE"
 	local repack_src=$repack_src TARBALL=$TARBALL
 	if [ "$repack_src" = yes ] && look_for_cookopt !repack_src; then
@@ -475,9 +472,10 @@ check_for_tarball()
 		fi
 	fi
 	report end-step
-	if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ]; then
+	if { [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ] ; } || \
+	{ [ -f "$SOURCES_REPOSITORY/$TARBALL" ] && [ "$repack_src" != yes ] && [ "$nounpack" ] ; }; then
 		[ -d "$tmp_src" ] && rm -r $tmp_src
-		return
+		return 0
 	fi
 
 	# Untaring source if necessary. We don't need to extract source if
