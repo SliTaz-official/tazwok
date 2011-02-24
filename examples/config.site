@@ -1,0 +1,63 @@
+# This file contains default option passed to ./configure at compile time.
+# Variables are setted this way :
+# { [ "$var" = NONE ] || [ ! "$var" ] ; } && var=
+# This is because config.site overwrite options passed directly in
+# configure, like ./configure --var=
+#
+# Here, we don't want overwrite default configuration : we want to
+# setup configure with default path only if nothing has been given
+# on the configure command-line. This allow contributors to overwrite
+# the defaults path filled here in the recipes.
+#
+# Path to the config.site is given to configure using the environnment
+# variable CONFIG_SITE
+# tazwok does that work before executing compile rules.
+#
+# If you want to use you're own config.site, you can use :
+# export CONFIG_SITE=path_to_my_config.site
+# in the compilation_rules of a receipt.
+# It can be usefull if you want to share default configuration between
+# some groups of packages like GNOME or KDE ones.
+#
+# To make tazwok configuration easier, we use variable from
+# /etc/tazwok.conf here. Note that only concerns configure options :
+# make flags (MAKEFLAGS, CFLAGS, CXXFLAGS and DESTDIR) are exported
+# to environment variables; options setted here are thoses we can't
+# export in environnment variables because it doesn't works.
+
+# Some variable are prefixed by "${prefix}" instead of "${datarootdir}".
+# For thoses case we use "${datadir}" because there's configure script
+# generally don't know about "${datarootdir}" (too olds). 
+if echo "$localedir" | grep -q \${prefix}; then
+	localedir=$( echo "$localedir" | sed 's/${prefix}/${datarootdir}/')
+fi
+if echo "$infodir" | grep -q \${prefix}; then
+	infodir=$( echo "$infodir" | sed 's/${prefix}/${datarootdir}/')
+fi
+if echo "$mandir" | grep -q \${prefix}; then
+	mandir=$( echo "$mandir" | sed 's/${prefix}/${datarootdir}/')
+fi
+
+# Use default values if one of theses configure variable is not set.
+{ [ "$prefix" = NONE ] || [ ! "$prefix" ] ; } && prefix=$default_prefix
+{ [ "$datarootdir" = NONE ] || [ ! "$datarootdir" ] ; } && datarootdir=$default_datarootdir
+{ [ "$datadir" = NONE ] || [ ! "$datadir" ] ; } && datadir=$datarootdir
+{ [ "$localedir" = NONE ] || [ ! "$localedir" ] ; } && localedir=$default_localedir
+{ [ "$infodir" = NONE ] || [ ! "$infodir" ] ; } && infodir=$default_infodir
+{ [ "$mandir" = NONE ] || [ ! "$mandir" ] ; } && mandir=$default_mandir
+{ [ "$build" = NONE ] || [ ! "$build" ] ; } && build=$default_build
+{ [ "$host" = NONE ] || [ ! "$host" ] ; } && host=$default_host
+
+# Print information about theses variables.
+echo "prefix = $prefix
+datarootdir = $datarootdir
+datadir = $datadir
+localedir= $localedir
+infodir = $infodir
+mandir = $mandir
+build = $build
+host = $host
+"
+
+# config.site is used by tazwok to check that config.site script has been used.
+touch /tmp/config.site
