@@ -3268,30 +3268,50 @@ EOF
 	;;
 	block)
 		# Add a pkg name to the list of blocked packages.
+		get_tazwok_config
+		check_root
+		check_for_package_on_cmdline
+		if ! [ -f $WOK/$PACKAGE/receipt ]; then
+			echo "Can't find $PACKAGE into wok." >&2
+			echo ""	
+			exit 1
+		fi
 		echo ""
-		if grep -qs "^$2$" $PACKAGES_REPOSITORY/blocked; then
-			echo -e "$2 is already in the blocked packages list."
+		if grep -qs "^$PACKAGE$" $PACKAGES_REPOSITORY/blocked; then
+			echo "$PACKAGE is already in the blocked packages list." >&2
+			echo ""
+			exit 1
 		else
-			echo -n "Adding $2 to     : $PACKAGES_REPOSITORY/blocked... "
-			echo "$2" >> $PACKAGES_REPOSITORY/blocked && echo "Done"
-			if grep -q "^$2$" $PACKAGES_REPOSITORY/cooklist; then
-				echo -n "Removing $2 from : $DB_DIR/cooklist... "
-				sed -i /"^$2$"/d $PACKAGES_REPOSITORY/cooklist && echo "Done"
+			echo -n "Adding $PACKAGE to     : $PACKAGES_REPOSITORY/blocked... "
+			echo "$PACKAGE" >> $PACKAGES_REPOSITORY/blocked
+			status
+			if grep -q "^$PACKAGE$" $PACKAGES_REPOSITORY/cooklist; then
+				echo -n "Removing $PACKAGE from : $PACKAGES_REPOSITORY/cooklist... "
+				sed -i /"^$PACKAGE$"/d $PACKAGES_REPOSITORY/cooklist
+				status
 			fi
 		fi
 		echo "" ;;
 	unblock)
 		# Remove a pkg name from the list of blocked packages.
+		get_tazwok_config
+		check_root
+		check_for_package_on_cmdline
+		if ! [ -f $WOK/$PACKAGE/receipt ]; then
+			echo "Can't find $PACKAGE into wok." >&2
+			echo ""
+			exit 1
+		fi
 		echo ""
-		if grep -qs "^$2$" $PACKAGES_REPOSITORY/blocked; then
-			echo -n "Removing $2 from : $PACKAGES_REPOSITORY/blocked... "
-			sed -i /"^$2$"/d $PACKAGES_REPOSITORY/blocked
-			sed -i '/^$/d' $PACKAGES_REPOSITORY/blocked && echo "Done"
-			echo -n "Adding $2 to     : $DB_DIR/cooklist... "
-			echo "$2" >> $DB_DIR/cooklist && echo "Done"
-			sort_cooklist
+		if grep -qs "^$PACKAGE$" $PACKAGES_REPOSITORY/blocked; then
+			echo -n "Removing $PACKAGE from : $PACKAGES_REPOSITORY/blocked... "
+			sed -i /"^$PACKAGE$"/d $PACKAGES_REPOSITORY/blocked
+			sed -i '/^$/d' $PACKAGES_REPOSITORY/blocked
+			status
 		else
-			echo -e "$2 is not in the blocked packages list."
+			echo "$PACKAGE is not in the blocked packages list." >&2
+			echo ""
+			exit 1
 		fi
 		echo "" ;;
 	usage|*)
