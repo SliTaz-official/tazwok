@@ -1,7 +1,7 @@
 <?php
-$version=$_GET["version"];
-if (file_exists("conf-$version.php")) {
-	include("conf-$version.php");
+$version_in_url=$_GET["version"];
+if (file_exists("conf-$version_in_url.php")) {
+	include("conf-$version_in_url.php");
 }
 else {
 	if (file_exists("conf.php")) {
@@ -157,7 +157,10 @@ echo "$version";
 		}
 	}
 	echo "<li>".date(DATE_RFC822).": $status</li>\n";
-	//include("$db_dir/summary");
+	// Set $version_in_url.
+	if ("$version_in_url") {
+		$version_in_url="?version=$version_in_url";
+	}
 ?>
 	<li><a href="http://hg.slitaz.org/wok<?php
 	if ($version != "cooking") echo "-$version";
@@ -165,15 +168,20 @@ echo "$version";
 	system("cd $wok && ls -1 | wc -l"); ?></li>
 	<li>Packages in the main repository: <?php
 	system("cd $packages && ls -1t *.tazpkg | wc -l"); ?></li>
-	<li><a href="?#cooked">Packages in the incoming repository</a>: <?php
+	<li><?php
+	echo "<a href=\"$version_in_url#cooked\">Packages in the incoming repository</a>: ";
 	system("cd $incoming && ls -1t *.tazpkg | wc -l"); ?></li>
-	<li><a href="?#Commit">Commited packages</a>: <?php
+	<li><?php
+	echo "<a href=\"$version_in_url#Commit\">Commited packages</a>: ";
 	system("wc -l < $db_dir/commit"); ?></li>
-	<li><a href="?#Cooklist">Packages to cook</a>: <?php
+	<li><?php
+	echo "<a href=\"$version_in_url#Cooklist\">Packages to cook</a>: ";
 	system("wc -l < $db_dir/cooklist"); ?></li>
-	<li><a href="?#Broken">Broken packages</a>: <?php
+	<li><?php
+	echo "<a href=\"$version_in_url#Broken\">Broken packages</a>: ";
 	system("wc -l < $db_dir/broken"); ?></li>
-	<li><a href="?#Blocked">Blocked packages</a>: <?php
+	<li><?php
+	echo "<a href=\"$version_in_url#Blocked\">Blocked packages</a>: ";
 	system("wc -l < $db_dir/blocked"); ?></li>
 </ul>
 
