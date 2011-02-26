@@ -114,6 +114,7 @@ function list_last_cooked($dir, $suffix)
 <!-- Block end -->
 </div>
 
+<a name="Cooklog"></a>
 <h2>Cooklog</h2>
 
 <p>
@@ -128,7 +129,9 @@ echo "$version";
 	</form>
 </p>
 
+<a name="Summary"></a>
 <h2>Summary</h2>
+<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" title="cpu daily" alt="cpu daily" />
 <ul>
 <?php
 	// Check curent status (update in real time) and display summary.
@@ -137,7 +140,14 @@ echo "$version";
 		$status = "Chroot is mounted";
 	}
 	if (file_exists("$log_dir/step")) {
-		$status .= ", ".file_get_contents("$log_dir/step");
+		$duration = time() - filemtime("$log_dir/step");
+		if ($duration < 60)
+			$duration .= "s";
+		else if ($duration < 3600)
+			$duration = floor($duration / 60). " min";
+		else	$duration = sprintf("%dH%02d",floor($duration / 3600),
+				($duration / 60) % 60);
+		$status .= ", ".file_get_contents("$log_dir/step")." ($duration ago)";
 		if (file_exists("$log_dir/package")) {
 			$pkg = file_get_contents("$log_dir/package");
 			$pkg = chop($pkg);
@@ -168,6 +178,7 @@ echo "$version";
 <?php
 if (!isset($_GET["summary"])) {
 ?>
+<a name="Commit"></a>
 <h3>Commit</h3>
 <pre class="package">
 <?php
@@ -175,6 +186,7 @@ include("$db_dir/commit");
 ?>
 </pre>
 
+<a name="Cooklist"></a>
 <h3>Cooklist</h3>
 <pre class="package">
 <?php
@@ -182,6 +194,7 @@ include("$db_dir/cooklist");
 ?>
 </pre>
 
+<a name="Broken"></a>
 <h3>Broken</h3>
 <pre class="package">
 <?php
@@ -189,6 +202,7 @@ include_and_link("$db_dir/broken");
 ?>
 </pre>
 
+<a name="Blocked"></a>
 <h3>Blocked</h3>
 <pre class="package">
 <?php
@@ -196,6 +210,7 @@ include_and_link("$db_dir/blocked");
 ?>
 </pre>
 
+<a name="cooked"></a>
 <h3>Last cooked packages</h3>
 <pre class="package">
 <?php
@@ -203,6 +218,7 @@ list_last_cooked($incoming, "tazpkg");
 ?>
 </pre>
 
+<a name="removed"></a>
 <h3>Last removed packages</h3>
 <pre class="package">
 <?php
@@ -210,6 +226,7 @@ include("$db_dir/removed");
 ?>
 </pre>
 
+<a name="flavors"></a>
 <h3>Last cooked flavors</h3>
 <pre class="package">
 <?php
