@@ -131,7 +131,9 @@ echo "$version";
 
 <a name="Summary"></a>
 <h2>Summary</h2>
-<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" title="cpu daily" alt="cpu daily" />
+<?php if (strpos($_SERVER["SERVER_NAME"],"slitaz.org") !== FALSE) { ?>
+<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" title="cpu dailey" alt="cpu daily" />
+<?php } ?>
 <ul>
 <?php
 	// Check curent status (update in real time) and display summary.
@@ -161,6 +163,8 @@ echo "$version";
 	if ("$version_in_url") {
 		$version_in_url="?version=$version_in_url";
 	}
+	else if (strpos($_SERVER["REQUEST_URI"],"?") !== FALSE)
+		$version_in_url="?";
 ?>
 	<li><a href="http://hg.slitaz.org/wok<?php
 	if ($version != "cooking") echo "-$version";
