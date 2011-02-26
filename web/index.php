@@ -123,7 +123,7 @@ function list_last_cooked($dir, $suffix)
 echo "$version";
 ?>
 " />
-		Show pkg log:<br />
+		Show pkg log:
 		 <input type="text" name="package" style="width: 320px;" />
 		<!-- <input type="submit" value="Show" /> -->
 	</form>
@@ -147,7 +147,7 @@ echo "$version";
 			$duration = floor($duration / 60). " min";
 		else	$duration = sprintf("%dH%02d",floor($duration / 3600),
 				($duration / 60) % 60);
-		$status .= ", ".file_get_contents("$log_dir/step")." ($duration ago)";
+		$status .= ". ".file_get_contents("$log_dir/step")." ($duration ago)";
 		if (file_exists("$log_dir/package")) {
 			$pkg = file_get_contents("$log_dir/package");
 			$pkg = chop($pkg);
@@ -159,19 +159,21 @@ echo "$version";
 	echo "<li>".date(DATE_RFC822).": $status</li>\n";
 	//include("$db_dir/summary");
 ?>
-	<li>Packages in the wok: <?php
+	<li><a href="http://hg.slitaz.org/wok<?php
+	if ($version != "cooking") echo "-$version";
+	echo "\">Packages in the wok</a>: ";
 	system("cd $wok && ls -1 | wc -l"); ?></li>
 	<li>Packages in the main repository: <?php
 	system("cd $packages && ls -1t *.tazpkg | wc -l"); ?></li>
-	<li>Packages in the incoming repository: <?php
+	<li><a href="?#cooked">Packages in the incoming repository</a>: <?php
 	system("cd $incoming && ls -1t *.tazpkg | wc -l"); ?></li>
-	<li>Commited packages: <?php
+	<li><a href="?#Commit">Commited packages</a>: <?php
 	system("wc -l < $db_dir/commit"); ?></li>
-	<li>Packages to cook: <?php
+	<li><a href="?#Cooklist">Packages to cook</a>: <?php
 	system("wc -l < $db_dir/cooklist"); ?></li>
-	<li>Broken packages: <?php
+	<li><a href="?#Broken">Broken packages</a>: <?php
 	system("wc -l < $db_dir/broken"); ?></li>
-	<li>Blocked packages: <?php
+	<li><a href="?#Blocked">Blocked packages</a>: <?php
 	system("wc -l < $db_dir/blocked"); ?></li>
 </ul>
 
