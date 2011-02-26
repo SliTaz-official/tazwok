@@ -952,14 +952,12 @@ gen_package()
 	# the package.
 	report step "Building $PACKAGE with the receipt"
 	report open-bloc
-	if fgrep -q ^genpkg_rules $RECEIPT; then
+	if grep -q ^genpkg_rules $RECEIPT; then
 		
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		report step "Executing genpkg_rules"
-		set -e
-		genpkg_rules
-		set +e
+		( set -e;  genpkg_rules ) || return 1
 		report end-step
 		check_fsh
 		cd $WOK/$PACKAGE
