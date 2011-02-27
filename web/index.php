@@ -42,8 +42,7 @@ function list_last_cooked($dir, $suffix)
 <?php
 	if (isset($_GET["refresh"]))
 		echo "    <meta http-equiv=\"refresh\" content=\""
-			.$_GET["refresh"]."; URL="
-			.$_SERVER["REQUEST_URI"]."\">\n";
+			.$_GET["refresh"]."\" />\n";
 ?>    <meta name="robots" content="index nofollow" />
     <link rel="shortcut icon" href="web/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="web/slitaz.css" />
