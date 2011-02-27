@@ -133,11 +133,13 @@ echo "$version";
 <a name="Summary"></a>
 <h2>Summary</h2>
 <?php if (strpos($_SERVER["SERVER_NAME"],"slitaz.org") !== FALSE) { ?>
-	<a href="http://tank.slitaz.org/" target="_blank">
-	<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" title="cpu daily" alt="cpu daily" />
+	<a href="http://tank.slitaz.org/">
+	<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" 
+		title="cpu daily" alt="cpu daily" />
 	</a>
 <?php } ?>
-<ul>
+
+<div class="infobox">
 <?php
 	// Check curent status (update in real time) and display summary.
 	$status = "Chroot is not mounted";
@@ -161,7 +163,7 @@ echo "$version";
 			else	$status .= " $pkg";
 		}
 	}
-	echo "<li>".date(DATE_RFC822).": $status</li>\n";
+	echo date(DATE_RFC822).": $status\n";
 	// Set $version_in_url.
 	if ("$version_in_url") {
 		$version_in_url="?version=$version_in_url";
@@ -169,6 +171,9 @@ echo "$version";
 	else if (strpos($_SERVER["REQUEST_URI"],"?") !== FALSE)
 		$version_in_url="?";
 ?>
+</div>
+
+<ul>
 	<li><a href="http://hg.slitaz.org/wok<?php
 	if ($version != "cooking") echo "-$version";
 	echo "\" target=\"_blank\">Packages in the wok</a>: ";
