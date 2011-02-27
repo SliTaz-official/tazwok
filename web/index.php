@@ -16,7 +16,7 @@ function include_and_link($file)
 	while (($pkg = fgets($fp)) !== false) {
 		$pkg = chop($pkg);
 		if (file_exists("$log_dir/$pkg.html"))
-			echo "<a href=\"log.php?version=$version&package=$pkg\" target=\"_blank\">$pkg</a>\n";
+			echo "<a href=\"log.php?version=$version&amp;package=$pkg\" target=\"_blank\">$pkg</a>\n";
 		else	echo "$pkg\n";
 	}
 	fclose($fp);
@@ -28,7 +28,7 @@ function list_last_cooked($dir, $suffix)
 	$path=basename($dir);
 	system("cd $dir && ls -1t *.$suffix | head -20 | \
 		while read file; do echo -n \$(stat -c '%y' $dir/\$file | \
-		cut -d. -f1); echo '   <a href=\"download.php?version=$version&package=$path/'\$file'\">'\$file'</a>'; done");
+		cut -d. -f1); echo '   <a href=\"download.php?version=$version&amp;package=$path/'\$file'\">'\$file'</a>'; done");
 }
 
 ?>
@@ -42,8 +42,8 @@ function list_last_cooked($dir, $suffix)
 <?php
 	if (isset($_GET["refresh"]))
 		echo "    <meta http-equiv=\"refresh\" content=\""
-			.$_GET["refresh"]."; URL=\""
-			.$_SERVER["REQUEST_URI"].">\n";
+			.$_GET["refresh"]."; URL="
+			.$_SERVER["REQUEST_URI"]."\">\n";
 ?>    <meta name="robots" content="index nofollow" />
     <link rel="shortcut icon" href="web/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="web/slitaz.css" />
@@ -118,6 +118,8 @@ function list_last_cooked($dir, $suffix)
 <h2>Cooklog</h2>
 
 <p>
+</p>
+<div>
 	<form action="log.php" method="get">
 		<input type="hidden" name="version" value="<?php
 echo "$version";
@@ -127,7 +129,7 @@ echo "$version";
 		 <input type="text" name="package" style="width: 320px;" />
 		<!-- <input type="submit" value="Show" /> -->
 	</form>
-</p>
+</div>
 
 <a name="Summary"></a>
 <h2>Summary</h2>
@@ -156,7 +158,7 @@ echo "$version";
 			$pkg = file_get_contents("$log_dir/package");
 			$pkg = chop($pkg);
 			if (file_exists("$log_dir/$pkg.html"))
-				$status .= " <a href=\"log.php?version=$version&package=$pkg\" target=\"_blank\">$pkg</a>";
+				$status .= " <a href=\"log.php?version=$version&amp;package=$pkg\" target=\"_blank\">$pkg</a>";
 			else	$status .= " $pkg";
 		}
 	}
