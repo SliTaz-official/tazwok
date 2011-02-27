@@ -16,7 +16,7 @@ function include_and_link($file)
 	while (($pkg = fgets($fp)) !== false) {
 		$pkg = chop($pkg);
 		if (file_exists("$log_dir/$pkg.html"))
-			echo "<a href=\"log.php?version=$version&package=$pkg\">$pkg</a>\n";
+			echo "<a href=\"log.php?version=$version&package=$pkg\" target=\"_blank\">$pkg</a>\n";
 		else	echo "$pkg\n";
 	}
 	fclose($fp);
@@ -132,7 +132,9 @@ echo "$version";
 <a name="Summary"></a>
 <h2>Summary</h2>
 <?php if (strpos($_SERVER["SERVER_NAME"],"slitaz.org") !== FALSE) { ?>
-<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" title="cpu dailey" alt="cpu daily" />
+	<a href="http://tank.slitaz.org/" target="_blank">
+	<img src="http://tank.slitaz.org/pics/rrd/cpu-day.png" title="cpu daily" alt="cpu daily" />
+	</a>
 <?php } ?>
 <ul>
 <?php
@@ -154,7 +156,7 @@ echo "$version";
 			$pkg = file_get_contents("$log_dir/package");
 			$pkg = chop($pkg);
 			if (file_exists("$log_dir/$pkg.html"))
-				$status .= " <a href=\"log.php?version=$version&package=$pkg\">$pkg</a>";
+				$status .= " <a href=\"log.php?version=$version&package=$pkg\" target=\"_blank\">$pkg</a>";
 			else	$status .= " $pkg";
 		}
 	}
@@ -168,7 +170,7 @@ echo "$version";
 ?>
 	<li><a href="http://hg.slitaz.org/wok<?php
 	if ($version != "cooking") echo "-$version";
-	echo "\">Packages in the wok</a>: ";
+	echo "\" target=\"_blank\">Packages in the wok</a>: ";
 	system("cd $wok && ls -1 | wc -l"); ?></li>
 	<li>Packages in the main repository: <?php
 	system("cd $packages && ls -1t *.tazpkg | wc -l"); ?></li>
