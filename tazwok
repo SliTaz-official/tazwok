@@ -936,6 +936,7 @@ set_pkg_broken()
 	# Remove pkg from cooklist to avoid re-cook it if no changes happens
 	# in the cook stuff.
 	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
 
 	gen_cookmd5
 
@@ -1118,6 +1119,22 @@ gen_package()
 	report step "Restoring original package tree"
 	{ zcat fs.cpio.gz 2> /dev/null || unlzma -c fs.cpio.lzma; } | cpio --quiet -id
 	rm fs.cpio.* && cd ..
+
+	# Recook of reverse-depends if package was broken.
+	if grep -q "^$PACKAGE$" $PACKAGES_REPOSITORY/broken; then
+		report step "Planning re-try a cook of reverse depends" 
+		sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/broken
+		for rdep in $(look_for_rdep); do
+			grep -q "^$rdep$" $PACKAGES_REPOSITORY/broken || continue
+			grep -q "^$rdep$" $PACKAGES_REPOSITORY/cooklist && continue
+			echo "Adding $rdep to the cooklist"
+			echo $rdep >> $PACKAGES_REPOSITORY/cooklist
+			regen_cooklist=t
+		done
+		report end-step
+	fi
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
 	
 	# Log process.
 	echo "$PACKAGE-$VERSION$EXTRAVERSION.tazpkg (done)" >> $LOG
@@ -1125,10 +1142,6 @@ gen_package()
 	echo "Package $PACKAGE ($VERSION$EXTRAVERSION) generated."
 	echo "Size : `du -sh $INCOMING_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg`"
 	echo ""
-	
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/broken
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
 }
 
 ########################################################################
