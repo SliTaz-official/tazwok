@@ -173,6 +173,9 @@ echo "$version";
 ?>
 </div>
 
+<table width="100%">
+<tr>
+<td>
 <ul>
 	<li><a href="http://hg.slitaz.org/wok<?php
 	if ($version != "cooking") echo "-$version";
@@ -186,6 +189,10 @@ echo "$version";
 	<li><?php
 	echo "<a href=\"$version_in_url#Commit\">Commited packages</a>: ";
 	system("wc -l < $db_dir/commit"); ?></li>
+</ul>
+</td>
+<td>
+<ul>
 	<li><?php
 	echo "<a href=\"$version_in_url#Cooklist\">Packages to cook</a>: ";
 	system("wc -l < $db_dir/cooklist"); ?></li>
@@ -196,6 +203,9 @@ echo "$version";
 	echo "<a href=\"$version_in_url#Blocked\">Blocked packages</a>: ";
 	system("wc -l < $db_dir/blocked"); ?></li>
 </ul>
+</td>
+</tr>
+</table>
 
 <?php
 if (!isset($_GET["summary"])) {
