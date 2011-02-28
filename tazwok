@@ -376,8 +376,9 @@ remove_build_depends()
 	report step "Removing previous build dependencies"
 	echo "Removing theses packages : $@"
 	for pkg in $@; do
-		[ -d "$INSTALLED/$pkg" ] && tazpkg remove $pkg --auto
+		[ -f "$INSTALLED/$pkg/receipt" ] && tazpkg remove $pkg --auto
 	done
+	cd $PWD
 	report end-step
 }
 
@@ -431,7 +432,7 @@ remove_previous_package()
 	if [ "$VERSION$EXTRAVERSION" != "$prev_VERSION" ]; then
 		rm -f $1/$PACKAGE-$prev_VERSION.tazpkg
 	fi
-	return
+	return 0
 }
 
 # Check for src tarball and wget if needed.
