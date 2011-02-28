@@ -16,7 +16,8 @@ function include_and_link($file)
 	while (($pkg = fgets($fp)) !== false) {
 		$pkg = chop($pkg);
 		if (file_exists("$log_dir/$pkg.html"))
-			echo "<a href=\"log.php?version=$version&amp;package=$pkg\" target=\"_blank\">$pkg</a>\n";
+			echo "<a href=\"log.php?version=$version&amp;package=".
+				urlencode($pkg)."\" target=\"_blank\">$pkg</a>\n";
 		else	echo "$pkg\n";
 	}
 	fclose($fp);
