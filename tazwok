@@ -870,6 +870,11 @@ py_compiled_files_remove()
 check_fsh()
 {
 	cd $WOK/$PACKAGE/taz/*/fs
+	if ! [ "$(find * -type f)" ]; then
+		echo "$PACKAGE fs is empty." >&2
+		cd $WOK/$PACKAGE && rm -rf taz
+		return 1
+	fi
 	[ -n "$FSH" ] || FSH="bin boot dev etc home init lib media mnt proc \
 root sbin share sys tmp usr var vz usr/bin usr/games usr/include usr/lib \
 usr/local usr/sbin usr/share usr/src"
@@ -902,8 +907,9 @@ _EOT_
 
 		# Dont generate a corrupted package.
 		cd $WOK/$PACKAGE && rm -rf taz
-		report exit
+		return 1
 	fi
+	return 0
 }
 
 gen_cookmd5()
@@ -920,6 +926,22 @@ gen_cookmd5()
 	fi
 }
 
+set_pkg_broken()
+{
+	if ! grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/broken; then
+		echo $PACKAGE >> $PACKAGES_REPOSITORY/broken
+	fi
+
+	# Remove pkg from cooklist to avoid re-cook it if no changes happens
+	# in the cook stuff.
+	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
+
+	gen_cookmd5
+
+	# Return 1 to make report know that's mother-function failed.
+	return 1
+}
+
 # Create a package tree and build the gziped cpio archive
 # to make a SliTaz (.tazpkg) package.
 gen_package()
@@ -927,8 +949,7 @@ gen_package()
 	check_root
 	check_for_package_on_cmdline
 	check_for_receipt
-	EXTRAVERSION=""
-	. $RECEIPT
+	source_receipt
 	
 	# May compute VERSION
 	if grep -q ^get_version $RECEIPT; then
@@ -941,8 +962,8 @@ gen_package()
 	[ -d "taz" ] &&	rm -rf taz
 	
 	# Create the package tree and set useful variables.
-	mkdir -p $WOK/$PACKAGE/taz/$PACKAGE-$VERSION/fs
 	fs=$WOK/$PACKAGE/taz/$PACKAGE-$VERSION/fs
+	mkdir -p $fs
 	
 	# Set $src for standard package and $_pkg variables.
 	set_src_path
@@ -952,16 +973,18 @@ gen_package()
 	# the package.
 	report step "Building $PACKAGE with the receipt"
 	report open-bloc
-	if grep -q ^genpkg_rules $RECEIPT; then
+	if look_for_cookopt !fs; then
+		:
+	elif grep -q ^genpkg_rules $RECEIPT; then
 		
 		# Log process.
 		echo "executing genpkg_rules" >> $LOG
 		report step "Executing genpkg_rules"
-		( set -e;  genpkg_rules ) || return 1
-		report end-step
-		check_fsh
+		( set -e;  genpkg_rules ) || { set_pkg_broken; report close-bloc; return 1; }
+		check_fsh || { set_pkg_broken; report close-bloc; return 1; }
 		cd $WOK/$PACKAGE
-		
+		report end-step
+
 		# Skip generic files for packages with a WANTED variable
 		# (dev and splited pkgs).
 		if [ ! "$WANTED" ]; then
@@ -971,7 +994,9 @@ gen_package()
 		py_compiled_files_remove
 	else
 		echo "No package rules to gen $PACKAGE..." >&2
-		report exit
+		set_pkg_broken
+		report close-bloc
+		return 1
 	fi
 	
 	# Copy the receipt and description (if exists) into the binary package tree.
@@ -2065,7 +2090,7 @@ cook()
 
 	clean $PACKAGE
 	[ -s $tmp/cooklist ] && sed "/^$PACKAGE$/d" -i $tmp/cooklist
-	
+
 	if compile_package; then
 		remove_src
 		refresh_packages_from_compile
@@ -2088,12 +2113,7 @@ cook()
 		done
 		report end-step
 	else
-
-		# Set package as broken.
-		if ! grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/broken; then
-			echo $PACKAGE >> $PACKAGES_REPOSITORY/broken
-		fi
-		gen_cookmd5
+		set_pkg_broken
 		cook_code=1
 	fi
 
