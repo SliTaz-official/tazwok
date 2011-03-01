@@ -136,7 +136,7 @@ get_tazwok_config()
 	fi
 
 	# Limit memory usage.
-	ulimit -v $(awk '/MemTotal/ { print int(($2*80)/100) }' < /proc/meminfo)
+	ulimit -v $(awk '/MemTotal|SwapTotal/ { n+=$2 } END { print int((n*80)/100) }' < /proc/meminfo)
 
 	# log steps for webserver.
 	log_step="$LOCAL_REPOSITORY/log/step"
