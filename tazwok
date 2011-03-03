@@ -117,6 +117,7 @@ get_tazwok_config()
 	# Basically, get theses files from the net if they are missing.
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
+	cookorder=$INCOMING_REPOSITORY/cookorder.txt
 
 	# Check commons directories, create them if user is root.
 	if test $(id -u) = 0 ; then
@@ -128,7 +129,7 @@ get_tazwok_config()
 		check_dir $LOCAL_REPOSITORY/log
 		[ -f $dep_db ] || touch $dep_db
 		[ -f $wan_db ] || touch $wan_db
-		[ -f $PACKAGES_REPOSITORY/cookorder.txt ] || touch $PACKAGES_REPOSITORY/cookorder.txt
+		[ -f $cookorder ] || touch $cookorder
 		for file in broken blocked commit incoming cooklist; do
 			[ ! -f $PACKAGES_REPOSITORY/$file ] && touch $PACKAGES_REPOSITORY/$file
 		done
@@ -1226,14 +1227,14 @@ $PACKAGE $pkg"
 				echo "Removing $PACKAGE from $pkg_repository."	
 				rm $pkg
 				[ -d $WOK/$PACKAGE ] && rm -r $WOK/$PACKAGE
-				sed "/^$PACKAGE\t/d" -i $wan_db $dep_db
-				for i in cookorder.txt cooklist commit blocked broken; do
+				sed "/^$PACKAGE\t/d" -i $wan_db $dep_db $cookorder
+				for i in cooklist commit blocked broken; do
 					sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/$i
 				done	
 				rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html	
 				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ] && \
-				[ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" != "#PlanSort" ] ; then
-					sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+				[ "$(sed 1!d $cookorder)" != "#PlanSort" ] ; then
+					sed 1i"#PlanSort" -i $cookorder
 					regen_cooklist=yes
 				else
 					echo "$PACKAGE" >> $PACKAGES_REPOSITORY/removed
@@ -1383,7 +1384,7 @@ gen_wok_db()
 	report step "Generating wok database"
 	report open-bloc
 	report step "Removing old files"
-	for file in $wan_db $dep_db $PACKAGES_REPOSITORY/cookorder.txt; do
+	for file in $wan_db $dep_db $cookorder; do
 		[ -f $file ] && rm $file
 	done
 	report step "Generating wok-wanted.txt"
@@ -1487,12 +1488,12 @@ sort_db()
 	# The toolchain packages are moved in first position.
 	grep $(for pkg in `scan "$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA" \
 		--look_for=all --with_args`; do echo " -e ^$pkg$"; done) \
-		$tmp/cookorder | tac > $PACKAGES_REPOSITORY/cookorder.txt
-	for pkg in $(cat $PACKAGES_REPOSITORY/cookorder.txt); do
+		$tmp/cookorder | tac > $cookorder
+	for pkg in $(cat $cookorder); do
 		sed "/^$pkg$/d" -i $tmp/cookorder
 	done
 
-	tac $tmp/cookorder >> $PACKAGES_REPOSITORY/cookorder.txt
+	tac $tmp/cookorder >> $cookorder
 	unset plan_regen_cookorder
 	report end-step
 }
@@ -1737,9 +1738,8 @@ scan()
 		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
 		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
 		if [ "$plan_regen_cookorder" ] && \
-		[ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" != "#PlanSort" ]; then
-			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt || \
-			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+		[ "$(sed 1!d $cookorder)" != "#PlanSort" ]; then
+			grep -q "^#" $cookorder || sed 1i"#PlanSort" -i $cookorder
 		fi
 	fi
 }
@@ -1876,8 +1876,8 @@ gen_cook_list()
 
 sort_cooklist()
 {
-	if [ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ]; then
-		sed 1d -i $PACKAGES_REPOSITORY/cookorder.txt
+	if [ "$(sed 1!d $cookorder)" = "#PlanSort" ]; then
+		sed 1d -i $cookorder
 		plan_regen_cookorder=yes
 	fi
 	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
@@ -1911,7 +1911,7 @@ sort_cooklist()
 
 	# Use cookorder.txt to sort cooklist.
 	if [ -s $tmp/cooklist ]; then
-		cat $PACKAGES_REPOSITORY/cookorder.txt | while read PACKAGE; do
+		cat $cookorder | while read PACKAGE; do
 			if grep -q ^$PACKAGE$ $tmp/cooklist; then
 				sed "/^$PACKAGE$/d" -i $tmp/cooklist
 				echo $PACKAGE >> $tmp/cooklist.tmp
@@ -2630,8 +2630,8 @@ Maintainer : $MAINTAINER"
 		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
 		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
 		if [ "$plan_regen_cookorder" ]; then
-			[ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ] || \
-			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
+			[ "$(sed 1!d $cookorder)" = "#PlanSort" ] || \
+			sed 1i"#PlanSort" -i $cookorder
 		fi
 		cook
 	;;
