@@ -84,6 +84,39 @@ tazwok_warning()
 # TAZWOK VARIABLES & INITIAL CONFIGURATION
 ########################
 
+# Check if all packages are up to date into build environnement
+check_env_status()
+{
+	{ [ "${COMMAND#cook}" = "$COMMAND" ] || \
+	[ "$COMMAND" = cook-toolchain ] ; } && return
+	MIRROR_path=$(grep -l "^$1$" $LOCALSTATE/mirror $LOCALSTATE/undigest/*/mirror)
+
+	if [ ! "$MIRROR_path" ]; then
+		echo "You are trying to cook something but you don't use $1 repository, which is \
+ needed for this operation." | fold -s >&2
+		exit 1
+	fi
+	
+	LOCALSTATE_path=${MIRROR_path%/mirror}
+
+	# Check is possible only if repository use ID.
+	if [ "${MIRROR_path:0:1}" = '/' ]; then
+		[ -f "$MIRROR_path/ID" ] || return
+	else
+		wget -a -s $MIRROR_path/ID 2>/dev/null || return
+	fi
+
+	[ -f $LOCALSTATE_path/ID ] && ID=$(cat $LOCALSATE_path/ID)
+
+	if [ "$LOCALSTATE_path" = "$LOCALSTATE" ]; then
+		tazpkg recharge main
+	else
+		tazpkg recharge ${LOCALSTATE_path##*/}
+	fi
+
+	[ "$(cat $LOCALSTATE_path/ID)" = "$ID" ] || env_status=1
+}
+
 get_tazwok_config()
 {
 	# Get configuration file.
@@ -112,12 +145,68 @@ get_tazwok_config()
 	INCOMING_REPOSITORY=$LOCAL_REPOSITORY/packages-incoming
 	SOURCES_REPOSITORY=$LOCAL_REPOSITORY/src
 	set_common_path
-
-	# /!\ This part needs some changes.
-	# Basically, get theses files from the net if they are missing.
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
 	cookorder=$INCOMING_REPOSITORY/cookorder.txt
+
+
+	# Check that packages are up to date if user intend to cook.
+	check_env_status ${USE_ONLINE_PKG:-$PACKAGES_REPOSITORY}
+	check_env_status $INCOMING_REPOSITORY
+
+	# In case undigest is used, we need to upgrade system.
+	if [ "$undigest" ]; then
+		ref_PACKAGES_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION/packages
+		if [ -f $SLITAZ_DIR/$SLITAZ_VERSION/tazwok.conf ] && \
+		grep -q ^USE_ONLINE_PKG $SLITAZ_DIR/$SLITAZ_VERSION/tazwok.conf; then
+			ref_USE_ONLINE_PKG=$(source $SLITAZ_DIR/$SLITAZ_VERSION/tazwok.conf && \
+				echo $USE_ONLINE_PKG)
+		fi
+
+		check_env_status ${ref_USE_ONLINE_PKG:-$ref_PACKAGES_REPOSITORY}
+		cd $ref_PACKAGES_REPOSITORY
+		if [ "$ref_USE_ONLINE_PKG" ]; then
+			ref_dep_db=$LOCALSTATE_path/wok-depends.txt
+			ref_wan_db=$LOCALSTATE_path/wok-wanted.txt
+		else
+			ref_dep_db=$ref_PACKAGES_REPOSITORY/wok-depends.txt
+			ref_wan_db=$ref_PACKAGES_REPOSITORY/wok-wanted.txt
+		fi
+
+		for file in $ref_dep_db $ref_wan_db; do
+			[ -f "$file" ] && continue
+			missing_file=t
+			echo "$file is missing." >&2
+		done
+		if [ "$missing_file" ]; then
+			echo "
+Theses files are needed to get datas about packages from the reference repository $SLITAZ_VERSION. \
+If you don't intend to build this reference repository yourself, you should set USE_ONLINE_PKG variable \
+into tazwok.conf of this reference repository. How-to:" | fold -s >&2
+			echo "echo 'USE_ONLINE_PKG=\"packages_repository_url\"' >> $SLITAZ_DIR/$SLITAZ_VERSION/tazwok.conf"
+			echo ""
+			exit 1
+		fi
+	fi
+
+	# If $env_status exists, it means an upgrade may be needed.
+	if [ "$env_status" ]; then
+		if [ -x /usr/bin/clean-chroot ]; then
+			echo y | tazpkg upgrade
+		else
+			echo "\e[0;31mWarning: \e[m"
+			echo "You're environnement may need a package upgrade."
+			echo "Upgrading is highly recommanded to ensure repository consistency."
+			echo "You can (E)xit, (U)pgrade, or (C)ontinue."
+			echo -n "What do you want to do ?"
+			read answer
+			case $answer in
+				[Cc]*) ;;
+				[Uu]*) echo y | tazpkg upgrade ;;
+				*) exit
+			esac
+		fi
+	fi
 
 	# Check commons directories, create them if user is root.
 	if test $(id -u) = 0 ; then
