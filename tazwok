@@ -2916,12 +2916,12 @@ EOF
 
 					# Auto-install only if we are in a cook chroot.
 					if [ -x /usr/bin/clean-chroot ]; then
+						tazpkg get-install mercurial
+					else
 						echo "" >&2
 						echo "You need to install mercurial to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold -s >&2
 						echo "">&2
 						exit 1
-					else
-						tazpkg get-install mercurial
 					fi
 				fi
 
