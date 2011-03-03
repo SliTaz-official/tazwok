@@ -2081,6 +2081,7 @@ check_for_incoming()
 	fi
 
 	report step "Moving incoming packages to main repository"
+	mkdir -p $PACKAGES_REPOSITORY/wok
 	unset EXTRAVERSION
 	for PACKAGE in $incoming_pkgs; do
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
@@ -2097,7 +2098,22 @@ check_for_incoming()
 				grep -q $'\t'$previous_tarball$ $SOURCES_REPOSITORY/sources.list || \
 					rm -f $SOURCES_REPOSITORY/$previous_tarball
 			fi
+			rm -rf $PACKAGES_REPOSITORY/wok/$PACKAGE
+			mkdir -p $PACKAGES_REPOSITORY/wok/$PACKAGE
+			for i in $WOK/$PACKAGE/receipt $WOK/$PACKAGE/description.txt \
+			$WOK/$PACKAGE/stuff; do
+				cp -a $i $PACKAGES_REPOSITORY/wok/$PACKAGE
+			done
 	done
+
+	if [ "$GEN_SAFE_WOK_TARBALL" ]; then
+		rm -rf $PACKAGES_REPOSITORY/wok.tar.lzma
+		cd $PACKAGES_REPOSITORY/wok
+		report step "Generating safe-wok tarball"
+		tar -c * | lzma e $PACKAGES_REPOSITORY/wok.tar.lzma
+		report end-step
+	fi
+
 	for file in packages.list packages.equiv packages.md5 packages.desc \
 		packages.txt; do
 		echo -n "" > $INCOMING_REPOSITORY/$file
