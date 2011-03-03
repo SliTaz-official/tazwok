@@ -147,7 +147,7 @@ get_tazwok_config()
 	set_common_path
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
-	cookorder=$INCOMING_REPOSITORY/cookorder.txt
+	cookorder=$PACKAGES_REPOSITORY/cookorder.txt
 
 
 	# Check that packages are up to date if user intend to cook.
