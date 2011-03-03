@@ -1381,6 +1381,11 @@ erase_package_info()
 	sed "/^$PACKAGE:/d" -i files.list
 	sed "/^$(basename ${pkg%.tazpkg})$/d" -i packages.list
 	sed "/ $(basename $pkg)$/d" -i packages.md5
+	[ "$pkg_repository" != "$PACKAGES_REPOSITORY" ] && return 0	
+	for i in wok-wanted.txt wok-depends.txt; do
+		[ -f $i ] || continue
+		sed "/^$PACKAGE\t/d" -i $i
+	done
 }
 
 get_packages_info()
@@ -1431,6 +1436,11 @@ BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
 	[ ! "$package_md5" ] && package_md5=$(md5sum $(basename $pkg))
 	echo "$package_md5" >> packages.md5
 	unset package_md5
+
+	if [ "$pkg_repository" = "$PACKAGES_REPOSITORY" ]; then
+		[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wok-wanted.txt
+		echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> wok-package.txt
+	fi
 }
 
 source_receipt()
@@ -1451,10 +1461,14 @@ packages_db_end()
 	# If lists was updated it's generally needed to sort them well.
 	if ! sort -c packages.list 2> /dev/null; then
 		report step "Sorting packages lists"
-		for file in packages.list packages.desc packages.equiv; do
+		files_list="packages.list packages.desc packages.equiv"
+		[ "$pkg_repository" = "$PACKAGES_REPOSITORY" ] && \
+			files_list="$files_list wok-wanted.txt wok-depends.txt"
+		for file in $files_list; do
 			[ -f $file ] || continue
 			sort -o $file $file
 		done
+		md5sum packages.md5 | cut -f1 -d' ' > ID
 		report end-step
 	fi
 	
@@ -1596,11 +1610,9 @@ sort_db()
 look_for_dep()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep -m1 ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
-			| cut -f 2
+		grep -m1 ^$PACKAGE$'\t' $ref_dep_db | cut -f 2
 	else
-		grep -m1 ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
-			cut -f 2
+		grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2
 	fi
 }
 
@@ -1612,19 +1624,17 @@ look_for_bdep()
 look_for_all()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep -m1 ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
-			| cut -f 2,3 | sed 's/ 	 / /'
+		grep -m1 ^$PACKAGE$'\t' $ref_dep_db | cut -f 2,3 | sed 's/ 	 / /'
 	else
-		grep -m1 ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-depends.txt | \
-			cut -f 2,3 | sed 's/ 	 / /'
+		grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2,3 | sed 's/ 	 / /'
 	fi
 }
 
 look_for_rdep()
 {
-	fgrep ' '$PACKAGE' ' $INCOMING_REPOSITORY/wok-depends.txt | cut -f 1
+	fgrep ' '$PACKAGE' ' $dep_db | cut -f 1
 	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt | cut -f 1); do
+		for rdep in $(fgrep ' '$PACKAGE' ' $ref_dep_db | cut -f 1); do
 			if [ ! -f "WOK$/$rdep/receipt" ]; then
 				echo "$rdep"
 			fi
@@ -1634,34 +1644,32 @@ look_for_rdep()
 
 look_for_rbdep()
 {
-	fgrep ' '$PACKAGE' ' $INCOMING_REPOSITORY/wok-depends.txt | \
-		cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1
+	fgrep ' '$PACKAGE' ' $dep_db | cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1
 	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-depends.txt \
-			| cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1); do
+		for rdep in $(fgrep ' '$PACKAGE' ' $ref_dep_db | cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1); do
 			if [ ! -f "WOK$/$rdep/receipt" ]; then
 				echo "$rdep"
 			fi
 		done
-	fi	
+	fi
 }
 
 # Return WANTED if it exists.
 look_for_wanted()
 {
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep -m1 ^$PACKAGE$'\t' $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 2
+		grep -m1 ^$PACKAGE$'\t' $ref_wan_db | cut -f 2
 	else
-		grep -m1 ^$PACKAGE$'\t' $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 2
+		grep -m1 ^$PACKAGE$'\t' $wan_db | cut -f 2
 	fi
 }
 
 # Return packages which wants PACKAGE.
 look_for_rwanted()
 {
-	grep $'\t'$PACKAGE$ $INCOMING_REPOSITORY/wok-wanted.txt | cut -f 1
+	grep $'\t'$PACKAGE$ $wan_db | cut -f 1
 	if [ "$undigest" ]; then
-		for rwanted in $(grep $'\t'$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming/wok-wanted.txt | cut -f 1); do
+		for rwanted in $(grep $'\t' $ref_wan_db | cut -f 1); do
 			if [ ! -f "$WOK/$rwanted/receipt" ]; then
 				echo "$rwanted"
 			fi
@@ -1674,13 +1682,13 @@ look_for_dev()
 	WANTED=$(look_for_wanted)
 	if [ "$WANTED" ]; then
 		if [ "$undigest" ] && [ ! -f "$WOK/$WANTED/receipt" ]; then
-			[ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$WANTED-dev/receipt" ] && echo $WANTED-dev
+			grep -q ^$WANTED-dev$'\t' $ref_dep_db && echo $WANTED-dev
 		else
 			[ -f "$WOK/$WANTED-dev/receipt" ] && echo $WANTED-dev
 		fi
 	fi
 	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		[ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
+			grep -q ^$PACKAGE-dev$'\t' $ref_dep_db && echo $PACKAGE-dev
 	else
 		[ -f "$WOK/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
 	fi
