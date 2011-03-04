@@ -1283,14 +1283,15 @@ update_packages_db()
 	fi
 	report step "Updating packages lists: $pkg_repository"
 	packages_db_start
-	
+
 	# Look for removed/update packages.
+	touch stamp -r packages.list
 	for PACKAGE in $(grep ^[0-9,a-z,A-Z] packages.txt); do
 		pkg="$pkg_repository/$(grep -m1 ^$PACKAGE- packages.list).tazpkg"
 		if ! [ -f "$pkg" ]; then
 			erase_package_info
 		else
-			if [ "$pkg" -nt "packages.list" ]; then
+			if [ "$pkg" -nt "stamp" ]; then
 				updated_pkg="$updated_pkg
 $PACKAGE $pkg"
 			elif [ ! -f $WOK/$PACKAGE/receipt ] && \
@@ -1313,6 +1314,7 @@ $PACKAGE $pkg"
 			fi
 		fi
 	done
+	rm stamp
 	echo "$updated_pkg" | sed 1d | while read PACKAGE pkg; do
 		erase_package_info
 		get_packages_info
@@ -1522,7 +1524,7 @@ update_wan_db()
 		source $RECEIPT
 		[ "$WANTED" ] || continue
 		wan_info=$(echo -e $PACKAGE"\t"$WANTED)
-		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && return
+		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && continue
 		sed "/^$PACKAGE\t/d" -i $wan_db
 		echo "$wan_info" >> $wan_db
 		plan_regen_cookorder=yes
