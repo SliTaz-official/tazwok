@@ -1362,7 +1362,7 @@ erase_package_info()
 	sed "/^$(basename ${pkg%.tazpkg})$/d" -i packages.list
 	sed "/ $(basename $pkg)$/d" -i packages.md5
 	[ "$pkg_repository" != "$PACKAGES_REPOSITORY" ] && return 0	
-	for i in wok-wanted.txt wok-depends.txt; do
+	for i in wanted.txt depends.txt; do
 		[ -f $i ] || continue
 		sed "/^$PACKAGE\t/d" -i $i
 	done
@@ -1418,8 +1418,8 @@ BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
 	unset package_md5
 
 	if [ "$pkg_repository" = "$PACKAGES_REPOSITORY" ]; then
-		[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wok-wanted.txt
-		echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> wok-package.txt
+		[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wanted.txt
+		echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> package.txt
 	fi
 }
 
@@ -1443,7 +1443,7 @@ packages_db_end()
 		report step "Sorting packages lists"
 		files_list="packages.list packages.desc packages.equiv"
 		[ "$pkg_repository" = "$PACKAGES_REPOSITORY" ] && \
-			files_list="$files_list wok-wanted.txt wok-depends.txt"
+			files_list="$files_list wanted.txt depends.txt"
 		for file in $files_list; do
 			[ -f $file ] || continue
 			sort -o $file $file
