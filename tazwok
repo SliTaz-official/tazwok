@@ -138,17 +138,8 @@ get_tazwok_config()
 			return
 		fi
 	fi
-	
-	# The path to the most important files/dir used by Tazwok.
-	PACKAGES_REPOSITORY=$LOCAL_REPOSITORY/packages
-	WOK=$LOCAL_REPOSITORY/wok
-	INCOMING_REPOSITORY=$LOCAL_REPOSITORY/packages-incoming
-	SOURCES_REPOSITORY=$LOCAL_REPOSITORY/src
-	set_common_path
-	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
-	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
-	cookorder=$PACKAGES_REPOSITORY/cookorder.txt
 
+	set_common_path
 
 	# Check that packages are up to date if user intend to cook.
 	check_env_status ${USE_ONLINE_PKG:-$PACKAGES_REPOSITORY}
@@ -219,31 +210,39 @@ into tazwok.conf of this reference repository. How-to:" | fold -s >&2
 		[ -f $dep_db ] || touch $dep_db
 		[ -f $wan_db ] || touch $wan_db
 		[ -f $cookorder ] || touch $cookorder
-		for file in broken blocked commit incoming cooklist; do
-			[ ! -f $PACKAGES_REPOSITORY/$file ] && touch $PACKAGES_REPOSITORY/$file
+		for file in $dep_db $wan_db $cookorder $commit $cooklist \
+			$broken $blocked $SOURCES_REPOSITORY/sources.list
+		do
+			[ -f $file ] || touch $file
 		done
-		touch $SOURCES_REPOSITORY/sources.list
 	fi
 
 	# Limit memory usage.
 	ulimit -v $(awk '/MemTotal|SwapTotal/ { n+=$2 } END { print int((n*80)/100) }' < /proc/meminfo)
+}
+
+# The path to the most important files/dir used by Tazwok.
+set_common_path()
+{
+	PACKAGES_REPOSITORY=$LOCAL_REPOSITORY/packages
+	WOK=$LOCAL_REPOSITORY/wok
+	INCOMING_REPOSITORY=$LOCAL_REPOSITORY/packages-incoming
+	SOURCES_REPOSITORY=$LOCAL_REPOSITORY/src
+	RECEIPT="$WOK/$PACKAGE/receipt"
+	LOG="$WOK/$PACKAGE/process.log"
+	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
+	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
+	cookorder=$PACKAGES_REPOSITORY/cookorder.txt
+	commit=$PACKAGES_REPOSITORY/commit
+	cooklist=$PACKAGES_REPOSITORY/cooklist
+	broken=$PACKAGES_REPOSITORY/broken
+	blocked=$PACKAGES_REPOSITORY/blocked
 
 	# log steps for webserver.
 	log_step="$LOCAL_REPOSITORY/log/step"
 	run_on_exit="$run_on_exit
 rm -f $LOCAL_REPOSITORY/log/step
 rm -f $LOCAL_REPOSITORY/log/package"
-}
-
-# Used in several functions.
-set_common_path()
-{
-	# The receipt is used to compile the source code and
-	# generate suitable packages for Tazpkg.
-	RECEIPT="$WOK/$PACKAGE/receipt"
-
-	# The path to the process log file.
-	LOG="$WOK/$PACKAGE/process.log"
 }
 
 ########################################################################
@@ -275,17 +274,10 @@ check_for_list()
 	if [ ! "$LIST" ]; then
 		echo -e "\nPlease specify the path to the list of packages to cook.\n" >&2
 		exit 1
-	fi
-	
-	# Check if the list of packages exists.
-	if [ -f "$LIST" ]; then
-		LIST=`cat $LIST`
-	else
+	elif ! [ -f "$LIST" ]; then
 		echo -e "\nUnable to find $LIST packages list.\n" >&2
 		exit 1
-	fi
-	
-	if [ ! "$LIST" ]; then
+	elif ! [ -s "$LIST" ]; then
 		echo -e "\nList is empty.\n" >&2
 		exit 1
 	fi
@@ -294,10 +286,7 @@ check_for_list()
 check_for_pkg_in_wok()
 {
 	[ -f $WOK/$PACKAGE/receipt ] && return
-	if [ "$undigest" ]; then
-		[ -f "$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
-		grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/packages.txt && return 1
-	fi
+	[ "$undigest" ] grep -q ^$PACKAGE'$\t' $ref_dep_db && return 1
 	echo "Can't find $PACKAGE in wok or mirror" >&2
 	return 2
 }
@@ -409,15 +398,13 @@ check_for_build_depends()
 			plan_remove="${plan_remove/ $pkg / }"
 			remove_later="$remove_later $pkg"
 		fi
-		if grep -q ^$pkg$ $PACKAGES_REPOSITORY/broken; then
-			broken="$broken$pkg "
-		fi
+		grep -q ^$pkg$ $broken && broken_pkg="$broken_pkg$pkg "
 	done
 	
 	# Don't cook if a depend is broken.
-	if [ "$broken" ]; then
+	if [ "$broken_pkg" ]; then
 		MISSING_PACKAGE=$plan_remove
-		echo "Can't cook $PACKAGE because broken depend(s) : $broken" >&2
+		echo "Can't cook $PACKAGE because broken depend(s) : $broken_pkg" >&2
 		unset plan_remove broken
 		
 		# Set report step to failed.
@@ -1021,14 +1008,11 @@ gen_cookmd5()
 
 set_pkg_broken()
 {
-	if ! grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/broken; then
-		echo $PACKAGE >> $PACKAGES_REPOSITORY/broken
-	fi
+	grep -q ^$PACKAGE$ $broken || echo $PACKAGE >> $broken
 
 	# Remove pkg from cooklist to avoid re-cook it if no changes happens
 	# in the cook stuff.
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
+	sed "/^$PACKAGE$/d" -i $cooklist $commit
 
 	gen_cookmd5
 
@@ -1151,9 +1135,8 @@ gen_package()
 				echo "A minor/major update in libraries is detected, planning re-cook of reverse-depends of $PACKAGE."
 				for rdep in $(scan $PACKAGE --look_for=rdep | use_wanted); do
 					[ "$rdep" = "${WANTED:-$PACKAGE}" ] && continue
-					grep -q ^$rdep$ $PACKAGES_REPOSITORY/blocked \
-						$PACKAGES_REPOSITORY/cooklist && continue
-					echo $rdep >> $PACKAGES_REPOSITORY/cooklist
+					grep -q ^$rdep$ $blocked $cooklist && continue
+					echo $rdep >> $cooklist
 				done
 				regen_cooklist=yes
 				break
@@ -1213,20 +1196,19 @@ gen_package()
 	rm fs.cpio.* && cd ..
 
 	# Recook of reverse-depends if package was broken.
-	if grep -q "^$PACKAGE$" $PACKAGES_REPOSITORY/broken; then
+	if grep -q "^$PACKAGE$" $broken; then
 		report step "Planning re-try a cook of reverse depends" 
-		sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/broken
+		sed "/^$PACKAGE$/d" -i $broken
 		for rdep in $(look_for_rdep); do
-			grep -q "^$rdep$" $PACKAGES_REPOSITORY/broken || continue
-			grep -q "^$rdep$" $PACKAGES_REPOSITORY/cooklist && continue
+			grep -q "^$rdep$" $broken || continue
+			grep -q "^$rdep$" $cooklist && continue
 			echo "Adding $rdep to the cooklist"
-			echo $rdep >> $PACKAGES_REPOSITORY/cooklist
+			echo $rdep >> $cooklist
 			regen_cooklist=t
 		done
 		report end-step
 	fi
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
-	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
+	sed "/^$PACKAGE$/d" -i $commit $cooklist
 	
 	# Log process.
 	echo "$PACKAGE-$VERSION$EXTRAVERSION.tazpkg (done)" >> $LOG
@@ -1317,9 +1299,7 @@ $PACKAGE $pkg"
 				rm $pkg
 				[ -d $WOK/$PACKAGE ] && rm -r $WOK/$PACKAGE
 				sed "/^$PACKAGE\t/d" -i $wan_db $dep_db $cookorder
-				for i in cooklist commit blocked broken; do
-					sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/$i
-				done	
+				sed "/^$PACKAGE$/d" -i $cooklist $commit $blocked $broken
 				rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html	
 				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ] && \
 				[ "$(sed 1!d $cookorder)" != "#PlanSort" ] ; then
@@ -1909,8 +1889,7 @@ check_for_commit()
 		}
 		set_commited()
 		{
-			! grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/commit &&
-				echo $PACKAGE >> $PACKAGES_REPOSITORY/commit
+			grep -q ^$PACKAGE$ $commit || echo $PACKAGE >> $commit
 			gen_cookmd5
 			update_dep_db
 		}
@@ -1942,6 +1921,8 @@ gen_cook_list()
 	report step "Scanning wok"
 	if [ "$pkg" ]; then
 		scan $pkg --cooklist
+	elif [ "$LIST" ]; then
+		scan `cat $LIST` --cooklist
 	else
 		scan `cat $cooklist` --cooklist
 	fi
@@ -1952,20 +1933,18 @@ gen_cook_list()
 	# Core toolchain should not be cooked unless cook-toolchain is used.
 	if ! [ -f /etc/config.site.tmptoolchain ] ; then
 		for PACKAGE in $(scan gcc --look_for=all --with_args --with_wanted); do
-			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/blocked || \
-				echo $PACKAGE >> $PACKAGES_REPOSITORY/blocked
+			grep -q ^$PACKAGE$ $blocked || echo $PACKAGE >> $blocked
 		done
 	fi
 
-	if [ -s $PACKAGES_REPOSITORY/commit ] && [ "$COMMAND" != gen-cooklist ]; then
-		cd $PACKAGES_REPOSITORY
-		for PACKAGE in $(cat commit); do
+	if [ -s $commit ] && [ "$COMMAND" != gen-cooklist ]; then
+		for PACKAGE in $(cat $commit); do
 			WANTED="$(look_for_wanted)"
 			if [ "$WANTED" ]; then
-				grep -q ^$WANTED$ broken cooklist blocked commit && continue
+				grep -q ^$WANTED$ $broken $cooklist $blocked $commit && continue
 			fi
-			grep -q ^$PACKAGE$ blocked cooklist && continue
-			echo $PACKAGE >> cooklist
+			grep -q ^$PACKAGE$ $blocked $cooklist && continue
+			echo $PACKAGE >> $cooklist
 		done
 	fi
 	sort_cooklist
@@ -1983,11 +1962,10 @@ sort_cooklist()
 	if [ -f "$tmp/checked" ]; then
 		rm -f $tmp/cooklist
 		cat $tmp/checked | while read PACKAGE; do
-			grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/cooklist && \
-				echo $PACKAGE >> $tmp/cooklist
+			grep -q ^$PACKAGE$ $cooklist && echo $PACKAGE >> $tmp/cooklist
 		done
 	elif ! [ "$COMMAND" = gen-cooklist ]; then
-		cat $PACKAGES_REPOSITORY/blocked | while read PACKAGE; do
+		cat $blocked | while read PACKAGE; do
 			sed "/^$PACKAGE/d" -i $tmp/cooklist
 		done
 	fi
@@ -1998,7 +1976,7 @@ sort_cooklist()
 	for PACKAGE in $(cat $tmp/cooklist); do
 		WANTED="$(look_for_wanted)"
 		[ "$WANTED" ] || continue
-		if grep -q ^$WANTED$ $PACKAGES_REPOSITORY/broken $tmp/cooklist; then
+		if grep -q ^$WANTED$ $broken $tmp/cooklist; then
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
 		elif [ ! -d $WOK/$WANTED/install ]; then
 			sed "/^$PACKAGE$/d" -i $tmp/cooklist
@@ -2023,8 +2001,7 @@ sort_cooklist()
 		fi
 		
 		cat $tmp/cooklist
-		[ "$cooklist" = "$PACKAGES_REPOSITORY/cooklist" ] && \
-			cat $tmp/cooklist > $cooklist
+		[ "$LIST" ] || cat $tmp/cooklist > $cooklist
 	fi
 	
 	report end-step
@@ -2046,7 +2023,7 @@ check_for_incoming()
 	[ -s $INCOMING_REPOSITORY/packages.desc ] || {
 	echo "No packages in $INCOMING_REPOSITORY."
 	report end-step; return; }
-	if [ -s $PACKAGES_REPOSITORY/broken ]; then
+	if [ -s $broken ]; then
 		missingpkg=$(look_for_missing_pkg broken)
 		if [ "$missingpkg" ]; then
 			echo "Don't move incoming packages to main repository because theses ones are broken:" >&2
@@ -2055,7 +2032,7 @@ check_for_incoming()
 			return 1
 		fi
 	fi
-	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
+	if [ -s $cooklist ]; then
 		missingpkg=$(look_for_missing_pkg cooklist)
 		if [ "$missingpkg" ]; then
 			echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
@@ -2069,7 +2046,7 @@ check_for_incoming()
 		cooklist=$PACKAGES_REPOSITORY/cooklist
 		pkg="$incoming_pkgs"
 		gen_cook_list
-		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
+		if [ -s $cooklist ]; then
 			missingpkg=$(look_for_missing_pkg cooklist)
 			if [ "$missingpkg" ]; then
 				echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
@@ -2255,8 +2232,8 @@ cook()
 	fi
 	
 	# Regen the cooklist if it was planned and command is not cook.
-	[ "$regen_cooklist" ] && unset regen_cooklist && \
-		[ "$COMMAND" != cook ] && sort_cooklist
+	[ "$regen_cooklist" ] && unset regen_cooklist &&
+	[ "$COMMAND" != cook ] && sort_cooklist
 
 	# Some hacks to set the bloc & function status as failed if cook was
 	# failed.
@@ -2425,7 +2402,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			if [ ! "$LIST" ] || [ "$LIST" = toolchain ]; then
 				pkg="$SLITAZ_TOOLCHAIN $SLITAZ_TOOLCHAIN_EXTRA"
 			else
-				cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
+				check_for_list
 			fi
 		fi
 		gen_cook_list
@@ -2749,19 +2726,15 @@ Maintainer : $MAINTAINER"
 		cook
 	;;
 	sort-cooklist)
-		if [ ! -f "$LIST" ]; then
-			echo "Usage : tazwok sort-cooklist cooklist" >&2
-			exit 1
-		fi
 		check_root
 		get_tazwok_config
+		check_for_list
 		report(){ : ; }
 		# When using sort-cooklist, the script should behave as for gen-cooklist
 		# The only difference between theses two is where the output is sended.
 		COMMAND=gen-cooklist
-		cooklist=$LIST
 		gen_cook_list
-		cp -af $tmp/cooklist $cooklist
+		cp -af $tmp/cooklist $LIST
 	;;
 	cook-list)
 		# Cook all packages listed in a file or in default cooklist.
@@ -2771,7 +2744,7 @@ Maintainer : $MAINTAINER"
 		source_lib report
 		report start
 		if ! [ "$pkg" ]; then
-			cooklist=${LIST:-$PACKAGES_REPOSITORY/cooklist}
+			[ "$LIST" ] && check_for_list
 		fi
 		gen_cook_list
 		cook_list
@@ -3192,7 +3165,6 @@ EOF
 				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
 			} | sort -u)"
 		fi
-		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 	;;
 	cook-commit)
@@ -3212,7 +3184,6 @@ EOF
 				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
 			} | sort -u)"
 		fi
-		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 		cook_list
 	;;
@@ -3229,7 +3200,6 @@ EOF
 				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
 			} | sort -u)"
 		fi
-		cooklist=$PACKAGES_REPOSITORY/cooklist
 		gen_cook_list
 		cook_list
 	;;
@@ -3428,17 +3398,17 @@ EOF
 			exit 1
 		fi
 		echo ""
-		if grep -qs "^$PACKAGE$" $PACKAGES_REPOSITORY/blocked; then
+		if grep -qs "^$PACKAGE$" $blocked; then
 			echo "$PACKAGE is already in the blocked packages list." >&2
 			echo ""
 			exit 1
 		else
-			echo -n "Adding $PACKAGE to     : $PACKAGES_REPOSITORY/blocked... "
-			echo "$PACKAGE" >> $PACKAGES_REPOSITORY/blocked
+			echo -n "Adding $PACKAGE to     : $blocked... "
+			echo "$PACKAGE" >> $blocked
 			status
-			if grep -q "^$PACKAGE$" $PACKAGES_REPOSITORY/cooklist; then
-				echo -n "Removing $PACKAGE from : $PACKAGES_REPOSITORY/cooklist... "
-				sed -i /"^$PACKAGE$"/d $PACKAGES_REPOSITORY/cooklist
+			if grep -q "^$PACKAGE$" $cooklist; then
+				echo -n "Removing $PACKAGE from : $cooklist... "
+				sed -i /"^$PACKAGE$"/d $cooklist
 				status
 			fi
 		fi
@@ -3454,10 +3424,10 @@ EOF
 			exit 1
 		fi
 		echo ""
-		if grep -qs "^$PACKAGE$" $PACKAGES_REPOSITORY/blocked; then
-			echo -n "Removing $PACKAGE from : $PACKAGES_REPOSITORY/blocked... "
-			sed -i /"^$PACKAGE$"/d $PACKAGES_REPOSITORY/blocked
-			sed -i '/^$/d' $PACKAGES_REPOSITORY/blocked
+		if grep -qs "^$PACKAGE$" $blocked; then
+			echo -n "Removing $PACKAGE from : $blocked... "
+			sed -i /"^$PACKAGE$"/d $blocked
+			sed -i '/^$/d' $blocked
 			status
 		else
 			echo "$PACKAGE is not in the blocked packages list." >&2
