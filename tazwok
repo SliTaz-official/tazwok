@@ -2272,11 +2272,19 @@ configure_tazchroot()
 	cat > $LOCAL_REPOSITORY/tazchroot.conf << EOF
 # Tazchroot configuration file - created by tazwok.
 
-# Default chroot path
+# Local repository definition.
 SLITAZ_DIR=$SLITAZ_DIR
 SLITAZ_VERSION=$SLITAZ_VERSION
-$( [ "$undigest" ] && echo "undigest=$undigest" )
-LOCAL_REPOSITORY=$SLITAZ_DIR/$(if [ "$undigest" ]; then echo '$undigest'; else echo '$SLITAZ_VERSION'; fi)
+LOCAL_REPOSITORY=$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}
+${USE_ONLINE_PKG:+USE_ONLINE_PKG=$USE_ONLINE_PKG}
+${undigest:+undigest=$undigest}
+${ref_USE_ONLINE_PKG:+ref_USE_ONLINE_PKG=$ref_USE_ONLINE_PKG}
+
+# Chroot path.
+# You can use a chroot into /tmp if it's mounted in RAM
+# to speed-up the process, be sure you have a free GB.
+# (minimal chroot is like 150~200MB, can be a lot more during cook)
+# chroot_dir=/tmp/chroot-${undigest:-$SLITAZ_VERSION}
 chroot_dir=\$LOCAL_REPOSITORY/chroot
 
 # Default scripts path (theses scripts are added in the
@@ -2284,7 +2292,7 @@ chroot_dir=\$LOCAL_REPOSITORY/chroot
 script_dir=/usr/lib/slitaz/chroot-scripts/tazwok
 
 # List of directories to mount.
-list_dir="$(for dir in packages wok src packages-incoming log flavors iso clean-wok; do echo $LOCAL_REPOSITORY/$dir; done)
+list_dir="$LOCAL_REPOSITORY
 $SLITAZ_LOG$( [ "$undigest" ] && echo -e "\n$SLITAZ_DIR/$SLITAZ_VERSION/packages" )"
 
 create_chroot()
@@ -2300,8 +2308,10 @@ create_chroot()
 	sed -e "s~^SLITAZ_DIR=.*~SLITAZ_DIR=\$SLITAZ_DIR~" \\
 		-e "s/^SLITAZ_VERSION=.*/SLITAZ_VERSION=\$SLITAZ_VERSION/" \\
 		-i \$chroot_dir/etc/slitaz/slitaz.conf
+	echo "\$SLITAZ_VERSION" > /etc/slitaz-release
 $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/slitaz/tazwok.conf')
 	sed 's/LC_ALL/LC_ALL=POSIX/' -i \$chroot_dir/etc/profile
+
 	# The build bot may run in a sandbox: link sandbox lockfile
 	ln -s \$LOCAL_REPOSITORY/sandbox/proc/1 \$chroot_dir/proc/1
 }
@@ -2309,11 +2319,22 @@ $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/sl
 mount_chroot()
 {
 	cp -a /etc/resolv.conf \$chroot_dir/etc/resolv.conf
-	echo "\$LOCAL_REPOSITORY/packages" > \$chroot_dir\$LOCALSTATE/mirror
+	$( if [ "$USE_ONLINE_PKG" ]; then
+		echo '	echo "$USE_ONLINE_PKG" > $chroot_dir$LOCALSTATE/mirror'
+	else
+		echo '	echo $LOCAL_REPOSITORY/packages" > $chroot_dir$LOCALSTATE/mirror'
+	fi
+	)
 	mkdir -p \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming
 	echo "\$LOCAL_REPOSITORY/packages-incoming" > \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming/mirror
-$( [ "$undigest" ] && echo '	mkdir -p $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION
-	echo "$SLITAZ_DIR/$SLITAZ_VERSION/packages" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror' )
+	$( [ "$undigest" ] || continue
+	echo '	mkdir -p $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION'
+	if [ "$ref_USE_ONLINE_PKG" ]; then
+		echo '	echo "$ref_USE_ONLINE_PKG" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror'
+	else
+		echo '	echo "$ref_LOCAL_REPOSITORY/packages" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror'
+	fi
+	)
 	echo -e "\${LOCAL_REPOSITORY##*/}-incoming\nmain" > \$chroot_dir\$LOCALSTATE/priority
 	mount -t proc proc \$chroot_dir/proc
 	mount -t sysfs sysfs \$chroot_dir/sys

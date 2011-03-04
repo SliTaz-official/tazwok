@@ -13,9 +13,9 @@
 
 [ ] Removing check for $UNDIGEST in scan() subfunctions - define how theses functions should act before
 [ ] Don't check for repository used into update_packages_db() & erase_packages_info(); define this before.
-[ ] Don't mount all theses /home/slitaz/... directories when chrooting: one is enough!
+[*] Don't mount all theses /home/slitaz/... directories when chrooting: one is enough!
 [ ] Move files related to cooking env from packages to packages-incoming (just before releasing the beta)
-[ ] Use variables for most used files
+[*] Use variables for most used files
 	[*] cook-order.txt; wok-wanted.txt/wok-depends.txt of reference repository
 	[*] cooklist, commit, broken, blocked
 [ ] Rename wok-wanted.txt/wok-depends.txt to simply depends.txt/wanted.txt
