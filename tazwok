@@ -307,7 +307,7 @@ check_for_build_depends()
 	rwanted=$(look_for_rwanted)
 
 	for pkg in $(scan $PACKAGE --look_for=bdep --with_dev | \
-		fgrep -v $(for i in $(look_for_rwanted) $PACKAGE; do echo " -e $i"; done))
+		grep -v $(for i in $(look_for_rwanted) $PACKAGE; do echo " -e ^$i$"; done))
 	do
 
 		# Delay the removing of previous cook depends if they are needed
