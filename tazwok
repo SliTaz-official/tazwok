@@ -3283,15 +3283,24 @@ EOF
 		echo -n "" > $PACKAGES_REPOSITORY/broken
 		if [ -f /usr/bin/tazchroot ]; then
 			cd $LOCAL_REPOSITORY
-			[ ! -f tazchroot.conf ] && configure_tazchroot
-			tazchroot cook-toolchain
-			# Buggy : chroot can be elsewhere.
+			[ -f tazchroot.conf ] || configure_tazchroot
+
+			# Plan to recook all packages.
+			if tazchroot cook-toolchain; then
+				source_lib report
+				report start
+				pkg="$(grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt \
+					$INCOMING_REPOSITORY/packages.txt | sort -u)"
+				forced=yes
+				gen_cook_list
+			fi
+
+			# Remove chroot where toolchain has been cooked.
+			source $LOCAL_REPOSITORY/tazchroot.conf
 			rm -r $LOCAL_REPOSITORY/chroot
-			# /!\ to be writed :
-			# next rm chroot and plan cook-all by pushing all packages
-			# in cooklist.
+
 		else
-			echo "The packages tazchroot need to be installed" >&2
+			echo -e "\nThe package tazchroot need to be installed.\n" >&2
 			exit 1
 		fi
 	;;

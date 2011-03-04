@@ -7,7 +7,7 @@
 		[ ] get reverse depends when a recook is needed (don't catch packages from reference repository!)
 		[ ] cooklist generation
 [ ] Fix md5um on-the-fly generation when using check-incoming)
-[ ] Generate cooklist properly after cook-toolchain
+[*] Generate cooklist properly after cook-toolchain
 
 ==== Code optimizations ====
 
@@ -19,7 +19,8 @@
 	[*] cook-order.txt; wok-wanted.txt/wok-depends.txt of reference repository
 	[*] cooklist, commit, broken, blocked
 [ ] Rename wok-wanted.txt/wok-depends.txt to simply depends.txt/wanted.txt
-[ ] L407: Use fgrep here are variable subsitution are not optimize for big strings.
+[x] L407: Use fgrep here are variable subsitution are not optimize for big strings.
+	> False, variable substitution is definitively better.
 
 ==== New features ====
 
