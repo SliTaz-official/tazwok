@@ -2,34 +2,39 @@
 
 [ ] fix --undigest repository support
 	[*] Check if reference repository is local or on network
-	[ ] Check that various scan() usage case are fine
+	[ ] Check that various scan() usage case are fine (need help at beta time)
 		[ ] get build-depends
 		[ ] get reverse depends when a recook is needed (don't catch packages from reference repository!)
+			> this one is not good yet
 		[ ] cooklist generation
 [ ] Fix md5um on-the-fly generation when using check-incoming)
 [*] Generate cooklist properly after cook-toolchain
 
 ==== Code optimizations ====
 
-[ ] Removing check for $UNDIGEST in scan() subfunctions - define how theses functions should act before
-[ ] Don't check for repository used into update_packages_db() & erase_packages_info(); define this before.
+[*] Removing check for $UNDIGEST in scan() subfunctions - define how theses functions should act before
+[*] Don't check for repository used into update_packages_db() & erase_packages_info(); define this before.
+[ ] Don't plan regen_cookorder multiple times.
 [*] Don't mount all theses /home/slitaz/... directories when chrooting: one is enough!
 [ ] Move files related to cooking env from packages to packages-incoming (just before releasing the beta)
 [*] Use variables for most used files
 	[*] cook-order.txt; wok-wanted.txt/wok-depends.txt of reference repository
 	[*] cooklist, commit, broken, blocked
 [ ] Rename wok-wanted.txt/wok-depends.txt to simply depends.txt/wanted.txt
+	[*] For main packages
+	[ ] For packages-incoming (at beta release time)
 [x] L407: Use fgrep here are variable subsitution are not optimize for big strings.
 	> False, variable substitution is definitively better.
 
 ==== New features ====
 
-[ ] Take advantage of --rootconfig of new tazpkg
+[ ] Take advantage of --rootconfig of new tazpkg (after tazpkg 4.3 release only)
 [*] Generate the safe-wok, and optionally a tarbalized one
 [ ] Rework detection of broken shared libs dependencies
-[ ] Check that packages are availble before cooking
+[ ] Check that packages are availbale before cooking
 	[*] Check that repositories exists into tazpkg conf
 	[*] Check that env is up to date, or upgrade, or propose upgrade if outside of chroot.
 	[ ] Need to check priorities outside of chroot
 [*] Generate ID of the repository.
 [ ] Ensure ID is up-dated after cook operations to avoid false-changes detection.
+[ ] Ensure smooth tazwok update by automatically update cook environnement according new stuff

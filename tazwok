@@ -147,6 +147,7 @@ get_tazwok_config()
 
 	# In case undigest is used, we need to upgrade system.
 	if [ "$undigest" ]; then
+		use_undigest_scan_core
 		ref_PACKAGES_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION/packages
 		if [ -f $SLITAZ_DIR/$SLITAZ_VERSION/tazwok.conf ] && \
 		grep -q ^USE_ONLINE_PKG $SLITAZ_DIR/$SLITAZ_VERSION/tazwok.conf; then
@@ -1346,6 +1347,13 @@ packages_db_start()
 	# Needed in some case as tazwok define RECEIPT at configuration time
 	# in this particular case it can broke the script.
 	unset RECEIPT
+
+	# If $packages_repository is the main one, configure few functions
+	# to act as they should, without having loop on them (speed-up)
+	if [ "${pkg_repository##*/}" = packages ]; then
+		erase_package_info_extracmd="erase_package_info_main"
+		get_packages_info_extracmd="erase_packages_info_main"
+	fi		
 }
 
 erase_package_info()
@@ -1361,7 +1369,11 @@ erase_package_info()
 	sed "/^$PACKAGE:/d" -i files.list
 	sed "/^$(basename ${pkg%.tazpkg})$/d" -i packages.list
 	sed "/ $(basename $pkg)$/d" -i packages.md5
-	[ "$pkg_repository" != "$PACKAGES_REPOSITORY" ] && return 0	
+	$erase_package_info_extracmd
+}
+
+erase_package_info_main()
+{
 	for i in wanted.txt depends.txt; do
 		[ -f $i ] || continue
 		sed "/^$PACKAGE\t/d" -i $i
@@ -1413,14 +1425,14 @@ BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
 
 	cd $pkg_repository
 	echo $(basename ${pkg%.tazpkg}) >> packages.list
-	[ ! "$package_md5" ] && package_md5=$(md5sum $(basename $pkg))
-	echo "$package_md5" >> packages.md5
-	unset package_md5
+	md5sum $(basename $pkg) >> packages.md5
+	$get_packages_info_extracmd
+}
 
-	if [ "$pkg_repository" = "$PACKAGES_REPOSITORY" ]; then
-		[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wanted.txt
-		echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> package.txt
-	fi
+get_packages_info_main()
+{
+	[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wanted.txt
+	echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> package.txt
 }
 
 source_receipt()
@@ -1589,11 +1601,7 @@ sort_db()
 
 look_for_dep()
 {
-	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep -m1 ^$PACKAGE$'\t' $ref_dep_db | cut -f 2
-	else
-		grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2
-	fi
+	grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2
 }
 
 look_for_bdep()
@@ -1603,75 +1611,38 @@ look_for_bdep()
 
 look_for_all()
 {
-	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep -m1 ^$PACKAGE$'\t' $ref_dep_db | cut -f 2,3 | sed 's/ 	 / /'
-	else
-		grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2,3 | sed 's/ 	 / /'
-	fi
+	grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2,3 | sed 's/ 	 / /'
 }
 
 look_for_rdep()
 {
 	fgrep ' '$PACKAGE' ' $dep_db | cut -f 1
-	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $ref_dep_db | cut -f 1); do
-			if [ ! -f "WOK$/$rdep/receipt" ]; then
-				echo "$rdep"
-			fi
-		done
-	fi
 }
 
 look_for_rbdep()
 {
 	fgrep ' '$PACKAGE' ' $dep_db | cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1
-	if [ "$undigest" ]; then
-		for rdep in $(fgrep ' '$PACKAGE' ' $ref_dep_db | cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1); do
-			if [ ! -f "WOK$/$rdep/receipt" ]; then
-				echo "$rdep"
-			fi
-		done
-	fi
 }
 
 # Return WANTED if it exists.
 look_for_wanted()
 {
-	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-		grep -m1 ^$PACKAGE$'\t' $ref_wan_db | cut -f 2
-	else
-		grep -m1 ^$PACKAGE$'\t' $wan_db | cut -f 2
-	fi
+	grep -m1 ^$PACKAGE$'\t' $wan_db | cut -f 2
 }
 
 # Return packages which wants PACKAGE.
 look_for_rwanted()
 {
 	grep $'\t'$PACKAGE$ $wan_db | cut -f 1
-	if [ "$undigest" ]; then
-		for rwanted in $(grep $'\t' $ref_wan_db | cut -f 1); do
-			if [ ! -f "$WOK/$rwanted/receipt" ]; then
-				echo "$rwanted"
-			fi
-		done
-	fi
 }
 
 look_for_dev()
 {
 	WANTED=$(look_for_wanted)
 	if [ "$WANTED" ]; then
-		if [ "$undigest" ] && [ ! -f "$WOK/$WANTED/receipt" ]; then
-			grep -q ^$WANTED-dev$'\t' $ref_dep_db && echo $WANTED-dev
-		else
-			[ -f "$WOK/$WANTED-dev/receipt" ] && echo $WANTED-dev
-		fi
+		[ -f "$WOK/$WANTED-dev/receipt" ] && echo $WANTED-dev
 	fi
-	if [ "$undigest" ] && [ ! -f "$WOK/$PACKAGE/receipt" ]; then
-			grep -q ^$PACKAGE-dev$'\t' $ref_dep_db && echo $PACKAGE-dev
-	else
-		[ -f "$WOK/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
-	fi
+	[ -f "$WOK/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
 }
 
 with_dev()
@@ -1692,10 +1663,83 @@ with_wanted()
 
 use_wanted()
 {
-for input in $(cat); do
-	{ grep ^$input$'\t' $wan_db || echo $input
-	} | sed 's/.*\t//'
-done
+	for input in $(cat); do
+		{ grep ^$input$'\t' $wan_db || echo $input
+		} | sed 's/.*\t//'
+	done
+}
+
+# Define how theses functions should act when using --undigest.
+use_undigest_scan_core()
+{
+	look_for_dep()
+	{
+		if [ -f "$WOK/$PACKAGE/receipt" ]; then
+			grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2	
+		else
+			grep -m1 ^$PACKAGE$'\t' $ref_dep_db | cut -f 2
+		fi
+	}
+
+	look_for_all()
+	{
+		if [ -f "$WOK/$PACKAGE/receipt" ]; then
+			grep -m1 ^$PACKAGE$'\t' $dep_db | cut -f 2,3 | sed 's/ 	 / /'
+		else
+			grep -m1 ^$PACKAGE$'\t' $ref_dep_db | cut -f 2,3 | sed 's/ 	 / /'
+		fi
+	}
+
+	look_for_rdep()
+	{
+		fgrep ' '$PACKAGE' ' $dep_db | cut -f 1
+		for rdep in $(fgrep ' '$PACKAGE' ' $ref_dep_db | cut -f 1); do
+			[ -f "WOK$/$rdep/receipt" ] || echo "$rdep"
+		done
+	}
+
+	look_for_rbdep()
+	{
+		fgrep ' '$PACKAGE' ' $dep_db | cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1
+		for rdep in $(fgrep ' '$PACKAGE' ' $ref_dep_db | cut -f 1,3 | fgrep ' '$PACKAGE' ' | cut -f 1); do
+			[ -f "WOK$/$rdep/receipt" ] || echo "$rdep"
+		done
+	}
+
+	look_for_wanted()
+	{
+		if [ -f "$WOK/$PACKAGE/receipt" ]; then
+			grep -m1 ^$PACKAGE$'\t' $wan_db | cut -f 2
+		else
+			grep -m1 ^$PACKAGE$'\t' $ref_wan_db | cut -f 2
+		fi
+	}
+
+	look_for_rwanted()
+	{
+		if [ -f "$WOK/$PACKAGE/receipt" ]; then
+			grep $'\t'$PACKAGE$ $wan_db | cut -f 1
+		else
+			grep $'\t'$PACKAGE$ $ref_wan_db | cut -f 1
+		fi
+	}
+
+	look_for_dev()
+	{
+		WANTED=$(look_for_wanted)
+		if [ "$WANTED" ]; then
+			if [ -f "$WOK/$WANTED/receipt" ]; then
+				[ -f "$WOK/$WANTED-dev/receipt" ] && echo $WANTED-dev
+			else
+				grep -q ^$WANTED-dev$'\t' $ref_dep_db && echo $WANTED-dev
+			fi
+		fi
+		if [ -f "$WOK/$PACKAGE/receipt" ]; then
+			[ -f "$WOK/$PACKAGE-dev/receipt" ] && echo $PACKAGE-dev
+		else
+			grep -q ^$PACKAGE-dev$'\t' $ref_dep_db && echo $PACKAGE-dev
+		fi
+	}
 }
 
 ########################################################################
