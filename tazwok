@@ -1426,7 +1426,7 @@ update_wan_db()
 		source $RECEIPT
 		[ "$WANTED" ] || continue
 		wan_info=$(echo -e $PACKAGE"\t"$WANTED)
-		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && return
+		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && continue
 		sed "/^$PACKAGE\t/d" -i $wan_db
 		echo "$wan_info" >> $wan_db
 		plan_regen_cookorder=yes
