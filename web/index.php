@@ -12,15 +12,15 @@ else {
 function include_and_link($file)
 {
 	global $log_dir, $version;
-	if (($fp = fopen($file,"r")) === false) return;
-	while (($pkg = fgets($fp)) !== false) {
-		$pkg = chop($pkg);
+	if (($str = file_get_contents($file)) === FALSE) return;
+	$lines = explode("\n",$str);
+	sort($lines);
+	foreach ($lines as $pkg) {
 		if (file_exists("$log_dir/$pkg.html"))
 			echo "<a href=\"log.php?version=$version&amp;package=".
 				urlencode($pkg)."\" target=\"_blank\">$pkg</a>\n";
 		else	echo "$pkg\n";
 	}
-	fclose($fp);
 }
 
 function list_last_cooked($dir, $suffix)
