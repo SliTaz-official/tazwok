@@ -1269,6 +1269,7 @@ update_packages_db()
 		lzma d files.list.lzma files.list
 	else
 		gen_packages_db
+		return
 	fi
 	report step "Updating packages lists: $pkg_repository"
 	packages_db_start
