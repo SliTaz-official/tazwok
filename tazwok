@@ -208,9 +208,6 @@ into tazwok.conf of this reference repository. How-to:" | fold -s >&2
 		check_dir $SOURCES_REPOSITORY
 		check_dir $INCOMING_REPOSITORY
 		check_dir $LOCAL_REPOSITORY/log
-		[ -f $dep_db ] || touch $dep_db
-		[ -f $wan_db ] || touch $wan_db
-		[ -f $cookorder ] || touch $cookorder
 		for file in $dep_db $wan_db $cookorder $commit $cooklist \
 			$broken $blocked $SOURCES_REPOSITORY/sources.list
 		do
@@ -282,14 +279,6 @@ check_for_list()
 		echo -e "\nList is empty.\n" >&2
 		exit 1
 	fi
-}
-
-check_for_pkg_in_wok()
-{
-	[ -f $WOK/$PACKAGE/receipt ] && return
-	[ "$undigest" ] grep -q ^$PACKAGE'$\t' $ref_dep_db && return 1
-	echo "Can't find $PACKAGE in wok or mirror" >&2
-	return 2
 }
 
 ########################################################################
@@ -1250,7 +1239,7 @@ gen_packages_db()
 	report step "Removing old files"
 	for file in files.list.lzma packages.list packages.txt \
 		packages.desc packages.equiv packages.md5; do
-		[ -f $file ] && rm $file
+		rm -rf $file
 	done
 	touch files.list
 	
@@ -1297,19 +1286,19 @@ $PACKAGE $pkg"
 			elif [ ! -f $WOK/$PACKAGE/receipt ] && \
 				[ "$COMMAND" = check-incoming -o "$pkg_repository" = "$INCOMING_REPOSITORY" ]; then
 				erase_package_info
-				echo "Removing $PACKAGE from $pkg_repository."	
+				echo "Removing $PACKAGE from $pkg_repository."
 				rm $pkg
-				[ -d $WOK/$PACKAGE ] && rm -r $WOK/$PACKAGE
+				rm -rf $WOK/$PACKAGE
 				sed "/^$PACKAGE\t/d" -i $wan_db $dep_db $cookorder
 				sed "/^$PACKAGE$/d" -i $cooklist $commit $blocked $broken
-				rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html	
+				rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html
 				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ] && \
 				[ "$(sed 1!d $cookorder)" != "#PlanSort" ] ; then
 					sed 1i"#PlanSort" -i $cookorder
 					regen_cooklist=yes
 				else
-					echo "$PACKAGE" >> $PACKAGES_REPOSITORY/removed
-					sed -n '1,10p' -i $PACKAGES_REPOSITORY/removed
+					echo "$PACKAGE" >> removed
+					sed -n '1,10p' -i removed
 				fi
 			fi
 		fi
@@ -1322,10 +1311,8 @@ $PACKAGE $pkg"
 	unset updated_pkg
 	
 	# Look for new packages.
-	for pkg in $(echo $pkg_repository/*.tazpkg | fgrep -v '*'); do
-		if ! fgrep -q "  ${pkg##*/}" $pkg_repository/packages.md5; then
-			get_packages_info
-		fi
+	for pkg in $pkg_repository/*.tazpkg; do
+		fgrep -q "  ${pkg##*/}" packages.md5 || get_packages_info
 	done
 	report end-step
 	packages_db_end
@@ -1333,17 +1320,17 @@ $PACKAGE $pkg"
 
 packages_db_start()
 {
-	if [ ! -s packages.txt ]; then
+	if [ -s packages.txt ]; then
+		sed -e 's/^# Packages :.*/# Packages : unknow/' \
+			-e "s/# Date     :.*/# Date     : $(date +%Y-%m-%d\ \%H:%M:%S)/" \
+			-i packages.txt
+	else
 			echo "# SliTaz GNU/Linux - Packages list
 #
 # Packages : unknow
 # Date     : $(date +%Y-%m-%d\ \%H:%M:%S)
 #
 " > packages.txt
-	else
-		sed -e 's/^# Packages :.*/# Packages : unknow/' \
-			-e "s/# Date     :.*/# Date     : $(date +%Y-%m-%d\ \%H:%M:%S)/" \
-			-i packages.txt
 	fi
 	
 	# Needed in some case as tazwok define RECEIPT at configuration time
@@ -1456,7 +1443,7 @@ packages_db_end()
 	if ! sort -c packages.list 2> /dev/null; then
 		report step "Sorting packages lists"
 		files_list="packages.list packages.desc packages.equiv"
-		[ "$pkg_repository" = "$PACKAGES_REPOSITORY" ] && \
+		[ "${pkg_repository##*/}" = packages ] && \
 			files_list="$files_list wanted.txt depends.txt"
 		for file in $files_list; do
 			[ -f $file ] || continue
@@ -1545,22 +1532,13 @@ update_dep_db()
 sort_db()
 {
 	report step "Generating cookorder.txt"
-	cat $dep_db | sed 's/ \t / /' | while read PACKAGE BUILD_DEPENDS; do
+	sed 's/ \t / /' $dep_db | while read PACKAGE BUILD_DEPENDS; do
 		grep -q ^$PACKAGE$'\t' $wan_db && continue
 		
 		# Replace each BUILD_DEPENDS with a WANTED package by it's
 		# WANTED package.
-		replace_by_wanted()
-		{
-			for p in $BUILD_DEPENDS; do
-				if grep -q ^$p$'\t' $wan_db; then
-					echo -n $(grep ^$p$'\t' $wan_db | cut -f 2)' '
-				else
-					echo -n $p' '
-				fi
-			done | tr ' ' '\n' | sort -u | sed "/^$PACKAGE$/d" | tr '\n' ' '
-		}
-		echo -e $PACKAGE"\t $(replace_by_wanted) "
+		echo -e $PACKAGE"\t $(echo $BUILD_DEPENDS | use_wanted | \
+			sort -u | sed "/^$PACKAGE$/d" | tr '\n' ' ') "
 	done > $tmp/db
 	while [ -s "$tmp/db" ]; do
 		status=start
@@ -1574,8 +1552,8 @@ sort_db()
 		if [ "$status" = start ]; then
 			cp -f $tmp/db /tmp/remain-depends.txt
 			echo "Can't go further because there's depency(ies) loop(s). The remaining packages will be commentend in the cookorder and will be unbuild in case of major update until the problem is solved." >&2
-			for blocked in $(cut -f 1 $tmp/db); do
-				echo "$blocked" >> $PACKAGES_REPOSITORY/blocked
+			for remaining in $(cut -f 1 $tmp/db); do
+				echo "$remaining" >> $blocked
 			done
 			break
 		fi
@@ -1667,8 +1645,15 @@ use_wanted()
 {
 	for input in $(cat); do
 		{ grep ^$input$'\t' $wan_db || echo $input
-		} | sed 's/.*\t//'
-	done
+		}
+	done | sed 's/.*\t//'
+}
+
+check_for_pkg_in_wok()
+{
+	[ -f $WOK/$PACKAGE/receipt ] && return
+	echo "Can't find $PACKAGE in wok or mirror" >&2
+	return 2
 }
 
 # Define how theses functions should act when using --undigest.
@@ -1742,6 +1727,14 @@ use_undigest_scan_core()
 			grep -q ^$PACKAGE-dev$'\t' $ref_dep_db && echo $PACKAGE-dev
 		fi
 	}
+
+	check_for_pkg_in_wok()
+	{
+		[ -f $WOK/$PACKAGE/receipt ] && return
+		grep -q ^$PACKAGE'$\t' $ref_dep_db && return 1
+		echo "Can't find $PACKAGE in wok or mirror" >&2
+		return 2
+	}
 }
 
 ########################################################################
@@ -1783,10 +1776,10 @@ scan()
 			done
 			append_to_dep()
 			{
-				if ! grep -q ^$PACKAGE$'\t' $dep_db; then
-					check_for_missing && echo $PACKAGE >> $tmp/dep
-				else
+				if grep -q ^$PACKAGE$'\t' $dep_db; then
 					echo $PACKAGE >> $tmp/dep
+				else
+					check_for_missing && echo $PACKAGE >> $tmp/dep
 				fi
 			}
 		else
@@ -1810,10 +1803,10 @@ scan()
 		if [ "$plan_check_for_missing" ]; then
 			append_to_dep()
 			{
-				if ! grep -q ^$PACKAGE$'\t' $dep_db; then
-					check_for_missing && echo $PACKAGE >> $tmp/dep
-				else
+				if grep -q ^$PACKAGE$'\t' $dep_db; then
 					echo $PACKAGE >> $tmp/dep
+				else
+					check_for_missing && echo $PACKAGE >> $tmp/dep
 				fi
 			}
 			check_db_status=yes
@@ -1846,9 +1839,7 @@ scan()
 		sed 1d -i $tmp/list
 		append_to_dep
 		for pkg in $(scan_pkg); do
-			if ! grep -q ^$pkg$ $tmp/list $tmp/dep; then
-				echo $pkg >> $tmp/list
-			fi
+			grep -q ^$pkg$ $tmp/list $tmp/dep || echo $pkg >> $tmp/list
 		done
 	done
 	if [ "$cooklist" ]; then
@@ -2113,7 +2104,7 @@ check_for_incoming()
 			echo "Moving $PACKAGE..."
 			mv -f $INCOMING_REPOSITORY/$PACKAGE-$VERSION.tazpkg $PACKAGES_REPOSITORY
 			touch $PACKAGES_REPOSITORY/$PACKAGE-$VERSION.tazpkg
-			previous_tarball=$(grep ^$PACKAGE:main $SOURCES_REPOSITORY/sources.list | cut -f2)
+			previous_tarball=$(grep -m1 ^$PACKAGE:main $SOURCES_REPOSITORY/sources.list | cut -f2)
 			sed -e "/^$PACKAGE:main/d" \
 				-e "s/^$PACKAGE:incoming/$PACKAGE:main/" \
 				-i $SOURCES_REPOSITORY/sources.list
@@ -2130,7 +2121,7 @@ check_for_incoming()
 	done
 
 	if [ "$GEN_SAFE_WOK_TARBALL" ]; then
-		rm -rf $PACKAGES_REPOSITORY/wok.tar.lzma
+		rm -f $PACKAGES_REPOSITORY/wok.tar.lzma
 		cd $PACKAGES_REPOSITORY/wok
 		report step "Generating safe-wok tarball"
 		tar -c * | lzma e $PACKAGES_REPOSITORY/wok.tar.lzma
@@ -2189,7 +2180,7 @@ clean()
 	if grep -q ^clean_wok $RECEIPT; then
 		clean_wok
 	fi
-	# Clean should only have a receipt, stuff and optional desc.
+	# Clean should only have a receipt, stuff and optionals desc/md5.
 	for f in `ls .`
 	do
 		case $f in
@@ -2234,7 +2225,9 @@ cook()
 	source_receipt
 
 	# Define log path and start report.
-	[ -f $LOCAL_REPOSITORY/log/$PACKAGE.html ] && rm $LOCAL_REPOSITORY/log/$PACKAGE.html
+	for i in $(look_for_rwanted) $PACKAGE; do
+		rm -f $LOCAL_REPOSITORY/log/$i.html
+	done
 	report sublog $LOCAL_REPOSITORY/log/$PACKAGE.html
 	echo "$PACKAGE" > $LOCAL_REPOSITORY/log/package
 	report step "Cooking $PACKAGE"
@@ -2259,7 +2252,7 @@ cook()
 		# Upgrade to cooked packages if it was previously installed.
 		report step "Look for package(s) to upgrade"
 		for pkg in $(look_for_rwanted) $PACKAGE; do
-			if [ -d $INSTALLED/$pkg ]; then
+			if [ -f $INSTALLED/$pkg/receipt ]; then
 				tazpkg get-install $pkg --forced
 			fi
 		done
