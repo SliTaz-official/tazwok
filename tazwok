@@ -456,10 +456,10 @@ check_for_tarball()
 		cd $SOURCES_REPOSITORY
 		if [ "$SOURCE" ]; then
 			alt_url="http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$SOURCE-$VERSION.tar.lzma"
-			alt_url2="http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$TARBALL"
+			alt_url2="http://mirror.slitaz.org/sources/packages/${TARBALL:0:1}/$TARBALL"
 		else
 			alt_url="http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-$VERSION.tar.lzma"
-			alt_url2="http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$TARBALL"
+			alt_url2="http://mirror.slitaz.org/sources/packages/${TARBALL:0:1}/$TARBALL"
 		fi
 		download $WGET_URL $alt_url $alt_url2 http://mirror.slitaz.org/sources/packages/${file:0:1}/$file
 		unset alt_url
