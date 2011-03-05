@@ -15,6 +15,6 @@ if (file_exists("$version-$package")) {
 	readfile("$version-$package");
 }
 else {
-	echo "Strange things happens...";
+	echo "Strange things happen...";
 }
 ?>
