@@ -18,6 +18,6 @@ if ("$package") {
 	}
 }
 else {
-	echo "Strange things happens...";
+	echo "Strange things happen...";
 }
 ?>

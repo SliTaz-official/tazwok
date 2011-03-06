@@ -107,7 +107,7 @@ function list_last_cooked($dir, $suffix)
 		<p>
 			Note: Flavors/Iso build logs are named "iso-?flavor",
 			Temporary toolchain logs are named "tmp-toolchain-?package"
-			and check-incoming log is named "incoming".
+			and the check-incoming log is named "incoming".
 		</p>
 	<!-- Top block end -->
 	</div>
