@@ -1420,8 +1420,13 @@ gen_wan_db()
 update_wan_db()
 {
 	local PACKAGE=$PACKAGE
-	for RECEIPT in $(fgrep WANTED $WOK/*/receipt | \
-		fgrep $PACKAGE | cut -f1 -d ':'); do
+	wanted_list=$(fgrep WANTED=\"$PACKAGE\" $WOK/*/receipt | cut -f1 -d ':')
+	grep $'\t'$PACKAGE $wan_db | cut -f 1 | while read wan; do
+		echo "$wanted_list" | fgrep -q /$wan/receipt && continue
+		sed "/^$wan\t/d" -i $wan_db
+		plan_regen_cookorder=yes
+	done 
+	for RECEIPT in $wanted_list; do
 		WANTED=
 		source $RECEIPT
 		[ "$WANTED" ] || continue
@@ -1432,6 +1437,7 @@ update_wan_db()
 		plan_regen_cookorder=yes
 		plan_sort_wandb=yes
 	done
+	unset wanted_list
 }
 
 update_dep_db()
