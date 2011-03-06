@@ -685,7 +685,7 @@ download()
 					mkdir $tmp_src
 					cd $tmp_src
 					if [ "$BRANCH" ]; then
-						git clone $file ${src##*/} && cd ${src##*/} && \
+							git clone $file ${src##*/} && cd ${src##*/} && \
 							git checkout $BRANCH && rm -rf .git* && break
 					else
 						git clone $file ${src##*/} && rm -rf ${src##*/}/.git* && break
@@ -693,6 +693,23 @@ download()
 					revert_vcs_failure
 				else
 					tazwok_warning "Needs git to download the source tarball from $file, please add it as build-depend."
+					continue
+				fi
+			;;
+			bazaar\|*)
+				file=${file#bazaar|}
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/bazaar/receipt ] && tazpkg get-install bazaar --forced
+				if [ -f $INSTALLED/bazaar/receipt ]; then
+					mkdir $tmp_src
+					cd $tmp_src
+					if [ "$BRANCH" ]; then
+						bzr co $file -r $BRANCH ${src##*/} && rm -rf ${src##*/}/.bzr* && break
+					else
+						bzr co $file ${src##*/} && rm -rf ${src##*/}/.bzr* && break
+					fi
+					revert_vcs_failure
+				else
+					tazwok_warning "Needs bazaar to download the source tarball from $file, please add it as build-depend."
 					continue
 				fi
 			;;
