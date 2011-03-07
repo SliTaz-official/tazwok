@@ -887,7 +887,7 @@ py_compiled_files_remove()
 check_fsh()
 {
 	cd $WOK/$PACKAGE/taz/*/fs
-	if [ -z "$(find * -type f)" ] && [ "$CATEGORY" != meta ]; then
+	if [ -z "$(find * ! -type d)" ] && [ "$CATEGORY" != meta ]; then
 		echo "$PACKAGE fs is empty." >&2
 		cd $WOK/$PACKAGE && rm -rf taz
 		return 1
