@@ -44,7 +44,7 @@ usage()
   cook           Compile and generate a package directly.
   cook-list      Cook all packages specified in the list by order.
   cook-commit    Cook all modified receipts.
-  cook-all       Cook all packages excepted toolchain.
+  cook-all       Cook all packages except toolchain.
   cook-toolchain Cook the toolchain packages.
   gen-cooklist   Generate a sorted cooklist using packages or list.
   sort-cooklist  Sort the cooklist given in argument.
@@ -53,10 +53,10 @@ usage()
   new-tree       Prepare a new package tree and receipt (--interactive).
   gen-list       (Re-)Generate a packages list for a repository.
   check-list     Update packages lists for a repository.
-  gen-wok-db     (Re-)Generate wok lists with depends and wanted datas.
+  gen-wok-db     (Re-)Generate wok lists with depends and wanted data.
   gen-clean-wok  Generate a clean wok in a dir.
   clean-wok      Clean entirely the wok.
-  clean-src       Remove old/unrelated-to-wok sources.
+  clean-src      Remove old/unrelated-to-wok sources.
   remove         Remove a package from the wok.
   webserver      Enable/disable webserver on localhost.
   update-wok     Update the wok.
@@ -66,12 +66,12 @@ usage()
   block          Add package from the blocked list to prevent cooking it.
   unblock        Remove package from the blocked list.\n
  
- You can use `basename $0` command --help to list avaible options.
+ You can use `basename $0` command --help to list available options.
  \033[1mImportant - *: \033[0m Commands which need a rewrite."
 }
 
-# This function display an error message without returning any error code.
-# It also log the message in source package's warnings.txt; this file can be
+# This function displays an error message without returning any error code.
+# It also logs the message in source package's warnings.txt; this file can be
 # used on an eventual package page on website to display cooking warnings.
 tazwok_warning()
 {
@@ -114,7 +114,7 @@ get_tazwok_config()
 	set_common_path
 
 	# /!\ This part needs some changes.
-	# Basically, get theses files from the net if they are missing.
+	# Basically, get these files from the net if they are missing.
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
 
@@ -225,12 +225,12 @@ remove_src()
 		mv "$src/_pkg" $WOK/$PACKAGE/install
 	fi
 	
-	# Don't remove sources if a package use src variable in his
+	# Don't remove sources if a package uses src variable in its
 	# genpkg_rules: it maybe need something inside.
 	for i in $PACKAGE $(look_for_rwanted); do
 		sed -n '/^genpkg_rules\(\)/','/}/'p $WOK/$i/receipt | \
 			fgrep -q '$src' && tazwok_warning "Sources will not be removed \
-because $i use \$src in his receipt." && return
+because $i use \$src in its receipt." && return
 	done
 	
 	report step "Removing sources directory"
@@ -239,7 +239,7 @@ because $i use \$src in his receipt." && return
 }
 
 # Check $COOK_OPT; usage : get_cookopt particular_opt
-# Return error if not founded
+# Return error if not found
 # Return args if the opt is in the format opt=arg1:arg2:etc
 look_for_cookopt()
 {
@@ -327,7 +327,7 @@ check_for_build_depends()
 	# Don't cook if a depend is broken.
 	if [ "$broken" ]; then
 		MISSING_PACKAGE=$plan_remove
-		echo "Can't cook $PACKAGE because broken depend(s) : $broken" >&2
+		echo "Can't cook $PACKAGE because of broken depend(s) : $broken" >&2
 		unset plan_remove broken
 		
 		# Set report step to failed.
@@ -374,7 +374,7 @@ remove_build_depends()
 {
 	[ "$1" ] || return
 	report step "Removing previous build dependencies"
-	echo "Removing theses packages : $@"
+	echo "Removing these packages : $@"
 	for pkg in $@; do
 		[ -f "$INSTALLED/$pkg/receipt" ] && tazpkg remove $pkg --auto
 	done
@@ -383,7 +383,7 @@ remove_build_depends()
 }
 
 # Check if we can use the new way to handle tarball
-# or if we keep the previous method by check for
+# or if we keep the previous method by checking for
 # _pkg=/src= in receipt and reverse-wanted.
 check_for_var_modification()
 {
@@ -403,7 +403,7 @@ set_src_path()
 	if check_for_var_modification src _pkg; then
 		src=$WOK/${WANTED:-$PACKAGE}/${WANTED:-$PACKAGE}-$VERSION
 	else
-		tazwok_warning "Use original name or tarball root directory because src/_pkg are defined into the receipt (this is no more needed!)."
+		tazwok_warning "Use original name or tarball root directory because src/_pkg is defined in the receipt (this is no longer needed!)."
 		src=$WOK/${WANTED:-$PACKAGE}/${SOURCE:-${WANTED:-$PACKAGE}}-$VERSION
 	fi
 	stuff=$WOK/$PACKAGE/stuff
@@ -488,7 +488,7 @@ check_for_tarball()
 	# Log process.
 	echo "untaring source tarball" >> $LOG
 
-	# If $tmp_src exists, there's already the unpacked tarball into it.
+	# If $tmp_src exists, there's already a unpacked tarball in it.
 	if ! [ -d $tmp_src ]; then
 		mkdir $tmp_src
 		if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$repack_src" = yes ]; then
@@ -530,7 +530,7 @@ check_for_tarball()
 				mv $tmp_src/* $WOK/$PACKAGE
 				repack_src=no
 				rm -r $tmp_src
-				tazwok_warning "Put all files into $WOK/$PACKAGE; not sure about how to handle this tarball (no root dir)... Please try to remove src/_pkg definition from receipt if you encounter a problem."
+				tazwok_warning "Putting all files in $WOK/$PACKAGE; not sure about how to handle this tarball (no root dir)... Please try to remove src/_pkg definition from the receipt if you encounter any problems."
 			fi
 		fi
 	fi
@@ -544,7 +544,7 @@ check_for_tarball()
 	fi
 
 	# Remove previous tarball if no other package needs it. We take care to
-	# keep tarball if the same package use it into main repository.
+	# keep tarball if the same package uses it in the main repository.
 	if [ "$TARBALL" ]; then
 		previous_tarball=$(grep ^$PACKAGE:incoming $SOURCES_REPOSITORY/sources.list | cut -f2)
 		if [ "$previous_tarball" ]; then
@@ -603,13 +603,13 @@ check_for_compile_rules()
 		# RAM are available.
 		if [ "$freeram" -lt 524288 ] && [ "$CFLAGS" != "${CFLAGS/-pipe}" -o \
 			"$CXXFLAGS" != "${CXXFLAGS/-pipe}" ]; then
-				tazwok_warning "Disabling -pipe compile flag because only ${freeram}b of RAM are available."
+				tazwok_warning "Disabling -pipe compile flag because only ${freeram}b of RAM is available."
 				CFLAGS="${CFLAGS/-pipe}"
 				CXXFLAGS="${CXXFLAGS/-pipe}"
 		fi
 		unset freeram
 
-		# Set cook environnement variables.
+		# Set cook environement variables.
 		[ "$src" ] || set_src_path
 		[ "$DESTDIR" ] || DESTDIR="$WOK/$PACKAGE/install"
 		[ "$CONFIG_SITE" ] || CONFIG_SITE=/etc/config.site
@@ -621,18 +621,18 @@ check_for_compile_rules()
 		compile_rules
 
 		# Check if config.site has been used.
-		# /!\ disabled since it screw the return_code of the step.
+		# /!\ disabled since it screws the return_code of the step.
 		#if [ -f /tmp/config.site ]; then
 		#	rm /tmp/config.site
 		#else
 		#	tazwok_warning "config.site hasn't been used during \
-#configuration process."
+#the configuration process."
 		#fi
 		report end-step
 	fi
 }
 
-# Check for loop in deps tree. /!\ can be removed
+# Check for loop in deps tree. /!\ can be removed.
 check_for_deps_loop()
 {
 	local list
@@ -643,7 +643,7 @@ check_for_deps_loop()
 	[ -n "$1" ] || return
 	list=""
 
-	# Filter out already processed deps
+	# Filter out already processed deps.
 	for i in $@; do
 		case " $ALL_DEPS" in
 		*\ $i\ *);;
@@ -692,7 +692,7 @@ download()
 					fi
 					revert_vcs_failure
 				else
-					tazwok_warning "Needs git to download the source tarball from $file, please add it as build-depend."
+					tazwok_warning "Needs git to download the source tarball from $file, please add it as a build-depend."
 					continue
 				fi
 			;;
@@ -709,7 +709,7 @@ download()
 					fi
 					revert_vcs_failure
 				else
-					tazwok_warning "Needs bazaar to download the source tarball from $file, please add it as build-depend."
+					tazwok_warning "Needs bazaar to download the source tarball from $file, please add it as a build-depend."
 					continue
 				fi
 			;;
@@ -726,7 +726,7 @@ download()
 					fi
 					revert_vcs_failure
 				else
-					tazwok_warning "Needs subversion to download the source tarball from $file, please add it as build-depend."
+					tazwok_warning "Needs subversion to download the source tarball from $file, please add it as a build-depend."
 					continue
 				fi
 			;;
@@ -743,7 +743,7 @@ download()
 					fi
 					revert_vcs_failure
 				else
-					tazwok_warning "Needs mercurial to download the source tarball from $file, please add it as build-depend."
+					tazwok_warning "Needs mercurial to download the source tarball from $file, please add it as a build-depend."
 					continue
 				fi
 			;;
@@ -756,7 +756,7 @@ download()
 						wget -q --no-check-certificate $file && break
 					fi
 				else
-					tazwok_warning "Needs wget to download the source tarball from $file, please add it as build-depend."
+					tazwok_warning "Needs wget to download the source tarball from $file, please add it as a build-depend."
 					continue
 				fi
 			;;
@@ -777,13 +777,13 @@ download()
 	done
 }
 
-# Regenerate every package that wants a PACKAGE compiled
+# Regenerate every package that wants a PACKAGE compiled.
 refresh_packages_from_compile()
 {
-	# make tazwok genpkg happy
+	# make tazwok genpkg happy.
 	mkdir $WOK/$PACKAGE/taz
 
-	# Cook rwanted in default or specied order
+	# Cook rwanted in default or specied order.
 	genlist=" $(look_for_rwanted | tr '\n' ' ') "
 	for i in $(look_for_cookopt genpkg | tac); do
 		[ "${genlist/ $i }" = "$genlist" ] && continue
@@ -874,7 +874,7 @@ strip_package()
 	report end-step
 }
 
-# Remove .pyc and .pyo files from packages
+# Remove .pyc and .pyo files from packages.
 py_compiled_files_remove()
 {
 	report step "Removing all .pyc and .pyo files from package ..."
@@ -949,14 +949,14 @@ set_pkg_broken()
 		echo $PACKAGE >> $PACKAGES_REPOSITORY/broken
 	fi
 
-	# Remove pkg from cooklist to avoid re-cook it if no changes happens
+	# Remove pkg from cooklist to avoid re-cook it if no changes happen
 	# in the cook stuff.
 	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/cooklist
 	sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/commit
 
 	gen_cookmd5
 
-	# Return 1 to make report know that's mother-function failed.
+	# Return 1 to make report know that its mother-function failed.
 	return 1
 }
 
@@ -1004,7 +1004,7 @@ gen_package()
 		report end-step
 
 		# Skip generic files for packages with a WANTED variable
-		# (dev and splited pkgs).
+		# (dev and split pkgs).
 		if [ ! "$WANTED" ]; then
 			copy_generic_files
 		fi
@@ -1066,7 +1066,7 @@ gen_package()
 			[ "$prev_VERSION" ] && pkg_file=$rep/$PACKAGE-$prev_VERSION.tazpkg && break
 		done
 		if [ "$pkg_file" ]; then
-			report step "Look for major/minor update in libraries"
+			report step "Looking for major/minor updates in libraries"
 			get_pkg_files $pkg_file
 			cd $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
 			fgrep ".so" files.list | egrep -v "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" | \
@@ -1107,7 +1107,7 @@ gen_package()
 	
 	# Build cpio archives. Find, cpio and gzip the fs, finish by
 	# removing the fs tree.
-	# Don't log this because compression always output error messages.
+	# Don't log this because compression always outputs error messages.
 	find fs -print | cpio -o -H newc | case "$PACKAGE-$COMPRESSION" in
 	tazpkg-lzma)	gzip > fs.cpio.gz;;
 	*-lzma)		lzma e fs.cpio.lzma -si;;
@@ -1138,7 +1138,7 @@ gen_package()
 
 	# Recook of reverse-depends if package was broken.
 	if grep -q "^$PACKAGE$" $PACKAGES_REPOSITORY/broken; then
-		report step "Planning re-try a cook of reverse depends" 
+		report step "Planning a re-try cook of reverse depends" 
 		sed "/^$PACKAGE$/d" -i $PACKAGES_REPOSITORY/broken
 		for rdep in $(look_for_rdep); do
 			grep -q "^$rdep$" $PACKAGES_REPOSITORY/broken || continue
@@ -1162,7 +1162,7 @@ gen_package()
 
 ########################################################################
 # This section contains functions used by several other functions
-# bellow.
+# below.
 ########################
 
 # Look for receipt/files.list in wok. If they can't be found, get them
@@ -1197,7 +1197,7 @@ gen_packages_db()
 	
 	packages_db_start
 	unset RECEIPT
-	report step "Reading datas from all packages"
+	report step "Reading data from all packages"
 	for pkg in $(echo $pkg_repository/*.tazpkg | fgrep -v '*'); do
 		get_packages_info
 	done
@@ -1280,18 +1280,18 @@ packages_db_start()
 	if [ ! -s packages.txt ]; then
 			echo "# SliTaz GNU/Linux - Packages list
 #
-# Packages : unknow
+# Packages : unknown
 # Date     : $(date +%Y-%m-%d\ \%H:%M:%S)
 #
 " > packages.txt
 	else
-		sed -e 's/^# Packages :.*/# Packages : unknow/' \
+		sed -e 's/^# Packages :.*/# Packages : unknown/' \
 			-e "s/# Date     :.*/# Date     : $(date +%Y-%m-%d\ \%H:%M:%S)/" \
 			-i packages.txt
 	fi
 	
-	# Needed in some case as tazwok define RECEIPT at configuration time
-	# in this particular case it can broke the script.
+	# Needed in some cases as tazwok defines RECEIPT at configuration time
+	# in this particular case it can break the script.
 	unset RECEIPT
 }
 
@@ -1312,11 +1312,11 @@ erase_package_info()
 
 get_packages_info()
 {
-	# If there's no taz folder in the wok, extract infos from the
+	# If there's no taz folder in the wok, extract info from the
 	# package.
 	get_pkg_files $pkg
 	source_receipt
-	echo "Getting datas from $PACKAGE"
+	echo "Getting data from $PACKAGE"
 
 	cat >> $pkg_repository/packages.txt << _EOT_
 $PACKAGE
@@ -1335,7 +1335,7 @@ _EOT_
 	# Packages.desc is used by Tazpkgbox <tree>.
 	echo "$PACKAGE | $VERSION$EXTRAVERSION | $SHORT_DESC | $CATEGORY | $WEB_SITE" >> $pkg_repository/packages.desc
 
-	# Packages.equiv is used by tazpkg install to check depends
+	# Packages.equiv is used by tazpkg install to check depends.
 	for i in $PROVIDE; do
 		DEST=""
 		echo $i | fgrep -q : && DEST="${i#*:}:"
@@ -1375,7 +1375,7 @@ packages_db_end()
 	pkgs=$(wc -l packages.list | sed 's/ .*//')
 	sed "s/# Packages : .*/# Packages : $pkgs/" -i packages.txt
 	
-	# If lists was updated it's generally needed to sort them well.
+	# If lists were updated it's generally needed to sort them well.
 	if ! sort -c packages.list 2> /dev/null; then
 		report step "Sorting packages lists"
 		for file in packages.list packages.desc packages.equiv; do
@@ -1385,7 +1385,7 @@ packages_db_end()
 		report end-step
 	fi
 	
-	# Dont log this because lzma always output error.
+	# Dont log this because lzma always output errors.
 	lzma e files.list files.list.lzma
 	rm -f files.list
 	[ -f packages.equiv ] || touch packages.equiv
@@ -1498,7 +1498,7 @@ sort_db()
 		done
 		if [ "$status" = start ]; then
 			cp -f $tmp/db /tmp/remain-depends.txt
-			echo "Can't go further because there's depency(ies) loop(s). The remaining packages will be commentend in the cookorder and will be unbuild in case of major update until the problem is solved." >&2
+			echo "Can't go further because of dependency loop(s). The remaining packages will be commented in the cookorder and will be unbuilt in case of major updates until the problem is solved." >&2
 			for blocked in $(cut -f 1 $tmp/db); do
 				echo "$blocked" >> $PACKAGES_REPOSITORY/blocked
 			done
@@ -1523,7 +1523,7 @@ sort_db()
 ########################################################################
 # SCAN CORE
 ########################
-# Include various scan core-functions. It's not intended to be used
+# Includes various scan core-functions. It's not intended to be used
 # directly : prefer scan wrappers in next section.
 
 look_for_dep()
@@ -1768,7 +1768,7 @@ scan()
 }
 
 ########################################################################
-# This section contains functions to check package repository and
+# This section contains functions to check the package repository and
 # find which packages to cook.
 ########################
 
@@ -1805,7 +1805,7 @@ check_for_commit()
 		# - in the wok/PACKAGE/taz/* folder
 		# - in the receipt in the package in incoming repository
 		# - in the receipt in the package in packages repository
-		# If md5sum match, there's no commit.
+		# If md5sums match, there's no commit.
 		check_for_commit_using_md5sum()
 		{
 			if [ ! -f $WOK/$PACKAGE/md5 ]; then
@@ -1941,7 +1941,7 @@ sort_cooklist()
 			fi
 		done
 
-		# Remaining packages in cooklist are thoses without compile_rules.
+		# Remaining packages in cooklist are those without compile_rules.
 		# They can be cooked first in any order.
 		if [ -f $tmp/cooklist.tmp ]; then
 			cat $tmp/cooklist.tmp >> $tmp/cooklist
@@ -1968,14 +1968,14 @@ look_for_missing_pkg()
 
 check_for_incoming()
 {
-	report step "Check that all packages were cooked fine"
+	report step "Checking that all packages were cooked OK"
 	[ -s $INCOMING_REPOSITORY/packages.desc ] || {
 	echo "No packages in $INCOMING_REPOSITORY."
 	report end-step; return; }
 	if [ -s $PACKAGES_REPOSITORY/broken ]; then
 		missingpkg=$(look_for_missing_pkg broken)
 		if [ "$missingpkg" ]; then
-			echo "Don't move incoming packages to main repository because theses ones are broken:" >&2
+			echo "Don't move incoming packages to main repository because these ones are broken:" >&2
 			echo "$missingpkg"
 			report end-step	
 			return 1
@@ -1984,7 +1984,7 @@ check_for_incoming()
 	if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
 		missingpkg=$(look_for_missing_pkg cooklist)
 		if [ "$missingpkg" ]; then
-			echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
+			echo "Don't move incoming packages to main repository because these ones need to be cooked:" >&2
 			echo "$missingpkg"
 			report end-step	
 			return 1
@@ -1998,7 +1998,7 @@ check_for_incoming()
 		if [ -s $PACKAGES_REPOSITORY/cooklist ]; then
 			missingpkg=$(look_for_missing_pkg cooklist)
 			if [ "$missingpkg" ]; then
-				echo "Don't move incoming packages to main repository because theses ones needs to be cooked:" >&2
+				echo "Don't move incoming packages to main repository because these ones need to be cooked:" >&2
 				echo "$missingpkg"
 				report end-step	
 				return 1
@@ -2056,7 +2056,7 @@ check_for_incoming()
 		done > flavors.list
 		[ -x /usr/bin/clean-chroot ] && clean-chroot
 	else
-		echo "Can't create up-to-date flavors because tazlito package is missing." >&2
+		echo "Can't create up-to-date flavors because the tazlito package is missing." >&2
 	fi
 	report end-step
 }
@@ -2144,7 +2144,7 @@ cook()
 		unset store_pkgname
 		
 		# Upgrade to cooked packages if it was previously installed.
-		report step "Look for package(s) to upgrade"
+		report step "Looking for package(s) to upgrade"
 		for pkg in $(look_for_rwanted) $PACKAGE; do
 			if [ -d $INSTALLED/$pkg ]; then
 				tazpkg get-install $pkg --forced
@@ -2168,7 +2168,7 @@ cook()
 	[ "$regen_cooklist" ] && unset regen_cooklist && \
 		[ "$COMMAND" != cook ] && sort_cooklist
 
-	# Some hacks to set the bloc & function status as failed if cook was
+	# Some hacks to set the bloc & function status as failed if cook has
 	# failed.
 	report_return_code=$cook_code
 	report close-bloc
@@ -2181,7 +2181,7 @@ cook_list()
 {
 	if [ -s $tmp/cooklist ]; then
 		if [ -f /usr/bin/tazchroot ]; then
-			# Note : options -main variables- are automatically keeped by
+			# Note : options -main variables- are automatically kept by
 			# the sub-applications tazchroot/tazwok; as well as report data.
 			cd $LOCAL_REPOSITORY
 			[ ! -f tazchroot.conf ] && configure_tazchroot
@@ -2205,15 +2205,15 @@ configure_tazchroot()
 	cat > $LOCAL_REPOSITORY/tazchroot.conf << EOF
 # Tazchroot configuration file - created by tazwok.
 
-# Default chroot path
+# Default chroot path.
 SLITAZ_DIR=$SLITAZ_DIR
 SLITAZ_VERSION=$SLITAZ_VERSION
 $( [ "$undigest" ] && echo "undigest=$undigest" )
 LOCAL_REPOSITORY=$SLITAZ_DIR/$(if [ "$undigest" ]; then echo '$undigest'; else echo '$SLITAZ_VERSION'; fi)
 chroot_dir=\$LOCAL_REPOSITORY/chroot
 
-# Default scripts path (theses scripts are added in the
-# $chroot_dir/usr/bin and can be called with tazchroot script)
+# Default scripts path (these scripts are added to the
+# $chroot_dir/usr/bin and can be called with tazchroot script).
 script_dir=/usr/lib/slitaz/chroot-scripts/tazwok
 
 # List of directories to mount.
@@ -2235,7 +2235,7 @@ create_chroot()
 		-i \$chroot_dir/etc/slitaz/slitaz.conf
 $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/slitaz/tazwok.conf')
 	sed 's/LC_ALL/LC_ALL=POSIX/' -i \$chroot_dir/etc/profile
-	# The build bot may run in a sandbox: link sandbox lockfile
+	# The build bot may run in a sandbox: link sandbox lockfile.
 	ln -s \$LOCAL_REPOSITORY/sandbox/proc/1 \$chroot_dir/proc/1
 }
 
@@ -2275,7 +2275,7 @@ EOF
 ######################### END OF NEW FUNCTIONS #########################
 ########################################################################
 
-# List packages providing a virtual package
+# List packages providing a virtual package.
 whoprovide()
 {
 	local i;
@@ -2315,7 +2315,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		$EDITOR $WOK/$PACKAGE/receipt
 	;;
 	build-depends)
-		# List dependencies to rebuild wok, or only a package
+		# List dependencies to rebuild wok, or only a package.
 		get_tazwok_config
 		report(){ : ; }
 		if [ ! "$PACKAGE" ] || [ "$PACKAGE" = toolchain ]; then
@@ -2341,7 +2341,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		gen_cook_list
 	;;
 	check-depends)
-		# Check package depends /!\ 
+		# Check package depends /!\. 
 		get_tazwok_config
 		echo ""
 		echo -e "\033[1mCheck every receipt for DEPENDS - doesn't scan ELF files\033[0m
@@ -2349,7 +2349,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		TMPDIR=/tmp/tazwok$$
 		DEFAULT_DEPENDS="glibc-base gcc-lib-base"
 
-		# Build ALL_DEPENDS variable
+		# Build ALL_DEPENDS variable.
 		scan_dep()
 		{
 			local i
@@ -2369,13 +2369,13 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			done
 		}
 
-		# Check for ELF file
+		# Check for ELF file.
 		is_elf()
 		{
 			[ "$(dd if=$1 bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ]
 		}
 
-		# Print shared library dependencies
+		# Print shared library dependencies.
 		ldd()
 		{
 			LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $1 2> /dev/null
@@ -2422,7 +2422,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 		rm -rf $TMPDIR
 	;;
 	check)
-		# Check wok consistency
+		# Check wok consistency.
 		get_tazwok_config
 		echo ""
 		echo -e "\033[1mWok and packages checking\033[0m
@@ -2496,7 +2496,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				echo -e "$MSG  $i"
 				MSG=""
 			done
-			MSG="Dependencies loop between $PACKAGE and :\n"
+			MSG="Dependency loop between $PACKAGE and :\n"
 			ALL_DEPS=""
 			check_for_deps_loop $PACKAGE $DEPENDS
 			[ -d $WOK/$pkg/taz ] && for i in $BUILD_DEPENDS; do
@@ -2667,7 +2667,7 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		report(){ : ; }
 		# When using sort-cooklist, the script should behave as for gen-cooklist
-		# The only difference between theses two is where the output is sended.
+		# The only difference between these two is where the output is sent.
 		COMMAND=gen-cooklist
 		cooklist=$LIST
 		gen_cook_list
@@ -2687,7 +2687,7 @@ Maintainer : $MAINTAINER"
 		cook_list
 	;;
 	clean)
-		# Clean up a package work directory + thoses which want it.
+		# Clean up a package work directory + those which want it.
 		#
 		get_tazwok_config
 		check_for_package_on_cmdline
@@ -2728,7 +2728,7 @@ Maintainer : $MAINTAINER"
 		echo ""
 	;;
 	clean-wok)
-		# Clean all packages in the work directory
+		# Clean all packages in the work directory.
 		#
 		get_tazwok_config
 		source_lib report
@@ -2760,13 +2760,13 @@ Maintainer : $MAINTAINER"
 			exit 1
 		fi
 		echo ""	
-		echo -e "\033[1mObsolete/unrelated-to-wok sourcess :\033[0m"
+		echo -e "\033[1mObsolete/unrelated-to-wok sources :\033[0m"
    		horizontal_line
 		cat $tmp/obsolete
 		horizontal_line
 		echo "$(wc -l $tmp/obsolete | cut -f1 -d' ') tarballs to remove."
 		echo ""
-		echo -n "Please confirm removing (type uppercase YES): "
+		echo -n "Please confirm before removing (type uppercase YES): "
 		read answer
 		if [ "$answer" = YES ]; then
 			echo -n "Removing old sources..."	
@@ -2872,7 +2872,7 @@ EOF
 		status
 		# Interactive mode, asking and seding.
 		if [ "$3" = "--interactive" ]; then
-			echo "Entering into interactive mode..."
+			echo "Entering interactive mode..."
 			echo "================================================================================"
 			echo "Package       : $PACKAGE"
 			# Version.
@@ -2942,7 +2942,7 @@ EOF
 						tazpkg get-install mercurial
 					else
 						echo "" >&2
-						echo "You need to install mercurial to get wok from hg (recommended). Oherwise, you can switch wok get method to \"tarball\" into $LOCAL_RESOSITORY/tazwok.conf (per-repository configuration, it not always exists) or /etc/slitaz/tazwok.conf (global configuration)." | fold -s >&2
+						echo "You need to install mercurial to get wok from hg (recommended). Otherwise, you can switch wok get method to \"tarball\" into $LOCAL_REPOSITORY/tazwok.conf (per-repository configuration, if it doesn't exist) or /etc/slitaz/tazwok.conf (global configuration)." | fold -s >&2
 						echo "">&2
 						exit 1
 					fi
@@ -3050,7 +3050,7 @@ EOF
 		echo "$(wc -l $tmp/tags | cut -f1 -d ' ') tags listed."
 	;;		
 	check-src)
-		# Verify if upstream package is still available
+		# Verify if upstream package is still available.
 		#
 		get_tazwok_config
 		check_for_package_on_cmdline
@@ -3200,7 +3200,7 @@ EOF
 			cd $LOCAL_REPOSITORY
 			configure_tazchroot
 		else
-			echo "The packages tazchroot need to be installed" >&2
+			echo "The package tazchroot needs to be installed" >&2
 			exit 1
 		fi
 	;;
@@ -3213,7 +3213,7 @@ EOF
 			[ ! -f tazchroot.conf ] && configure_tazchroot
 			tazchroot
 		else
-			echo "The packages tazchroot need to be installed" >&2
+			echo "The package tazchroot needs to be installed" >&2
 			exit 1
 		fi
 	;;
@@ -3227,11 +3227,11 @@ EOF
 			tazchroot cook-toolchain
 			# Buggy : chroot can be elsewhere.
 			rm -r $LOCAL_REPOSITORY/chroot
-			# /!\ to be writed :
+			# /!\ to be written :
 			# next rm chroot and plan cook-all by pushing all packages
 			# in cooklist.
 		else
-			echo "The packages tazchroot need to be installed" >&2
+			echo "The package tazchroot needs to be installed" >&2
 			exit 1
 		fi
 	;;
@@ -3251,7 +3251,7 @@ EOF
 				[ -d $INSTALLED/$pkg ] || missing="$missing $pkg"
 			done
 			if [ "$missing" ]; then
-				echo "You need to install those packages to start webserver: $missing." >&2
+				echo "You need to install these packages to start webserver: $missing." >&2
 				exit 1
 			fi
 			if [ ! -f "$LOCAL_REPOSITORY/tazwok.conf" ]; then
@@ -3294,7 +3294,7 @@ EOF
 			[ -L "$WEBSERVER/web" ] || ln -s /usr/share/slitaz/web $WEBSERVER
 			echo "WEBSERVER=\"$WEBSERVER\"" >> $LOCAL_REPOSITORY/tazwok.conf
 			if [ -L "$WEBSERVER/conf.php" ]; then
-				echo "Do yo want to make ${undigest:-$SLITAZ_VERSION} the default page (y/N) ? "
+				echo "Do you want to make ${undigest:-$SLITAZ_VERSION} the default page (y/N) ? "
 				read answer
 				if [ "$answer" = y ]; then
 					rm $WEBSERVER/conf.php
@@ -3315,7 +3315,7 @@ EOF
 				rm $WEBSERVER/${undigest:-$SLITAZ_VERSION}-${dir##*/}
 			done
 			if ! [ -s "$WEBSERVER/repositories.list" ]; then
-				echo "$WEBSERVER/repositories.list is empty; tazwok doesn't remove the server automatically in case you have important stuff in it. If it's not the case, you can remove it using: rm -r $WEBSERVER"
+				echo "$WEBSERVER/repositories.list is empty; tazwok doesn't remove the server automatically in case you have important stuff in it. If that's not the case, you can remove it using: rm -r $WEBSERVER"
 				rm $WEBSERVER/conf.php	
 			elif [ "$(readlink $WEBSERVER/conf.php)" = "$WEBSERVER/conf-${undigest:-$SLITAZ_VERSION}.php" ]; then
 				echo "${undigest:-$SLITAZ_VERSION} was the default version to use; switched to : $(sed 1!d $WEBSERVER/repositories.list)"
@@ -3333,7 +3333,7 @@ EOF
 		check_root
 		check_for_package_on_cmdline
 		if ! [ -f $WOK/$PACKAGE/receipt ]; then
-			echo "Can't find $PACKAGE into wok." >&2
+			echo "Can't find $PACKAGE in wok." >&2
 			echo ""	
 			exit 1
 		fi
@@ -3359,7 +3359,7 @@ EOF
 		check_root
 		check_for_package_on_cmdline
 		if ! [ -f $WOK/$PACKAGE/receipt ]; then
-			echo "Can't find $PACKAGE into wok." >&2
+			echo "Can't find $PACKAGE in wok." >&2
 			echo ""
 			exit 1
 		fi
