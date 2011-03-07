@@ -20,7 +20,7 @@ report open-bloc
 
 report step "Initializing tools & environment"
 
-# Theses fours packages will be needed later.
+# These four packages will be needed later.
 for p in libtaz tazwok slitaz-base-files tazpkg; do
 	tazwok cook $p
 done
@@ -32,7 +32,7 @@ LANG=POSIX
 LC_ALL=POSIX
 
 # Set BUILD_HOST to something like $ARCH-tmp-linux-gnu to enable
-# of the temporary toolchain.
+# the temporary toolchain.
 BUILD_HOST=$(echo $BUILD_HOST | sed 's/\(.*\)-\(.*\)-linux-gnu/\1-tmp-linux-gnu/')
 
 PATH=/tools/bin:/tools/usr/bin:/tools/sbin:/tools/usr/sbin:/bin:/usr/bin:/sbin:/usr/sbin
@@ -89,10 +89,10 @@ for PACKAGE in $SLITAZ_TOOLCHAIN; do
 	prepare_package
 	report step "Running compilation rules"
 	
-	# Use compile_rules if there's not function cook_tmp_toolchain in
+	# Use compile_rules if there's no function cook_tmp_toolchain in
 	# the receipt. Works well if both functions are the same, as
-	# cook-toolchain use it's own config.site to set different defaults
-	# pathes.
+	# cook-toolchain uses its own config.site to set different default
+	# paths.
 	if grep -q ^cook_tmp_toolchain\(\)$ $WOK/$PACKAGE/receipt; then
 		cook_tmp_toolchain
 	else
@@ -104,7 +104,7 @@ for PACKAGE in $SLITAZ_TOOLCHAIN; do
 	report end-sublog
 done
 
-# Now we erase previous chroot tools and we switch to temporary
+# Now we erase previous chroot tools and switch to temporary
 # toolchain.
 
 report step "Setting up temporary toolchain environnment"
@@ -140,7 +140,7 @@ case $ARCH in
 esac
 
 mkdir -p /bin /usr/bin /usr/lib
-# doing a loop so we don't get {bash,cat,echo,pwd,stty} softlink
+# Doing a loop so we don't get {bash,cat,echo,pwd,stty} softlink
 BASIC_APPS="bash cat echo pwd stty"
 for i in $BASIC_APPS; do
 	ln -s /tools/bin/$i /bin/$i
@@ -159,7 +159,7 @@ report end-step
 # Finally, cook final* version of the toolchain packages.
 # * : recook toolchain against itself minus linux-api-headers
 # glibc binutils & gcc can be a good idea to make things
-# more robust & stable; in some cases it solves dependencies
+# more robust & stable; in some cases it solves dependency
 # loops.
 
 # Incoming packages as the only source for packages.
@@ -171,7 +171,7 @@ tazpkg recharge
 tazwok gen-cooklist ${undigest:+--undigest=$undigest} > /tmp/toolchain.list
 
 # Next cook packages one by one.
-# Cooking the list doesn't works because sh wouldn't take care
+# Cooking the list doesn't work because sh won't take care
 # of the presence of new executables even if they're first in
 # $PATH.
 

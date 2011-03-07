@@ -1,6 +1,6 @@
 #!/bin/sh
 # Little script to cook flavor in tazwok chroot waiting
-# for something more consistent into tazlito.
+# for something more consistent in tazlito.
 
 [ "$1" ] || { echo "Usage: gen-iso flavorname [gzip]" >&2; exit 1; }
 source /usr/lib/slitaz/libtaz
@@ -33,6 +33,6 @@ if [ -d "$SLITAZ_DIR/flavors/$1" ]; then
 	clean-chroot
 	report stop
 else
-	echo "$SLITAZ_DIR/flavors/$1 doesn't exists." >&2
+	echo "$SLITAZ_DIR/flavors/$1 doesn't exist." >&2
 	exit 1
 fi
