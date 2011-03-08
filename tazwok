@@ -2248,10 +2248,10 @@ mount_chroot()
 $( [ "$undigest" ] && echo '	mkdir -p $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION
 	echo "$SLITAZ_DIR/$SLITAZ_VERSION/packages" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror' )
 	echo -e "\${LOCAL_REPOSITORY##*/}-incoming\nmain" > \$chroot_dir\$LOCALSTATE/priority
-	mount -t proc proc \$chroot_dir/proc
-	mount -t sysfs sysfs \$chroot_dir/sys
-	mount -t devpts devpts \$chroot_dir/dev/pts
-	mount -t tmpfs shm \$chroot_dir/dev/shm 
+	mount -o bind proc \$chroot_dir/proc
+	mount -o bind sys \$chroot_dir/sys
+	mount -o bind /dev/pts \$chroot_dir/dev/pts
+	mount -o bind /dev/shm \$chroot_dir/dev/shm 
 	for dir in \$list_dir; do
 		mkdir -p \$dir \$chroot_dir\$dir
 		mount \$dir \$chroot_dir\$dir
