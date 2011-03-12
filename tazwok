@@ -89,8 +89,10 @@ get_tazwok_config()
 	# Get configuration file.
 	get_config
 
+	WOK=$LOCAL_REPOSITORY/wok
+	
 	# Define & get options.
-	get_options_list="$get_options_list SLITAZ_DIR SLITAZ_VERSION undigest"
+	get_options_list="$get_options_list WOK SLITAZ_DIR SLITAZ_VERSION undigest"
 	get_options
 
 	LOCAL_REPOSITORY=$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}
@@ -108,7 +110,6 @@ get_tazwok_config()
 	
 	# The path to the most important files/dir used by Tazwok.
 	PACKAGES_REPOSITORY=$LOCAL_REPOSITORY/packages
-	WOK=$LOCAL_REPOSITORY/wok
 	INCOMING_REPOSITORY=$LOCAL_REPOSITORY/packages-incoming
 	SOURCES_REPOSITORY=$LOCAL_REPOSITORY/src
 	set_common_path
