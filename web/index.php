@@ -19,7 +19,7 @@ function include_and_link($file)
 		if (file_exists("$log_dir/$pkg.html"))
 			echo "<a href=\"log.php?version=$version&amp;package=".
 				urlencode($pkg)."\" target=\"_blank\">$pkg</a>\n";
-		else	echo "$pkg\n";
+		else if ($pkg != "") echo "$pkg\n";
 	}
 }
 
@@ -230,17 +230,13 @@ include("$db_dir/cooklist");
 <a name="Broken"></a>
 <h3>Broken</h3>
 <pre class="package">
-<?php
-include_and_link("$db_dir/broken");
-?>
+<?php include_and_link("$db_dir/broken"); ?>
 </pre>
 
 <a name="Blocked"></a>
 <h3>Blocked</h3>
 <pre class="package">
-<?php
-include_and_link("$db_dir/blocked");
-?>
+<?php include_and_link("$db_dir/blocked"); ?>
 </pre>
 
 <a name="cooked"></a>
