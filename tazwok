@@ -2831,7 +2831,7 @@ Maintainer : $MAINTAINER"
 			echo -e "\n$PACKAGE package tree already exists.\n" >&2
 			exit 1
 		fi
-		echo "Creating : $WOK/$PACKAGE"
+		echo "Creating : $clean_wok/$PACKAGE"
 		mkdir $clean_wok/$PACKAGE
 		cd $clean_wok/$PACKAGE
 		echo -n "Preparing the receipt..."
