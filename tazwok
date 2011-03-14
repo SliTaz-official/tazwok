@@ -2234,6 +2234,7 @@ create_chroot()
 	sed -e "s~^SLITAZ_DIR=.*~SLITAZ_DIR=\$SLITAZ_DIR~" \\
 		-e "s/^SLITAZ_VERSION=.*/SLITAZ_VERSION=\$SLITAZ_VERSION/" \\
 		-i \$chroot_dir/etc/slitaz/slitaz.conf
+	echo \$SLITAZ_VERSION > \$chroot_dir/etc/slitaz-release
 $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/slitaz/tazwok.conf')
 	sed 's/LC_ALL/LC_ALL=POSIX/' -i \$chroot_dir/etc/profile
 	# The build bot may run in a sandbox: link sandbox lockfile.
