@@ -1356,8 +1356,8 @@ packages_db_start()
 	# to act as they should, without having loop on them (speed-up)
 	if [ "${pkg_repository##*/}" = packages ]; then
 		erase_package_info_extracmd="erase_package_info_main"
-		get_packages_info_extracmd="erase_packages_info_main"
-	fi		
+		get_packages_info_extracmd="erase_package_info_main"
+	fi
 }
 
 erase_package_info()
