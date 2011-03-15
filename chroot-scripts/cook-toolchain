@@ -18,13 +18,21 @@ report start
 report step "Cooking temporary toolchain"
 report open-bloc
 
-report step "Initializing tools & environment"
+report step "Configuring repositories"
+# Incoming packages as the only source for packages.
+rm -r /var/lib/tazpkg/undigest
+tazpkg setup-mirror $SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}/packages-incoming
+tazpkg recharge
 
+report step "Refreshing SliTaz tools"
+report open-bloc
 # These four packages will be needed later.
 for p in libtaz tazwok slitaz-base-files tazpkg; do
 	tazwok cook $p
 done
+report close-bloc
 
+report step "Setting up environnement"
 set +h
 umask 022
 PS1='\u:\w\$ '
@@ -42,10 +50,16 @@ echo 'prefix=/tools' > /etc/config.site.tmptoolchain
 export LANG LC_ALL PATH PS1 MAKEFLAGS CONFIG_SITE
 unset CC CXX CPP CFLAGS CXXFLAGS LD_LIBRARY_PATH LD_PRELOAD DESTDIR
 
+LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
+[ "$undigest" ] && LOCAL_REPOSITORY=$SLITAZ_DIR/$undigest
+WOK=$LOCAL_REPOSITORY/wok
+
 # Create the dir for the temporary toolchain and link in root of host 
 # system.
-[ -d /tools ] && rm -r /tools
+rm -rf /tools
 mkdir /tools
+
+report end-step
 
 # Use some tweaked code from tazwok.
 prepare_package()
@@ -58,11 +72,6 @@ prepare_package()
 	src=$WOK/$PACKAGE/$PACKAGE-$VERSION
 	cd $WOK/$PACKAGE
 }
-LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
-[ "$undigest" ] && LOCAL_REPOSITORY=$SLITAZ_DIR/$undigest
-WOK=$LOCAL_REPOSITORY/wok
-
-report end-step
 
 # Binutils and gcc need to be compiled twice.
 for PACKAGE in binutils gcc; do
@@ -162,11 +171,6 @@ report end-step
 # more robust & stable; in some cases it solves dependency
 # loops.
 
-# Incoming packages as the only source for packages.
-rm -r /var/lib/tazpkg/undigest
-tazpkg setup-mirror $SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}/packages-incoming
-tazpkg recharge
-
 # Get toolchain cooklist.
 tazwok gen-cooklist ${undigest:+--undigest=$undigest} > /tmp/toolchain.list
 
@@ -175,6 +179,6 @@ tazwok gen-cooklist ${undigest:+--undigest=$undigest} > /tmp/toolchain.list
 # of the presence of new executables even if they're first in
 # $PATH.
 
-cat /tmp/cooklist | while read PACKAGE; do
+cat /tmp/toolchain.list | while read PACKAGE; do
 	tazwok cook $PACKAGE || exit 1
 done

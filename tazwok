@@ -944,7 +944,7 @@ strip_package()
 # Remove .pyc and .pyo files from packages.
 py_compiled_files_remove()
 {
-	report step "Removing all .pyc and .pyo files from package ..."
+	report step "Removing all .pyc and .pyo files from package"
 	find $fs -type f -name "*.pyc" -delete 2>/dev/null
 	find $fs -type f -name "*.pyo" -delete 2>/dev/null
 	report end-step
@@ -2368,7 +2368,7 @@ create_chroot()
 	sed -e "s~^SLITAZ_DIR=.*~SLITAZ_DIR=\$SLITAZ_DIR~" \\
 		-e "s/^SLITAZ_VERSION=.*/SLITAZ_VERSION=\$SLITAZ_VERSION/" \\
 		-i \$chroot_dir/etc/slitaz/slitaz.conf
-	echo "\$SLITAZ_VERSION" > /etc/slitaz-release
+	echo \$SLITAZ_VERSION > \$chroot_dir/etc/slitaz-release
 $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/slitaz/tazwok.conf')
 	sed 's/LC_ALL/LC_ALL=POSIX/' -i \$chroot_dir/etc/profile
 
@@ -2396,8 +2396,8 @@ mount_chroot()
 	fi
 	)
 	echo -e "\${LOCAL_REPOSITORY##*/}-incoming\nmain" > \$chroot_dir\$LOCALSTATE/priority
-	mount -o bind proc \$chroot_dir/proc
-	mount -o bind sys \$chroot_dir/sys
+	mount -o bind /proc \$chroot_dir/proc
+	mount -o bind /sys \$chroot_dir/sys
 	mount -o bind /dev/pts \$chroot_dir/dev/pts
 	mount -o bind /dev/shm \$chroot_dir/dev/shm 
 	for dir in \$list_dir; do
@@ -2974,7 +2974,7 @@ Maintainer : $MAINTAINER"
 			echo -e "\n$PACKAGE package tree already exists.\n" >&2
 			exit 1
 		fi
-		echo "Creating : $WOK/$PACKAGE"
+		echo "Creating : $clean_wok/$PACKAGE"
 		mkdir $clean_wok/$PACKAGE
 		cd $clean_wok/$PACKAGE
 		echo -n "Preparing the receipt..."
