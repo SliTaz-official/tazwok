@@ -31,11 +31,11 @@
 [ ] Allow to download safe-wok using rsync
 [ ] Take advantage of --rootconfig of new tazpkg (after tazpkg 4.3 release only)
 [*] Generate the safe-wok, and optionally a tarbalized one
-[ù] Rework detection of broken shared libs dependencies
+[*] Rework detection of broken shared libs dependencies
 [ ] Check that packages are availbale before cooking
 	[*] Check that repositories exists into tazpkg conf
 	[*] Check that env is up to date, or upgrade, or propose upgrade if outside of chroot.
 	[ ] Need to check priorities outside of chroot
 [*] Generate ID of the repository.
-[ ] Ensure ID is up-dated after cook operations to avoid false-changes detection.
+[*] Ensure ID is up-dated after cook operations to avoid false-changes detection.
 [ ] Ensure smooth tazwok update by automatically update cook environnement according new stuff

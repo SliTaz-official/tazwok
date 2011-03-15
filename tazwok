@@ -3547,5 +3547,19 @@ EOF
 	;;
 esac
 
+# If a cook command has been used, refresh ID of the repository to avoid
+# useless upgrade at next cook command.
+case $COMMAND in
+	cook*)
+		for repo in $PACKAGES_REPOSITORY $INCOMING_REPOSITORY \
+		$( [ "$undigest" -a ! "$ref_USE_ONLINE_PKG" ] && echo $ref_PACKAGES_REPOSITORY ); do
+			[ -f $repo/ID ] || continue
+			MIRROR_path=$(grep -l "^$repo$" $LOCALSTATE/mirror $LOCALSTATE/undigest/*/mirror)
+			LOCALSTATE_path=${MIRROR_path%/mirror}
+			cp -a $repo/ID $LOCALSTATE_path
+		done
+	;;
+esac
+
 report stop 2>/dev/null
 exit 0
