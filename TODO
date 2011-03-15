@@ -7,7 +7,7 @@
 		[ ] get reverse depends when a recook is needed (don't catch packages from reference repository!)
 			> this one is not good yet
 		[ ] cooklist generation
-[ ] Fix md5um on-the-fly generation when using check-incoming)
+[*] Fix md5um on-the-fly generation when using check-incoming)
 [*] Generate cooklist properly after cook-toolchain
 
 ==== Code optimizations ====
@@ -28,6 +28,7 @@
 
 ==== New features ====
 
+[ ] Allow to download safe-wok using rsync
 [ ] Take advantage of --rootconfig of new tazpkg (after tazpkg 4.3 release only)
 [*] Generate the safe-wok, and optionally a tarbalized one
 [ ] Rework detection of broken shared libs dependencies

@@ -1199,6 +1199,9 @@ gen_package()
 	{ zcat fs.cpio.gz 2> /dev/null || unlzma -c fs.cpio.lzma; } | cpio --quiet -id
 	rm fs.cpio.* && cd ..
 
+	# Save receipts if save_wok is enabled.
+	[ "$save_wok" ] && copy_cooking_stuff $WOK $PACKAGE $INCOMING_REPOSITORY/wok
+
 	# Recook of reverse-depends if package was broken.
 	if grep -q "^$PACKAGE$" $broken; then
 		report step "Planning a re-try cook of reverse depends" 
@@ -1303,16 +1306,18 @@ $PACKAGE $pkg"
 				erase_package_info
 				echo "Removing $PACKAGE from $pkg_repository."
 				rm $pkg
-				rm -rf $WOK/$PACKAGE
-				sed "/^$PACKAGE\t/d" -i $wan_db $dep_db $cookorder
-				sed "/^$PACKAGE$/d" -i $cooklist $commit $blocked $broken
-				rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html
-				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ] && \
-				[ "$(sed 1!d $cookorder)" != "#PlanSort" ] ; then
-					sed 1i"#PlanSort" -i $cookorder
-					regen_cooklist=yes
+				[ "$save_wok" ] && rm -rf $pkg_repository/wok/$PACKAGE
+				if [ "$pkg_repository" = "$INCOMING_REPOSITORY" ]; then
+					rm -rf $WOK/$PACKAGE
+					sed "/^$PACKAGE\t/d" -i $wan_db $dep_db $cookorder
+					sed "/^$PACKAGE$/d" -i $cooklist $commit $blocked $broken
+					rm -f $LOCAL_REPOSITORY/log/$PACKAGE.html
+					if [ "$(sed 1!d $cookorder)" != "#PlanSort" ]; then
+						sed 1i"#PlanSort" -i $cookorder
+						regen_cooklist=yes
+					fi
 				else
-					echo "$PACKAGE" >> removed
+   					echo "$PACKAGE" >> removed
 					sed -n '1,10p' -i removed
 				fi
 			fi
@@ -2116,7 +2121,7 @@ check_for_incoming()
 	fi
 
 	report step "Moving incoming packages to main repository"
-	mkdir -p $PACKAGES_REPOSITORY/wok
+	[ "save_wok" ] && mkdir -p $PACKAGES_REPOSITORY/wok
 	unset EXTRAVERSION
 	for PACKAGE in $incoming_pkgs; do
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
@@ -2133,15 +2138,11 @@ check_for_incoming()
 				grep -q $'\t'$previous_tarball$ $SOURCES_REPOSITORY/sources.list || \
 					rm -f $SOURCES_REPOSITORY/$previous_tarball
 			fi
-			rm -rf $PACKAGES_REPOSITORY/wok/$PACKAGE
-			mkdir -p $PACKAGES_REPOSITORY/wok/$PACKAGE
-			for i in $WOK/$PACKAGE/receipt $WOK/$PACKAGE/description.txt \
-			$WOK/$PACKAGE/stuff; do
-				cp -a $i $PACKAGES_REPOSITORY/wok/$PACKAGE
-			done
+			[ "$save_wok" ] &&
+			copy_cooking_stuff $INCOMING_REPOSITORY/wok $PACKAGE $PACKAGES_REPOSITORY/wok
 	done
 
-	if [ "$GEN_SAFE_WOK_TARBALL" ]; then
+	if [ "$save_wok" = tarball ]; then
 		rm -f $PACKAGES_REPOSITORY/wok.tar.lzma
 		cd $PACKAGES_REPOSITORY/wok
 		report step "Generating safe-wok tarball"
@@ -2184,6 +2185,20 @@ check_for_incoming()
 		echo "Can't create up-to-date flavors because the tazlito package is missing." >&2
 	fi
 	report end-step
+}
+
+# Usage: move_cooking_stuff source receipt destination
+# Make the argument check before calling it!
+copy_cooking_stuff()
+{
+	rm -rf $3/$2
+	mkdir -p $3/$2
+	cp -a $1/$2/receipt $3/$2
+	[ -f $1/$2/description.txt ] && \
+		cp -a $1/$2/description.txt $3/$2
+	if [ -d "$1/$2/stuff" ]; then
+		cp -a $1/$2/stuff $3/$2
+	fi
 }
 
 ########################################################################
@@ -2858,13 +2873,7 @@ Maintainer : $MAINTAINER"
 		report step "Creating clean wok in : $dest"
 		for pkg in `ls -1 $WOK`
 		do
-			mkdir -p $dest/$pkg
-			cp -a $WOK/$pkg/receipt $dest/$pkg
-			[ -f $WOK/$pkg/description.txt ] && \
-				cp -a $WOK/$pkg/description.txt $dest/$pkg
-			if [ -d "$WOK/$pkg/stuff" ]; then
-				cp -a $WOK/$pkg/stuff $dest/$pkg
-			fi
+			copy_cooking_stuff $WOK $pkg $dest
 		done
 		[ -d $WOK/.hg ] && cp -a $WOK/.hg $dest
 		report end-step
