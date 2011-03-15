@@ -160,12 +160,14 @@ get_tazwok_config()
 		if [ "$ref_USE_ONLINE_PKG" ]; then
 			ref_dep_db=$LOCALSTATE_path/wok-depends.txt
 			ref_wan_db=$LOCALSTATE_path/wok-wanted.txt
+			ref_lib_db=$LOCALSTATE_path/libraries.txt
 		else
 			ref_dep_db=$ref_PACKAGES_REPOSITORY/wok-depends.txt
 			ref_wan_db=$ref_PACKAGES_REPOSITORY/wok-wanted.txt
+			ref_lib_db=$ref_PACKAGES_REPOSITORY/libraries.txt
 		fi
 
-		for file in $ref_dep_db $ref_wan_db; do
+		for file in $ref_dep_db $ref_wan_db $ref_lib_db; do
 			[ -f "$file" ] && continue
 			missing_file=t
 			echo "$file is missing." >&2
@@ -209,7 +211,7 @@ into tazwok.conf of this reference repository. How-to:" | fold -s >&2
 		check_dir $INCOMING_REPOSITORY
 		check_dir $LOCAL_REPOSITORY/log
 		for file in $dep_db $wan_db $cookorder $commit $cooklist \
-			$broken $blocked $SOURCES_REPOSITORY/sources.list
+			$broken $blocked $SOURCES_REPOSITORY/sources.list $lib_db
 		do
 			[ -f $file ] || touch $file
 		done
@@ -230,6 +232,7 @@ set_common_path()
 	LOG="$WOK/$PACKAGE/process.log"
 	dep_db=$INCOMING_REPOSITORY/wok-depends.txt
 	wan_db=$INCOMING_REPOSITORY/wok-wanted.txt
+	lib_db=$INCOMING_REPOSITORY/libraries.txt
 	cookorder=$PACKAGES_REPOSITORY/cookorder.txt
 	commit=$PACKAGES_REPOSITORY/commit
 	cooklist=$PACKAGES_REPOSITORY/cooklist
@@ -1122,34 +1125,35 @@ gen_package()
 	done > files.list
 	
 	# Next, check if something has changed in lib files.
-	if fgrep -q '.so' files.list; then
-		for rep in $INCOMING_REPOSITORY $PACKAGES_REPOSITORY \
-			$([ "$undigest" ] && echo $SLITAZ_DIR/$SLITAZ_VERSION/packages-incoming && \
-			echo $SLITAZ_DIR/$SLITAZ_VERSION/packages); do
-			prev_VERSION=$(get_pkg_version $rep)
-			[ "$prev_VERSION" ] && pkg_file=$rep/$PACKAGE-$prev_VERSION.tazpkg && break
+	# Plan to recook each packages which depends on libs
+	# which doesn't exists anymore.
+    libs=$(for file in $(find * -type f); do
+	[ "$(dd if=$file bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ] || continue
+		LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $PWD/$file
+	done | { cut -f 1 -d ' ' | tr -d '\t' | sort -u | \
+	sed -e 's/^linux-gate.so.*$/SLIB/' -e 's~^/lib/ld-.*$~SLIB~' \
+		-e '/^statically$/d' | tr '\n' ' '; })
+	libs=$(echo " $libs" | sed -r 's/( SLIB)+ / /g')
+	old_libs=$(grep -m1 ^$PACKAGE$'\t' $lib_db | cut -f 2)
+	if [ "$old_libs" ]; then
+		report step "Looking if reverse depends needs to be refreshed"
+		for i in $old_libs; do
+			[ "${libs/ $i }" = "$libs" ] || continue
+			fgrep " $i " $lib_db | cut -f 1
+		done | sort -u | while read rdep; do
+			[ "$rdep" = "${WANTED:-$PACKAGE}" ] && continue
+			grep -q ^$rdep$ $blocked $cooklist && continue
+			echo "Plan to recook $rdep"
+			echo $rdep >> $cooklist
 		done
-		if [ "$pkg_file" ]; then
-			report step "Looking for major/minor updates in libraries"
-			get_pkg_files $pkg_file
-			cd $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
-			fgrep ".so" files.list | egrep -v "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" | \
-			while read lib; do
-				fgrep -q "$lib" $pkg_files_dir/files.list && continue
-				echo "A minor/major update in libraries is detected, planning re-cook of reverse-depends of $PACKAGE."
-				for rdep in $(scan $PACKAGE --look_for=rdep | use_wanted); do
-					[ "$rdep" = "${WANTED:-$PACKAGE}" ] && continue
-					grep -q ^$rdep$ $blocked $cooklist && continue
-					echo $rdep >> $cooklist
-				done
-				regen_cooklist=yes
-				break
-			done
-			rm -r $pkg_files_dir
-			unset pkg_file
-			report end-step		
-   		fi
-   	fi
+		sed "/^$PACKAGE\t/d" -i $lib_db
+		report end-step
+	fi
+	if [ "$libs" ]; then
+		echo -e "$PACKAGE\t$libs" >> $lib_db
+		sort -o $lib_db $lib_db
+	fi
+
 	if [ ! "$EXTRAVERSION" ]; then
 		case "$PACKAGE" in
 		linux*);;
@@ -1383,7 +1387,7 @@ erase_package_info()
 
 erase_package_info_main()
 {
-	for i in wanted.txt depends.txt; do
+	for i in wanted.txt depends.txt libraries.txt; do
 		[ -f $i ] || continue
 		sed "/^$PACKAGE\t/d" -i $i
 	done
@@ -1442,6 +1446,8 @@ get_packages_info_main()
 {
 	[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wanted.txt
 	echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> package.txt
+	libs=$(grep -m1 ^$PACKAGE$'\t' $lib_db | cut -f 2)
+	[ "$libs" ] && echo "$libs" >> libraries.txt
 }
 
 source_receipt()
@@ -1464,7 +1470,7 @@ packages_db_end()
 		report step "Sorting packages lists"
 		files_list="packages.list packages.desc packages.equiv"
 		[ "${pkg_repository##*/}" = packages ] && \
-			files_list="$files_list wanted.txt depends.txt"
+			files_list="$files_list wanted.txt depends.txt libraries.txt"
 		for file in $files_list; do
 			[ -f $file ] || continue
 			sort -o $file $file
