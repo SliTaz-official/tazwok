@@ -2387,14 +2387,14 @@ mount_chroot()
 	)
 	mkdir -p \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming
 	echo "\$LOCAL_REPOSITORY/packages-incoming" > \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming/mirror
-	$( [ "$undigest" ] || continue
-	echo '	mkdir -p $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION'
-	if [ "$ref_USE_ONLINE_PKG" ]; then
-		echo '	echo "$ref_USE_ONLINE_PKG" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror'
-	else
-		echo '	echo "$ref_LOCAL_REPOSITORY/packages" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror'
-	fi
-	)
+	$( if [ "$undigest" ]; then
+		echo '	mkdir -p $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION'
+		if [ "$ref_USE_ONLINE_PKG" ]; then
+			echo '	echo "$ref_USE_ONLINE_PKG" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror'
+		else
+			echo '	echo "$ref_LOCAL_REPOSITORY/packages" > $chroot_dir$LOCALSTATE/undigest/$SLITAZ_VERSION/mirror'
+		fi
+	fi )
 	echo -e "\${LOCAL_REPOSITORY##*/}-incoming\nmain" > \$chroot_dir\$LOCALSTATE/priority
 	mount -o bind /proc \$chroot_dir/proc
 	mount -o bind /sys \$chroot_dir/sys
