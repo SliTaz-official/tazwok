@@ -2403,7 +2403,7 @@ mount_chroot()
 	$( if [ "$USE_ONLINE_PKG" ]; then
 		echo '	echo "$USE_ONLINE_PKG" > $chroot_dir$LOCALSTATE/mirror'
 	else
-		echo '	echo $LOCAL_REPOSITORY/packages" > $chroot_dir$LOCALSTATE/mirror'
+		echo '	echo "$LOCAL_REPOSITORY/packages" > $chroot_dir$LOCALSTATE/mirror'
 	fi
 	)
 	mkdir -p \$chroot_dir\$LOCALSTATE/undigest/\${LOCAL_REPOSITORY##*/}-incoming
