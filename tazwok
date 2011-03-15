@@ -87,8 +87,9 @@ tazwok_warning()
 # Check if all packages are up to date into build environnement
 check_env_status()
 {
-	{ [ "${COMMAND#cook}" = "$COMMAND" ] || \
-	[ "$COMMAND" = cook-toolchain ] ; } && return
+	{ [ "${COMMAND#cook}" = "$COMMAND" ] ||
+	[ "$COMMAND" = cook-toolchain ] ||
+	[ -f /etc/config.site.tmptoolchain ]; } && return
 	MIRROR_path=$(grep -l "^$1$" $LOCALSTATE/mirror $LOCALSTATE/undigest/*/mirror)
 
 	if [ ! "$MIRROR_path" ]; then
