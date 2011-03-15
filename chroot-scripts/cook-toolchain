@@ -18,12 +18,6 @@ report start
 report step "Cooking temporary toolchain"
 report open-bloc
 
-report step "Configuring repositories"
-# Incoming packages as the only source for packages.
-rm -r /var/lib/tazpkg/undigest
-tazpkg setup-mirror $SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}/packages-incoming
-tazpkg recharge
-
 report step "Refreshing SliTaz tools"
 report open-bloc
 # These four packages will be needed later.
@@ -31,6 +25,12 @@ for p in libtaz tazwok slitaz-base-files tazpkg; do
 	tazwok cook $p
 done
 report close-bloc
+
+report step "Configuring repositories"
+# Incoming packages as the only source for packages.
+rm -r /var/lib/tazpkg/undigest
+tazpkg setup-mirror $SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}/packages-incoming
+tazpkg recharge
 
 report step "Setting up environnement"
 set +h
