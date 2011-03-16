@@ -126,6 +126,7 @@ cp -a /etc/slitaz/tazpkg.conf /tmp/tazpkg.conf
 mkdir -p /tmp/backup/var/lib/tazpkg
 sed 's/^AUTO_INSTALL_DEPS="yes"/AUTO_INSTALL_DEPS="no"/' -i \
 	/etc/slitaz/tazpkg.conf
+cp -a /var/lib/tazpkg/* /tmp/backup/var/lib/tazpkg
 BASE_PKGS="tazpkg tazwok slitaz-base-files libtaz"
 for i in $BASE_PKGS; do
 	echo N | tazpkg get-install $i --root=/tmp/backup --forced
@@ -134,7 +135,6 @@ mkdir -p /tmp/backup/var/log/slitaz /tmp/backup/etc/slitaz
 if [ -d /var/log/slitaz ]; then
 	cp -a /var/log/slitaz/* /tmp/backup/var/log/slitaz
 fi
-cp -a /var/lib/tazpkg/* /tmp/backup/var/lib/tazpkg
 cp -a /etc/slitaz/* /tmp/backup/etc/slitaz
 cp -a /tmp/tazpkg.conf /tmp/backup/etc/slitaz
 cp -a /etc/resolv.conf /tmp/backup/etc
@@ -154,7 +154,7 @@ BASIC_APPS="bash cat echo pwd stty"
 for i in $BASIC_APPS; do
 	ln -s /tools/bin/$i /bin/$i
 done
-BASIC_LIBS="libgcc_s.so libgcc_s.so.1 libstdc++.so libstdc++.so.6"
+BASIC_LIBS="libgcc_s.so libgcc_s.so.1 libstdc++.so libstdc++.so.6 ld*.so"
 for i in $BASIC_LIBS; do
 	ln -sf /tools/lib/$i /usr/lib/$i
 done
@@ -162,6 +162,11 @@ done
 ln -s /tools/bin/perl /usr/bin
 ln -s /tools/bin/gettext.sh /usr/bin
 ln -s /tools/bin/busybox /bin/sh
+
+# Touch /etc/config.site.tmptoolchain to make tazwok know
+# we still cook the toolchain.
+# (= non-conventional repositories configuration into chroot).
+touch /etc/config.site.tmptoolchain
 
 report end-step
 
