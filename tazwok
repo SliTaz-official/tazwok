@@ -895,6 +895,7 @@ check_fsh()
 	[ -n "$FSH" ] || FSH="bin boot dev etc home init lib media mnt proc \
 root sbin share sys tmp usr var vz usr/bin usr/games usr/include usr/lib \
 usr/local usr/sbin usr/share usr/src"
+	error=0
 	for i in `ls -d * usr/* 2>/dev/null`
 	do
 		if ! echo $FSH | fgrep -q $i; then
