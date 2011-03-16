@@ -1134,7 +1134,7 @@ gen_package()
 	done | { cut -f 1 -d ' ' | tr -d '\t' | sort -u | \
 	sed -e 's/^linux-gate.so.*$/SLIB/' -e 's~^/lib/ld-.*$~SLIB~' \
 		-e '/^statically$/d' | tr '\n' ' '; })
-	libs=$(echo " $libs" | sed -r 's/( SLIB)+ / /g')
+	[ "$libs" ] && libs=$(echo " $libs" | sed -r 's/( SLIB)+ / /g')
 	old_libs=$(grep -m1 ^$PACKAGE$'\t' $lib_db | cut -f 2)
 	if [ "$old_libs" ]; then
 		report step "Looking if reverse depends needs to be refreshed"
