@@ -49,6 +49,7 @@ usage()
   gen-cooklist   Generate a sorted cooklist using packages or list.
   sort-cooklist  Sort the cooklist given in argument.
   get-src        Download the tarball of the package given in argument.
+  gen-src        Rebuild sources.list in $SOURCES_REPOSITORY folder.
   clean          Clean all generated files in the package tree.
   new-tree       Prepare a new package tree and receipt (--interactive).
   gen-list       (Re-)Generate a packages list for a repository.
@@ -582,6 +583,41 @@ check_for_tarball()
 		echo "There's already something at $src. Abort." >&2
 	fi
 	report end-step
+}
+
+# help gen sources.list file from scranch
+gen_sources_list()
+{
+	local src_repository=$1
+	[ -f $src_repository/sources.list ] && rm -f $src_repository/sources.list
+	for i in $WOK/*; do
+		unset PACKAGE SOURCE VERSION WGET_URL TARBALL WANTED
+		[ -f $i/receipt ] && source $i/receipt
+		[ "$WGET_URL" ] || continue
+		if grep -q "^$PACKAGE | $VERSION" $PACKAGES_REPOSITORY/packages.desc; then
+			main_version="$VERSION"
+			if [ -f $src_repository/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
+				echo -e "$PACKAGE:main\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $src_repository/sources.list
+			elif [ -f "$src_repository/$TARBALL" ]; then
+				echo -e "$PACKAGE:main\t$TARBALL" >> $src_repository/sources.list
+			fi
+		else
+			# May not works if package use extraversion.
+			main_version=$(grep -m1 -A1 -sh ^$PACKAGE$ $PACKAGES_REPOSITORY/packages.txt | tail -1 | sed 's/ *//')
+			if [ -f $src_repository/${SOURCE:-$PACKAGE}-$main_version.tar.lzma ]; then
+				echo -e "$PACKAGE:main\t${SOURCE:-$PACKAGE}-$main_version.tar.lzma" >> $src_repository/sources.list
+			else
+				unset main_version
+			fi
+		fi
+		if [ ! "$main_version" ] || [ $(grep -q "^$PACKAGE | $VERSION" $INCOMING_REPOSITORY/packages.desc) ]; then
+			if [ -f $src_repository/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
+				echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $src_repository/sources.list
+			elif [ -f "$src_repository/$TARBALL" ]; then
+				echo -e "$PACKAGE:incoming\t$TARBALL" >> $src_repository/sources.list
+			fi
+		fi
+	done
 }
 
 # Log and execute compile_rules function if it exists, to configure and
@@ -3071,6 +3107,21 @@ EOF
 		else
 			echo "No tarball to check for $PACKAGE"
 		fi
+	;;
+	gen-src)
+		get_tazwok_config
+		if [ "$2" ]; then
+			if [ -d "$2" ]; then
+				src_repository=$2
+			else
+				echo -e "\nUnable to find directory : $2\n" >&2
+				exit 1
+			fi
+		fi
+		echo -n "Rebuilding sources.list file"
+		[ $src_repository ] || src_repository="$SOURCES_REPOSITORY"
+		gen_sources_list $src_repository
+		status
 	;;
 	get-src)
 		check_root
