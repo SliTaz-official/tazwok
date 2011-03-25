@@ -1364,9 +1364,9 @@ packages_db_start()
 
 	# If $packages_repository is the main one, configure few functions
 	# to act as they should, without having loop on them (speed-up)
-	if [ "${pkg_repository##*/}" = packages ]; then
+	if [ "$pkg_repository" = "$PACKAGES_REPOSITORY" ]; then
 		erase_package_info_extracmd="erase_package_info_main"
-		get_packages_info_extracmd="erase_package_info_main"
+		get_packages_info_extracmd="get_packages_info_main"
 	fi
 }
 
@@ -1447,8 +1447,7 @@ get_packages_info_main()
 {
 	[ "$WANTED" ] && echo -e "$PACKAGE\t$WANTED" >> wanted.txt
 	echo -e "$PACKAGE\t "$DEPENDS" \t "$BUILD_DEPENDS" " >> package.txt
-	libs=$(grep -m1 ^$PACKAGE$'\t' $lib_db | cut -f 2)
-	[ "$libs" ] && echo "$libs" >> libraries.txt
+	grep -m1 ^$PACKAGE$'\t' $lib_db >> libraries.txt
 }
 
 source_receipt()
@@ -1476,9 +1475,11 @@ packages_db_end()
 			[ -f $file ] || continue
 			sort -o $file $file
 		done
-		md5sum packages.md5 | cut -f1 -d' ' > ID
 		report end-step
 	fi
+
+	md5sum packages.md5 | cut -f1 -d' ' > ID
+	[ -s ID ] || echo null > ID
 	
 	# Dont log this because lzma always output errors.
 	lzma e files.list files.list.lzma
