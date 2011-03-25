@@ -2184,7 +2184,8 @@ check_for_incoming()
 					rm -f $SOURCES_REPOSITORY/$previous_tarball
 			fi
 			[ "$save_wok" ] &&
-			copy_cooking_stuff $INCOMING_REPOSITORY/wok $PACKAGE $PACKAGES_REPOSITORY/wok
+			copy_cooking_stuff $INCOMING_REPOSITORY/wok $PACKAGE $PACKAGES_REPOSITORY/wok &&
+			rm -r $INCOMING_REPOSITORY/wok/$PACKAGE
 	done
 
 	if [ "$save_wok" = tarball ]; then
