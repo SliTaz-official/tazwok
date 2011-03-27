@@ -14,16 +14,26 @@
 # tazwok does that work before executing compile rules.
 #
 # If you want to use your own config.site, you can use :
-# export CONFIG_SITE=path_to_my_config.site
-# in the compilation_rules of a receipt.
+# export CONFIG_SITE=path_to_my_config.site in header declarations of
+# a receipt.
+#
 # It can be useful if you want to share a default configuration between
 # some groups of packages like GNOME or KDE ones.
 #
-# To make tazwok configuration easier, we use variables from
-# /etc/tazwok.conf here. Note this only concerns configure options :
-# make flags (MAKEFLAGS, CFLAGS, CXXFLAGS and DESTDIR) are exported
-# to environment variables; options set here are those we can't
-# export environnment variables to because they don't work.
+
+#Default pathes.
+default_prefix=/usr
+default_libdir=/usr/lib
+default_datarootdir=$default_prefix/share
+default_datadir=$default_datarootdir
+default_localedir=$default_datarootdir/locale
+default_infodir=$default_datarootdir/info
+default_mandir=$default_datarootdir/man
+default_sysconfigdir=/etc
+default_localstatedir=/var
+default_build="$BUILD_HOST"
+default_host="$BUILD_HOST"
+
 
 # Some variable are prefixed by "${prefix}" instead of "${datarootdir}".
 # For those cases we use "${datadir}" because the configure script
@@ -40,21 +50,27 @@ fi
 
 # Use default values if one of these configure variables is not set.
 { [ "$prefix" = NONE ] || [ ! "$prefix" ] ; } && prefix=$default_prefix
+{ [ "$libdir" = NONE ] || [ ! "$libdir" ] ; } && libdir=$default_libdir
 { [ "$datarootdir" = NONE ] || [ ! "$datarootdir" ] ; } && datarootdir=$default_datarootdir
-{ [ "$datadir" = NONE ] || [ ! "$datadir" ] ; } && datadir=$datarootdir
+{ [ "$datadir" = NONE ] || [ ! "$datadir" ] ; } && datadir=$default_datadir
 { [ "$localedir" = NONE ] || [ ! "$localedir" ] ; } && localedir=$default_localedir
 { [ "$infodir" = NONE ] || [ ! "$infodir" ] ; } && infodir=$default_infodir
 { [ "$mandir" = NONE ] || [ ! "$mandir" ] ; } && mandir=$default_mandir
+{ [ "$sysconfigdir" = NONE ] || [ ! "$sysconfigdir" ] ; } && sysconfigdir=$default_sysconfigdir
+{ [ "$localstatedir" = NONE ] || [ ! "$localstatedir" ] ; } && localstatedir=$default_localstatedir
 { [ "$build" = NONE ] || [ ! "$build" ] ; } && build=$default_build
 { [ "$host" = NONE ] || [ ! "$host" ] ; } && host=$default_host
 
 # Print information about these variables.
 echo "prefix = $prefix
+libdir = $libdir
 datarootdir = $datarootdir
 datadir = $datadir
 localedir= $localedir
 infodir = $infodir
 mandir = $mandir
+sysconfigdir = $sysconfigdir
+localstatedir = $localstatedir
 build = $build
 host = $host
 "

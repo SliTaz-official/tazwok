@@ -726,15 +726,17 @@ check_for_compile_rules()
 			default_infodir default_mandir default_build default_host
 		local LC_ALL=POSIX LANG=POSIX
 		compile_rules
+		return_code=$?
 
-		# Check if config.site has been used.
-		# /!\ disabled since it screws the return_code of the step.
-		#if [ -f /tmp/config.site ]; then
-		#	rm /tmp/config.site
-		#else
-		#	tazwok_warning "config.site hasn't been used during \
-#the configuration process."
-		#fi
+		if [ -f /tmp/config.site ]; then
+			rm /tmp/config.site
+		else
+			tazwok_warning "config.site hasn't been used during \
+the configuration process."
+		fi
+
+		# Return the proper status to step.
+		(exit $return_code)
 		report end-step
 	fi
 }
