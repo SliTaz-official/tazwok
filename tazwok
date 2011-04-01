@@ -400,7 +400,7 @@ check_for_build_depends()
 	if [ "$broken_pkg" ]; then
 		MISSING_PACKAGE=$plan_remove
 		echo "Can't cook $PACKAGE because of broken depend(s) : $broken_pkg" >&2
-		unset plan_remove broken
+		unset plan_remove broken_pkg
 		
 		# Set report step to failed.
 		report_return_code=1
