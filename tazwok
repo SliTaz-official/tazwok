@@ -1458,12 +1458,12 @@ gen_wok_db()
 
 gen_wan_db()
 {
-	rm $wan_db
+	rm -f $wan_db
 	for RECEIPT in $(fgrep -l WANTED $WOK/*/receipt); do
 		WANTED=
 		source $RECEIPT
 		[ "$WANTED" ] || continue
-		echo -e $PACKAGE"\t"$WANTED >> $tmp/wan_db
+		echo -e $PACKAGE"\t"$WANTED >> $wan_db
 	done
 }
 
