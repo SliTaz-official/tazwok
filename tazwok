@@ -1458,18 +1458,13 @@ gen_wok_db()
 
 gen_wan_db()
 {
+	rm $wan_db
 	for RECEIPT in $(fgrep -l WANTED $WOK/*/receipt); do
 		WANTED=
 		source $RECEIPT
 		[ "$WANTED" ] || continue
 		echo -e $PACKAGE"\t"$WANTED >> $tmp/wan_db
 	done
-	if ! [ -f $wan_db ] || [ "$(diff -q $tmp/wan_db $wan_db)" ]; then
-		mv -f $tmp/wan_db $wan_db
-		plan_regen_cookorder=yes
-	else
-		rm $tmp/wan_db
-	fi
 }
 
 update_wan_db()
@@ -1479,30 +1474,21 @@ update_wan_db()
 	grep $'\t'$PACKAGE $wan_db | cut -f 1 | while read wan; do
 		echo "$wanted_list" | fgrep -q /$wan/receipt && continue
 		sed "/^$wan\t/d" -i $wan_db
-		plan_regen_cookorder=yes
 	done 
 	for RECEIPT in $wanted_list; do
-		WANTED=
+		unset WANTED PACKAGE
 		source $RECEIPT
 		[ "$WANTED" ] || continue
-		wan_info=$(echo -e $PACKAGE"\t"$WANTED)
-		[ "$wan_info" = "$(grep -m1 ^$PACKAGE$'\t' $wan_db 2>/dev/null)" ] && continue
 		sed "/^$PACKAGE\t/d" -i $wan_db
-		echo "$wan_info" >> $wan_db
-		plan_regen_cookorder=yes
-		plan_sort_wandb=yes
+		echo -e $PACKAGE"\t"$WANTED >> $wan_db
 	done
 	unset wanted_list
 }
 
 update_dep_db()
 {
-	dep_info=$(echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ')
-	[ "$dep_info" = "$(grep -m1 ^$PACKAGE$'\t' $dep_db 2>/dev/null)" ] && return
 	sed "/^$PACKAGE\t/d" -i $dep_db
-	echo "$dep_info" >> $dep_db
-	plan_regen_cookorder=yes
-	plan_sort_depdb=yes
+	echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ' >> $dep_db
 }
 
 sort_db()
@@ -1554,7 +1540,6 @@ sort_db()
 	done
 
 	tac $tmp/cookorder >> $PACKAGES_REPOSITORY/cookorder.txt
-	unset plan_regen_cookorder
 	report end-step
 }
 
@@ -1705,6 +1690,9 @@ scan()
 	local cooklist= look_for= with_dev= with_wanted= with_args= log_command="$0 $@" \
 		get_options_list="look_for with_dev with_wanted with_args cooklist use_wanted"
 	get_options
+
+	# Get db md5 to be able to check for changes latter.
+	db_md5=$(md5sum $dep_db $wan_db)
 	
 	# Cooklist is a special case where we need to modify a little
 	# scan behavior
@@ -1753,7 +1741,6 @@ scan()
 					echo $PACKAGE >> $tmp/dep
 				fi
 			}
-			check_db_status=yes
 			unset plan_check_for_missing
 		fi
 	fi
@@ -1794,14 +1781,11 @@ scan()
 		cat $tmp/dep | sort -u
 	fi
 	rm -f $tmp/dep $tmp/list
-	if [ "$check_db_status" ]; then
-		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
-		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
-		if [ "$plan_regen_cookorder" ] && \
-		[ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" != "#PlanSort" ]; then
-			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt || \
-			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
-		fi
+	if [ "$db_md5" != "$(md5sum $dep_db $wan_db)" ]; then
+		sort -o $dep_db $dep_db
+		sort -o $wan_db $wan_db
+		grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt ||
+		sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
 	fi
 }
 
@@ -1939,10 +1923,8 @@ sort_cooklist()
 {
 	if [ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ]; then
 		sed 1d -i $PACKAGES_REPOSITORY/cookorder.txt
-		plan_regen_cookorder=yes
+		sort_db
 	fi
-	[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
-	[ "$plan_regen_cookorder" ] && sort_db
 	report step "Generating cooklist"
 	if [ -f "$tmp/checked" ]; then
 		rm -f $tmp/cooklist
@@ -2687,12 +2669,13 @@ Maintainer : $MAINTAINER"
 		get_tazwok_config
 		source_lib report
 		report start
+		db_md5=$(md5sum $dep_db $wan_db)
 		update_wan_db
 		check_for_commit
-		[ "$plan_sort_depdb" ] && sort -o $dep_db $dep_db && unset plan_sort_depdb
-		[ "$plan_sort_wandb" ] && sort -o $wan_db $wan_db && unset plan_sort_wandb
-		if [ "$plan_regen_cookorder" ]; then
-			[ "$(sed 1!d $PACKAGES_REPOSITORY/cookorder.txt)" = "#PlanSort" ] || \
+		if [ "$db_md5" != "$(md5sum $dep_db $wan_db)" ]; then
+			sort -o $dep_db $dep_db
+			sort -o $wan_db $wan_db
+			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt ||
 			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
 		fi
 		cook
