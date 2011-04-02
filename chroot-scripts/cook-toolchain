@@ -70,6 +70,8 @@ prepare_package()
 		MAINTAINER WEB_SITE WGET_URL DEPENDS BUILD_DEPENDS WANTED
 	. $WOK/$PACKAGE/receipt
 	src=$WOK/$PACKAGE/$PACKAGE-$VERSION
+	stuff=$WOK/$PACKAGE/stuff
+	[ "$WANTED" ] && wanted_stuff=$WOK/$WANTED/stuff
 	cd $WOK/$PACKAGE
 }
 
