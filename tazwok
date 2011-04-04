@@ -1781,9 +1781,9 @@ scan()
 		cat $tmp/dep | sort -u
 	fi
 	rm -f $tmp/dep $tmp/list
+	sort -o $dep_db $dep_db
+	sort -o $wan_db $wan_db
 	if [ "$db_md5" != "$(md5sum $dep_db $wan_db)" ]; then
-		sort -o $dep_db $dep_db
-		sort -o $wan_db $wan_db
 		grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt ||
 		sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
 	fi
@@ -2672,9 +2672,9 @@ Maintainer : $MAINTAINER"
 		db_md5=$(md5sum $dep_db $wan_db)
 		update_wan_db
 		check_for_commit
+		sort -o $dep_db $dep_db
+		sort -o $wan_db $wan_db
 		if [ "$db_md5" != "$(md5sum $dep_db $wan_db)" ]; then
-			sort -o $dep_db $dep_db
-			sort -o $wan_db $wan_db
 			grep -q "^#" $PACKAGES_REPOSITORY/cookorder.txt ||
 			sed 1i"#PlanSort" -i $PACKAGES_REPOSITORY/cookorder.txt
 		fi
