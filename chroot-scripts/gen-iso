@@ -29,7 +29,7 @@ if [ -d "$SLITAZ_DIR/flavors/$1" ]; then
 	sed "/^ISO_NAME/ s/$1/$SLITAZ_VERSION-$1/" -i tazlito.conf
 	[ "$2" = gzip ] && echo "COMPRESSION=gzip" >> tazlito.conf
 	echo -e "\n" | tazlito gen-distro || report exit "Generation of iso failed"
-	cp $SLITAZ_DIR/distro/*.iso $SLITAZ_DIR/distro/*.md5 $LOCAL_REPOSITORY/iso
+	cp $LOCAL_REPOSITORY/distro/*.iso $LOCAL_REPOSITORY/distro/*.md5 $LOCAL_REPOSITORY/iso
 	clean-chroot
 	report stop
 else
