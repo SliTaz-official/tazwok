@@ -2168,16 +2168,14 @@ check_for_incoming()
 				grep -q $'\t'$previous_tarball$ $SOURCES_REPOSITORY/sources.list || \
 					rm -f $SOURCES_REPOSITORY/$previous_tarball
 			fi
-			[ "$save_wok" ] &&
-			copy_cooking_stuff $INCOMING_REPOSITORY/wok $PACKAGE $PACKAGES_REPOSITORY/wok &&
-			rm -r $INCOMING_REPOSITORY/wok/$PACKAGE
+			[ "$save_wok" ] && mv $INCOMING_REPOSITORY/wok/$PACKAGE $PACKAGES_REPOSITORY/wok
 	done
 
 	if [ "$save_wok" = tarball ]; then
 		rm -f $PACKAGES_REPOSITORY/wok.tar.lzma
 		cd $PACKAGES_REPOSITORY/wok
 		report step "Generating safe-wok tarball"
-		tar -c * | lzma e $PACKAGES_REPOSITORY/wok.tar.lzma
+		tar -c * | lzma e -si $PACKAGES_REPOSITORY/wok.tar.lzma
 		report end-step
 	fi
 
