@@ -440,6 +440,7 @@ remove_previous_package()
 check_for_tarball()
 {
 	[ "$WGET_URL" ] || return 0
+	[ "$WANTED" ] || return 0
 	look_for_cookopt !unpack && nounpack=yes
 	report step "Checking for source tarball: $PACKAGE"
 	local repack_src=$repack_src TARBALL=$TARBALL
@@ -475,13 +476,6 @@ check_for_tarball()
 	{ [ -f "$SOURCES_REPOSITORY/$TARBALL" ] && [ "$repack_src" != yes ] && [ "$nounpack" ] ; }; then
 		[ -d "$tmp_src" ] && rm -r $tmp_src
 		return 0
-	fi
-
-	# Untaring source if necessary. We don't need to extract source if
-	# the package is built with a wanted source package.
-	if [ "$WANTED" ]; then
-		[ -d "$tmp_src" ] && rm -r $tmp_src
-		return
 	fi
 
 	report step "Untaring source tarball"
@@ -1024,7 +1018,7 @@ gen_package()
 	# Set $src for standard package and $_pkg variables.
 	set_src_path
 	set_pkg_path
-	
+
 	# Execute genpkg_rules, check package and copy generic files to build
 	# the package.
 	report step "Building $PACKAGE with the receipt"
