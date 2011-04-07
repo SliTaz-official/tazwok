@@ -511,7 +511,7 @@ remove_previous_package()
 check_for_tarball()
 {
 	[ "$WGET_URL" ] || return 0
-	[ "$WANTED" ] || return 0
+	[ "$WANTED" ] && return 0
 	report step "Checking for source tarball: $PACKAGE"
 	local repack_src=$repack_src TARBALL=$TARBALL local nounpack=$nounpack
 	look_for_cookopt !unpack && nounpack=yes
