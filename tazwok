@@ -1164,36 +1164,55 @@ gen_package()
 		fi
 		LAST_FILE="$file"
 	done > files.list
-	
+
 	# Next, check if something has changed in lib files.
 	# Plan to recook each packages which depends on libs
 	# which doesn't exists anymore.
-    libs=$(for file in $(find * -type f); do
+	for rep in $INCOMING_REPOSITORY $PACKAGES_REPOSITORY; do
+		prev_VERSION=$(get_pkg_version $rep)
+		[ "$prev_VERSION" ] && pkg_file=$rep/$PACKAGE-$prev_VERSION.tazpkg && break
+	done
+	if [ "$pkg_file" ]; then
+		report step "Looking if reverse depends needs to be refreshed"
+		get_pkg_files $pkg_file
+		cd $WOK/$PACKAGE/taz/$PACKAGE-$VERSION
+
+		pkg_to_check=$(diff files.list $pkg_files_dir/files.list | \
+		grep '^-/.*\.so' | while read lib; do
+			fgrep " ${lib##*/} " $libs_db | cut -f1
+		done | sort -u)
+
+		if [ "$pkg_to_check" ]; then
+			for rdep in $(scan $PACKAGE --look_for=rdep | use_wanted); do
+				echo "$pkg_to_check" | grep -q ^$PACKAGE$ || continue
+				[ "$rdep" = "${WANTED:-$PACKAGE}" ] && continue
+				grep -q ^$rdep$ $blocked $cooklist && continue
+				echo "Plan to recook $rdep"
+				echo $rdep >> $cooklist
+				regen_cooklist=yes
+			done
+		fi
+
+		rm -r $pkg_files_dir
+		unset pkg_file pkg_file_dir pkg_to_check
+		report end-step
+	fi
+	
+	# Update lib_db
+	libs=$(for file in $(find * -type f); do
 	[ "$(dd if=$file bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ] || continue
 		LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $PWD/$file
 	done | { cut -f 1 -d ' ' | tr -d '\t' | sort -u | \
 	sed -e 's/^linux-gate.so.*$/SLIB/' -e 's~^/lib/ld-.*$~SLIB~' \
 		-e '/^statically$/d' | tr '\n' ' '; })
-	[ "$libs" ] && libs=$(echo " $libs" | sed -r 's/( SLIB)+ / /g')
-	old_libs=$(grep -m1 ^$PACKAGE$'\t' $lib_db | cut -f 2)
-	if [ "$old_libs" ]; then
-		report step "Looking if reverse depends needs to be refreshed"
-		for i in $old_libs; do
-			[ "${libs/ $i }" = "$libs" ] || continue
-			fgrep " $i " $lib_db | cut -f 1
-		done | sort -u | while read rdep; do
-			[ "$rdep" = "${WANTED:-$PACKAGE}" ] && continue
-			grep -q ^$rdep$ $blocked $cooklist && continue
-			echo "Plan to recook $rdep"
-			echo $rdep >> $cooklist
-		done
-		sed "/^$PACKAGE\t/d" -i $lib_db
-		report end-step
-	fi
+
+	sed "/$PACKAGE\t/d" -i $lib_db
 	if [ "$libs" ]; then
+		libs=$(echo " $libs" | sed -r 's/( SLIB)+ / /g')
 		echo -e "$PACKAGE\t$libs" >> $lib_db
 		sort -o $lib_db $lib_db
 	fi
+	unset libs
 
 	if [ ! "$EXTRAVERSION" ]; then
 		case "$PACKAGE" in
@@ -1203,6 +1222,7 @@ gen_package()
 		esac
 	fi
 	rm -f $INCOMING_REPOSITORY/$PACKAGE-$VERSION$EXTRAVERSION.tazpkg 2> /dev/null
+
 	report step "Creating md5sum of files"
 	while read file; do
 		[ -L "fs$file" ] && continue
