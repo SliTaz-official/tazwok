@@ -2056,6 +2056,8 @@ check_for_incoming()
 		[ -L /home/slitaz/flavors ] && rm /home/slitaz/flavors
 		mkdir -p /home/slitaz
 		ln -s $LOCAL_REPOSITORY/flavors /home/slitaz/flavors
+		cd /home/slitaz/flavors
+		[ -d .hg ] && hg pull -u
 
 		cd $LOCAL_REPOSITORY/packages
 		for i in $LOCAL_REPOSITORY/flavors/*; do
