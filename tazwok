@@ -206,9 +206,10 @@ check_for_pkg_in_wok()
 {
 	[ -f $WOK/$PACKAGE/receipt ] && return
 	if [ "$undigest" ]; then
-		[ -f "$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
+		[ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
 		grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/packages.txt && return 1
 	fi
+	[ -f $WOK/$(whoprovide $PACKAGE)/receipt ] && return 1
 	echo "Can't find $PACKAGE in wok or mirror" >&2
 	return 2
 }
