@@ -978,13 +978,14 @@ strip_package()
 	report end-step
 }
 
-# Remove .pyc, .pyo and perllocal.pod files from packages.
+# Remove .pyc, .pyo, perllocal.pod and .packlist files from packages.
 py_compiled_files_remove()
 {
-	report step "Removing all .pyc, .pyo, and perllocal.pod files from package"
+	report step "Removing all .pyc, .pyo, perllocal.pod, and .packlist files from package"
 	find $fs -type f -name "*.pyc" -delete 2>/dev/null
 	find $fs -type f -name "*.pyo" -delete 2>/dev/null
 	find $fs -type f -name "perllocal.pod" -delete 2>/dev/null
+	find $fs -type f -name ".packlist" -delete 2>/dev/null
 	report end-step
 }
 
