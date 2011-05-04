@@ -81,7 +81,7 @@ function list_last_cooked($dir, $suffix)
 <div class="block">
 	<!-- Nav block begin -->
 	<div id="block_nav">
-		<h3><img src="pics/website/development.png" alt="" />Developers</h3>
+		<h3><img src="images/development.png" alt="" />Developers</h3>
 		<ul>
 			<li><a href="http://www.slitaz.org/en/devel/">Website/devel</a></li>
 			<li><a href="http://labs.slitaz.org/">Laboratories</a></li>
@@ -292,7 +292,7 @@ list_last_cooked($packages, "flavor");
 		<li><a href="http://www.slitaz.org/netmap.php">Network Map</a></li>
 		<li>Page modified the <?php echo (date( "d M Y", getlastmod())); ?></li>
 		<li><a href="http://validator.w3.org/check?uri=referer"><img
-		src="pics/website/xhtml10.png" alt="Valid XHTML 1.0"
+		src="images/xhtml10.png" alt="Valid XHTML 1.0"
 		title="Code validé XHTML 1.0"
 		style="width: 80px; height: 15px; vertical-align: middle;" /></a></li>
 	</ul>
