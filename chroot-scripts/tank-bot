@@ -10,7 +10,12 @@ tazwok update-wok
 . /etc/slitaz/tazwok.conf
 LOCAL_REPOSITORY="$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}"
 cd $LOCAL_REPOSITORY/flavors
-hg pull -u
+if [ ! -d .hg ]; then
+	[ "$SLITAZ_VERSION" == "cooking" ] && hg clone http://hg.slitaz.org/flavors .
+	[ "$SLITAZ_VERSION" == "stable" ] && hg clone http://hg.slitaz.org/flavors-stable .
+else
+	hg pull -u
+fi
 clean-chroot
 
 tazwok cook-commit --missing

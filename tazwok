@@ -286,6 +286,21 @@ check_for_list()
 	fi
 }
 
+<<<<<<< local
+=======
+check_for_pkg_in_wok()
+{
+	[ -f $WOK/$PACKAGE/receipt ] && return
+	if [ "$undigest" ]; then
+		[ -f "$SLITAZ_DIR/$SLITAZ_VERSION/wok/$PACKAGE/receipt" ] && return 1
+		grep -q ^$PACKAGE$ $SLITAZ_DIR/$SLITAZ_VERSION/packages/packages.txt && return 1
+	fi
+	[ -f $WOK/$(whoprovide $PACKAGE)/receipt ] && return 1
+	echo "Can't find $PACKAGE in wok or mirror" >&2
+	return 2
+}
+
+>>>>>>> other
 ########################################################################
 # TAZWOK CORE FUNCTIONS
 ########################
@@ -978,12 +993,13 @@ strip_package()
 	report end-step
 }
 
-# Remove .pyc and .pyo files from packages.
+# Remove .pyc, .pyo and perllocal.pod files from packages.
 py_compiled_files_remove()
 {
-	report step "Removing all .pyc and .pyo files from package"
+	report step "Removing all .pyc, .pyo, and perllocal.pod files from package"
 	find $fs -type f -name "*.pyc" -delete 2>/dev/null
 	find $fs -type f -name "*.pyo" -delete 2>/dev/null
+	find $fs -type f -name "perllocal.pod" -delete 2>/dev/null
 	report end-step
 }
 
@@ -2211,6 +2227,8 @@ check_for_incoming()
 		[ -L /home/slitaz/flavors ] && rm /home/slitaz/flavors
 		mkdir -p /home/slitaz
 		ln -s $LOCAL_REPOSITORY/flavors /home/slitaz/flavors
+		cd /home/slitaz/flavors
+		[ -d .hg ] && hg pull -u
 
 		cd $LOCAL_REPOSITORY/packages
 		for i in $LOCAL_REPOSITORY/flavors/*; do
