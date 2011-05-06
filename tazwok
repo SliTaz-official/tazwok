@@ -419,6 +419,8 @@ set_pkg_path()
 	else
 		_pkg=$src/_pkg
 	fi
+	# compatibly with cookutils
+	install=$_pkg
 }
 
 # Output $VERSION-$EXTRAVERSION using packages.txt
@@ -745,8 +747,12 @@ download()
 					continue
 				fi
 			;;
-			subversion\|*)
-				file=${file#subversion|}
+			svn*|subversion*)
+				if $(echo "$WGET_URL" | fgrep -q svn); then
+					file=${WGET_URL#svn|}
+				else
+					file=${WGET_URL#subversion|}
+				fi
 				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/subversion/receipt ] && tazpkg get-install subversion --forced
 				if [ -f $INSTALLED/subversion/receipt ]; then
 					mkdir $tmp_src
@@ -762,8 +768,12 @@ download()
 					continue
 				fi
 			;;
-			mercurial\|*)
-				file=${file#mercurial|}
+			hg*|mercurial*)
+				if $(echo "$WGET_URL" | fgrep -q hg); then
+					file=${WGET_URL#hg|}
+				else
+					file=${WGET_URL#mercurial|}
+				fi
 				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/mercurial/receipt ] && tazpkg get-install mercurial --forced
 				if [ -f $INSTALLED/mercurial/receipt ]; then
 					mkdir $tmp_src
