@@ -1,0 +1,9 @@
+Tazbb is a wrapper script to automate doing things when using crond
+for doing daily builds.
+
+examples for /var/spool/cron/crontabs/root:
+NOTE: you need full path for file you want to execute in chroot
+*/2 * * * tazbb /usr/bin/tank-bin
+
+1 * * * tazbb /usr/bin/gen-iso
+

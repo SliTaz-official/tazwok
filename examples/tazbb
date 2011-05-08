@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. /etc/slitaz/slitaz.conf
+
+LOCAL_REPOSITORY="$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}"
+if [ -f $LOCAL_REPOSITORY/tazchroot.conf ]; then
+	. $LOCAL_REPOSITORY/tazchroot.conf
+else
+	tazwok configure-chroot
+	. $LOCAL_REPOSITORY/tazchroot.conf
+fi
+
+if [ -f $LOCAL_REPOSITORY/tazwok.conf ]; then
+	. $LOCAL_REPOSITORY/tazwok.conf
+else
+	. /etc/slitaz/tazwok.conf
+fi
+
+[ -d $chroot_dir ] || create_chroot
+
+if [ -f $LOCAL_REPOSITORY/chroot${1} -a -x $LOCAL_REPOSITORY/chroot${1} ]; then
+	mount_chroot
+	chroot $LOCAL_REPOSITORY/chroot $1
+	umount_chroot
+else
+	echo "Make sure to use full path and file is executable in chroot"
+	exit 1
+fi
+
