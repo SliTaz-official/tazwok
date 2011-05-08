@@ -2268,7 +2268,7 @@ create_chroot()
 $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/slitaz/tazwok.conf')
 	sed 's/LC_ALL/LC_ALL=POSIX/' -i \$chroot_dir/etc/profile
 	# The build bot may run in a sandbox: link sandbox lockfile.
-	ln -s \$LOCAL_REPOSITORY/sandbox/proc/1 \$chroot_dir/proc/1
+	[ -d \$LOCAL_REPOSITORY/sandbox ] && ln -s \$LOCAL_REPOSITORY/sandbox/proc/1 \$chroot_dir/proc/1
 }
 
 mount_chroot()
