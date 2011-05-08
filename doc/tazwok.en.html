@@ -38,7 +38,13 @@ Tazwok - SliTaz sources and packages cooker.
 <h2>SYNTAX</h2>
 <pre> tazwok [command] [package|list|category|dir] [--option]
 </pre>
-
+<h2>WARNING</h2>
+<p>
+This version of tazwok (tazwok-3.9 .*) is currently subject to active development and parts of program have 
+not yet been completely revised and corrected. In its current state, however you should not encounter major 
+problems during use. Any suggestions/comments/contributions are welcome: you will find the email 
+address of the maintainer at the end of this document.
+</p>
 <h2>DESCRIPTION</h2>
 <p>
 Tazwok is a command line tool to configure and compile a package from source. Tazwok can also create packages
@@ -47,7 +53,7 @@ the receipt and any necessary information (stuff) for the construction of the pa
 Tazpkg and consists of different variables and functions. Tazwok uses a configuration file (/etc/tazwok.conf)
 to find the path to the wok, the package sources, and any generated .tazpkg packages. Tazwok can also generate
 a list of packages with their md5, create packages interactively, search for packages in the wok, clean generated files and even 
-cook several packages at once (See available commands).
+cook several packages at once (See available commands). Tazwok can be used to recompile SliTaz entirely from source.
 </p>
 <p>
 Tazwok is entirely built from scratch using SHell script, compatible with Bash; it runs under Ash - 
@@ -55,6 +61,26 @@ part of the Busybox project. Tazwok is distributed under the free GNU license GP
 Cookbook also provides documentation about Tazwok and the package receipts.
 </p>
 
+<h2>GENERAL OPTIONS</h2>
+<p>
+Three options can be used with almost all orders tazwok. They are used to define the deposit to 
+which to apply the command, ie the folder containing subfolders clean-wok, wok, packages, 
+packages, incoming, src, log, optionally chroot. They are: SLITAZ_DIR: the directory in which are 
+deposits (default: /home/slitaz as defined in /etc/slitaz/slitaz.conf) SLITAZ_VERSION name of 
+the reference version, such stable cooking, ... (default: version that you use as defined 
+in /etc/slitaz-release) undigest: Indicates the use of a secondary deposit, for which 
+the reference is SLITAZ_VERSION.
+</p>
+<p>
+In the absence of the option undigest, the address used will be depositing 
+$SLITAZ_DIR/$SLITAZ_VERSION (example would be /home/slitaz/cooking by default 
+if you use cooking) undigest If the option is present, it will $SLITAZ_DIR/$undigest 
+undigest option is important for some commands (eg configure-chroot build-depends, etc..), 
+when packets are missing from the secondary deposit, or information concerning them must be 
+found in the deposit reference. In other cases the use of or undigest SLITAZ_VERSION gives the same result.
+</p>
+<pre> # tazwok build-depends linux --SLITAZ_DIR=/home/pas-slitaz --SLITAZ_VERSION=cooking --undigest=undigest
+</pre>
 <h2>COMMANDS</h2>
 <a name="usage"></a>
 <h3><font color="#6c0023">usage</font></h3>
@@ -134,20 +160,62 @@ Cook will simply compile and generate the package:
 <a name="cook-list"></a>
 <h3><font color="#6c0023">cook-list</font></h3>
 <p>
-This command will launch 'tazwok cook' on all the packages contained in the list file specified in the argument.
-Cook-list is used for example, to cook the base system (base-system) without glibc. On SliTaz, you will find
-examples of cooking lists in the directory /usr/share/examples/tazwok.cooklists:
+This command will launch 'tazwok cook' on all packages in the list specified as an argument, and 
+their dependencies cooking if they are missing or need updating. Cook-list is used, for example, 
+to cook the base system, core applications, the X, packets of flavor, etc.. Cooklist can also be 
+used on a single package with the option - pkg. The option - Forced can be used to anneal all the 
+dependencies required cooking, even if they are already available and current, example toolchain 
+(see SLITAZ_TOOLCHAIN ​​in /etc/slitaz/tazwok.conf). Without argument, cook-list uses the 
+default list of cooking, located in the folder 'package '.
 </p>
-<pre> # tazwok cook-list packages.cooklist
+<pre> # tazwok cook-list 
+ # tazwok cook-list packages.cooklist --forced
+ # tazwok cook-list --pkg=firefox
 </pre>
 <a name="cook-commit"></a>
 <h3><font color="#6c0023">cook-commit</font></h3>
 <p>
-This is newer cook commits in repo:
+The command 'cook-commit' to look for packages with revenue /stuff/descriptions were modified and updated 
+using cook. The research uses data changes md5 (identification by measuring different characteristics 
+of files) elements used in the previous cooking packages. This information is stored in the wok, if 
+they are absent they are derived from packages already prepared. The option - Forced commit forces to 
+check md5 use data from the packages, which is useful for retrieving consistent information if you 
+changed the lists commit/cooklist manually (rare). Default check-commit targets only those packages 
+which are already present in the package pools. The option - missing can scan the entire wok and 
+add all the packages that have not been cooked to the list.
 </p>
-<pre># tazwok cook-commit
- # tazwok cook-commit --missing
+<pre> # tazwok cook-commit # cook packages that need updating
+ # tazwok cook-commit --forced # Same, correting any inconsistencies in the data
+ # tazwok cook-commit --missing # Cook packages that need updating + the missing packets
  # tazwok cook-commit --missing --forced
+</pre>
+<a name "cook-all"></a>
+<h3><font color="#6c0023">cook-all</font></h3>
+<p>
+The command 'cook-all ' anneal allows all packets from wok. Without options, it is identical to cook-commit: 
+annealing only packets with receipts / description.txt / stuffs have been modified. The option - missing 
+also has the same effect as in cook-commit: add all the packages that have not yet been prepared. 
+The difference lies in the - Forced: here it means anneal all packets, even if they have not been 
+updated since the last firing. As explained below, the core of the tool chain will never be annealed 
+by this command.
+</p>
+<pre> # tazwok cook-all # identical to tazwok cook-commit
+# tazwok cook-all --missing # identical to tazwok cook-commit --missing
+# tazowk cook-all --forced # annealing all existing packages in your repository except the toolchain
+# tazwok cook-all --forced --missing # annealing all packages of the wok execpt the toolchain
+</pre>
+<a name="cook-toolchain"></a>
+<h3><font color="#6c0023">cook-toolchain</font></h3>
+<p> Cook-toolchain is dedicated to controlling the firing of packages that allow all other preparations.
+ Indeed, the packets in the heart of the tool chain (for SliTaz linux-api-headers/glibc/binutils/gcc) 
+ can not / should not be cooked differently in SliTaz. The preparation process of the tool chain is 
+ unique, and uses the script 'cook-toolchain' from 'tazchroot'. The method used is an adaptation of 
+ that presented in the book Linux From Scratch: a first toolchain temporary and unrelated to the 
+ equipment / system used is prepared and used in cooking packages from the "real" chain tools. It 
+ should be noted that this operation is quite long (several hours to several tens of hours depending 
+ on hardware). This is the first step to fully realize SliTaz to compile from source.
+</p>
+<pre> # tazwok cook-toolchain
 </pre>
 <a name="clean"></a>
 <h3><font color="#6c0023">clean</font></h3>
@@ -179,6 +247,33 @@ command line. Examples:
 <pre> # tazwok gen-list
  # tazwok gen-list --text
  # tazwok gen-list /path/to/repository
+</pre>
+<a name="check-list"></a>
+<h3><font color="#6c0023">check-list</font></h3>
+<p>
+The command 'checklist' fulfills the same function as 'gen-list', but it looks for packages that information 
+must be updated. For this reason it is generally faster, particularly when few packets have been modified. 
+Commands automatically use the cook. As for 'gen-list', if you do not specify a target, 'packages'and 
+'packages-incoming' will both be updated.
+</p>
+<pre> # tazwok check-list
+ # tazwok check-list /path/to/repository
+</pre>
+<a name="gen-wok-db"></a>
+<h3><font color="#6c0023">gen-wok-db</font></h3>
+<p>
+'wok-db' means files used to quickly obtain the dependency relationships between revenue. This information is usually 
+added whenever necessary, and automatically, by tazwok. 'gen-wok-db ' is used to re-generate them in case of file corruption 
+(eg you killed tazwok while automatically generating these files).
+</p>
+<pre> # tazwok gen-wok-db
+</pre>
+<a name="report"></a>
+<h3><font color="#6c0023">report</font></h3>
+<p>Displays the contents of lists: commit / cooklist / broken / blocked, or only the requested list argument.
+</p>
+<pre> # tazwok report
+ # tazwok report cooklist
 </pre>
 <a name="gen-clean-wok"></a>
 <h3><font color="#6c0023">gen-clean-wok and clean-wok</font></h3>
@@ -215,6 +310,16 @@ The --cook option compiles the packages. Examples:
  # tazwok compare --remove
  # tazwok compare --cook
 </pre> 
+<a name="check-commit"></a>
+<h3><font color="#6c0023">check-commit</font></h3>
+<p>
+'check-commit' scans the wok to find recipes that have been modified and added to the cooklist default. 
+Options --forced and --missing here play the same role for cook-commit.
+</p>
+<pre> # tazwok check-commit
+# tazwok check-commit --forced
+# tazwok check-commit --missing
+</pre>
 <a name="check"></a>
 <h3><font color="#6c0023">check</font></h3>
 <p>
@@ -222,12 +327,31 @@ Checks the receipts for common errors:
 </p>
 <pre> # tazwok check
 </pre>
+<a name="update-wok"></a>
 <h3><font color="#6c0023">update-wok</font></h3>
 <p>
-Copies receipts from clean-wok to wok:
+'update-wok' downloads or updates the contents in the wok-wok clean record of the deposit. Then it copies 
+the new elements in the cooking wok (wok folder) and remove those that no longer exist in the new version. 
+The addresses and the method (or tarball hg) used by this command are defined in tazwok.conf. The --local 
+option allows for only the second operation (copy files to the wok). This is useful if you have make changes
+in the local clean-wok and want to add to wok cooking. This is especially useful for users of 
+mercurial (hg), since this tool is much faster with a wok that contains no files associated with the 
+compilation. In this case, make changes in the clean-wok then: tazwok update-wok --local.
 </p>
 <pre> # tazwok update-wok
  # tazwok update-wok --local
+</pre>
+<a name="webserver"></a>
+<h3><font color="#6c0023">webserver</font></h3>
+<p>
+'webserver' is the command that creates a PHP interface that provides information about the status 
+of deposits. Several deposits can be added/removed by using the options --SLITAZ_VERSION/--undigest. 
+The argument 'on ' you can add a deposit to the web interface, while the 'off' withdraw (in each case). 
+Using the default configuration, the interface will be available in your browser address 
+http://localhost/vhosts/bb/. Package 'php' should be installed to use this command.
+</p>
+<pre> # tazwok webserver on
+ # tazwok webserver off
 </pre>
 <h3><font color="#6c0023">chroot</font></h3>
 <p>
