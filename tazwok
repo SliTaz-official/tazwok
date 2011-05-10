@@ -418,12 +418,12 @@ check_for_build_depends()
 		if [ "$auto_install" = yes ]; then
 			install_missing
 		else
-			echo "================================================================================"
+			horizontal_line
 			for pkg in $MISSING_PACKAGE
 			do
 				echo "Missing : $pkg"
 			done
-			echo "================================================================================"
+			horizontal_line
 			echo "You can continue, exit or install missing dependencies."
 			echo -n "Install, continue or exit (install/y/N) ? "; read answer
 			case $answer in
@@ -489,6 +489,8 @@ set_pkg_path()
 	else
 		_pkg=$src/_pkg
 	fi
+	# compatibly with cookutils
+	install=$_pkg
 }
 
 # Output $VERSION-$EXTRAVERSION using packages.txt
@@ -817,8 +819,12 @@ download()
 					continue
 				fi
 			;;
-			subversion\|*)
-				file=${file#subversion|}
+			svn*|subversion*)
+				if $(echo "$WGET_URL" | fgrep -q svn); then
+					file=${WGET_URL#svn|}
+				else
+					file=${WGET_URL#subversion|}
+				fi
 				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/subversion/receipt ] && tazpkg get-install subversion --forced
 				if [ -f $INSTALLED/subversion/receipt ]; then
 					mkdir $tmp_src
@@ -834,8 +840,12 @@ download()
 					continue
 				fi
 			;;
-			mercurial\|*)
-				file=${file#mercurial|}
+			hg*|mercurial*)
+				if $(echo "$WGET_URL" | fgrep -q hg); then
+					file=${WGET_URL#hg|}
+				else
+					file=${WGET_URL#mercurial|}
+				fi
 				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/mercurial/receipt ] && tazpkg get-install mercurial --forced
 				if [ -f $INSTALLED/mercurial/receipt ]; then
 					mkdir $tmp_src
@@ -1629,7 +1639,9 @@ sort_db()
 			cp -f $tmp/db /tmp/remain-depends.txt
 			echo "Can't go further because of dependency loop(s). The remaining packages will be commented in the cookorder and will be unbuilt in case of major updates until the problem is solved." >&2
 			for remaining in $(cut -f 1 $tmp/db); do
-				echo "$remaining" >> $blocked
+				if ! grep -q ^$remaining $PACKAGES_REPOSITORY/blocked; then
+					echo "$remaining" >> $PACKAGES_REPOSITORY/blocked
+				fi
 			done
 			break
 		fi
@@ -2437,7 +2449,7 @@ $( [ "$undigest" ] && echo '	echo "undigest='"$undigest"'" >> $chroot_dir/etc/sl
 	sed 's/LC_ALL/LC_ALL=POSIX/' -i \$chroot_dir/etc/profile
 
 	# The build bot may run in a sandbox: link sandbox lockfile.
-	ln -s \$LOCAL_REPOSITORY/sandbox/proc/1 \$chroot_dir/proc/1
+	[ -d \$LOCAL_REPOSITORY/sandbox ] && ln -s \$LOCAL_REPOSITORY/sandbox/proc/1 \$chroot_dir/proc/1
 }
 
 mount_chroot()
@@ -2730,7 +2742,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			ASKED_CATEGORY=$2
 			echo ""
 			echo -e "\033[1mPackages in category :\033[0m $ASKED_CATEGORY"
-			echo "================================================================================"
+			horizontal_line
 			for pkg in $WOK/*
 			do
 				[ ! -f $pkg/receipt ] && continue
@@ -2741,13 +2753,13 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 					packages=$(($packages+1))
 				fi
 			done
-			echo "================================================================================"
+			horizontal_line
 			echo -e "$packages packages in category $ASKED_CATEGORY.\n"
 		else
 			# By default list all packages and version.
 			echo ""
 			echo -e "\033[1mList of packages in the wok\033[0m"
-			echo "================================================================================"
+			horizontal_line
 			for pkg in $WOK/*
 			do
 				[ ! -f $pkg/receipt ] && continue
@@ -2757,7 +2769,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 				echo -e "\033[42G $CATEGORY"
 				packages=$(($packages+1))
 			done
-			echo "================================================================================"
+			horizontal_line
 			echo -e "$packages packages available in the wok.\n"
 		fi
 		;;
@@ -2785,7 +2797,7 @@ Maintainer : $MAINTAINER"
 		if [ ! "$WANTED" = "" ]; then
 			echo "Wanted src : $WANTED"
 		fi
-		echo "================================================================================"
+		horizontal_line
 		echo ""
 	;;
 	check-log)
@@ -2798,15 +2810,15 @@ Maintainer : $MAINTAINER"
 		else
 			echo ""
 			echo -e "\033[1mPackage process log for :\033[0m $PACKAGE"
-			echo "================================================================================"
+			horizontal_line
 			cat $LOG
-			echo "================================================================================"
+			horizontal_line
 			echo ""
 			if [ -s "$WOK/$PACKAGE/warning.txt" ]; then
 				echo -e "\033[1mCook warning(s) for :\033[0m $PACKAGE"
-				echo "================================================================================"
+				horizontal_line
 				cat "$WOK/$PACKAGE/warning.txt"
-				echo "================================================================================"
+				horizontal_line
 				echo ""
 			fi
 		fi
@@ -2822,7 +2834,7 @@ Maintainer : $MAINTAINER"
 		fi
 		echo ""
 		echo -e "\033[1mSearch result for :\033[0m $2"
-		echo "================================================================================"
+		horizontal_line
 		list=`ls -1 $WOK | fgrep $2`
 		for pkg in $list
 		do
@@ -2832,7 +2844,7 @@ Maintainer : $MAINTAINER"
 			echo -e "\033[42G $CATEGORY"
 			packages=$(($PACKAGEs+1))
 		done
-		echo "================================================================================"
+		horizontal_line
 		echo "$packages packages found for : $2"
 		echo ""
 	;;
@@ -3075,7 +3087,7 @@ EOF
 		# Interactive mode, asking and seding.
 		if [ "$3" = "--interactive" ]; then
 			echo "Entering interactive mode..."
-			echo "================================================================================"
+			horizontal_line
 			echo "Package       : $PACKAGE"
 			# Version.
 			echo -n "Version       : " ; read anser
@@ -3110,7 +3122,7 @@ EOF
 				echo -n "Creating the description.txt file..."
 				echo "" > description.txt && status
 			fi
-			echo "================================================================================"
+			horizontal_line
 			echo ""
 		fi
 	;;
@@ -3198,7 +3210,7 @@ EOF
 		get_tazwok_config
 		echo ""
 		echo "List of maintainers for: $WOK"
-		echo "================================================================================"
+		horizontal_line
 		touch /tmp/slitaz-maintainers
 		for pkg in $WOK/*
 		do
@@ -3208,7 +3220,7 @@ EOF
 				echo "$MAINTAINER"
 			fi
 		done
-		echo "================================================================================"
+		horizontal_line
 		echo "Maintainers: `cat /tmp/slitaz-maintainers | wc -l`"
 		echo ""
 		# Remove tmp files
@@ -3222,7 +3234,7 @@ EOF
 			exit 1
 		fi
 		echo "Maintainer packages"
-		echo "================================================================================"
+		horizontal_line
 		for pkg in $WOK/*
 		do
 			. $pkg/receipt
@@ -3231,7 +3243,7 @@ EOF
 				packages=$(($PACKAGEs+1))
 			fi
 		done
-		echo "================================================================================"
+		horizontal_line
 		echo "Packages maintained by $2: $PACKAGEs"
 		echo ""
 	;;
@@ -3384,9 +3396,9 @@ EOF
 			if [ -s $i ]; then
 				echo ""	
 				echo -e "\033[1m$i\033[0m"
-				echo "================================================================================"
+				horizontal_line
 				cat $i
-				echo "================================================================================"
+				horizontal_line
 				echo ""
 			fi
 		done
