@@ -1530,9 +1530,9 @@ sort_db()
 		if [ "$status" = start ]; then
 			cp -f $tmp/db /tmp/remain-depends.txt
 			echo "Can't go further because of dependency loop(s). The remaining packages will be commented in the cookorder and will be unbuilt in case of major updates until the problem is solved." >&2
-			for blocked in $(cut -f 1 $tmp/db); do
-				if [ ! $(grep -l "^$blocked$" $PACKAGES_REPOSITORY/blocked) ]; then
-					echo "$blocked" >> $PACKAGES_REPOSITORY/blocked
+			for remaining in $(cut -f 1 $tmp/db); do
+				if ! grep -q ^$remaining $PACKAGES_REPOSITORY/blocked; then
+					echo "$remaining" >> $PACKAGES_REPOSITORY/blocked
 				fi
 			done
 			break
