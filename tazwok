@@ -789,6 +789,20 @@ download()
 					continue
 				fi
 			;;
+			cvs*)
+				file=${WGET_URL#cvs|}
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/cvs/receipt ] && tazpkg get-install cvs --forced
+				if [ -f $INSTALLED/cvs/receipt ]; then
+					mkdir $tmp_src
+					cd $tmp_src
+					mod=${src##*/}
+					[ "$CVS_MODULE" ] && mod=$CVS_MODULE
+					cvs -z3 -d:$file co $mod && rm -rf $mod/CVS && break
+				else
+					tazwok_warning "Needs cvs to download the source tarball from $file, please add it as a build-depend."
+					continue
+				fi
+			;;
 			https*)
 				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/wget/receipt ] && tazpkg get-install wget --forced
 				if [ -d $INSTALLED/wget ]; then
