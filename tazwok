@@ -547,7 +547,7 @@ check_for_tarball()
 	report end-step
 	if { [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ] ; } || \
 	{ [ -f "$SOURCES_REPOSITORY/$TARBALL" ] && [ "$repack_src" != yes ] && [ "$nounpack" ] ; }; then
-		[ -d "$tmp_src" ] && rm -r $tmp_src
+		[ -d "$tmp_src" ] && rm -r "$tmp_src"
 		return 0
 	fi
 
@@ -557,11 +557,11 @@ check_for_tarball()
 	echo "untaring source tarball" >> $LOG
 
 	# If $tmp_src exists, there's already a unpacked tarball in it.
-	if ! [ -d $tmp_src ]; then
-		mkdir $tmp_src
+	if ! [ -d "$tmp_src" ]; then
+		mkdir "$tmp_src"
 		if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$repack_src" = yes ]; then
 			lzma d $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -so | \
-				tar xf - -C $tmp_src
+				tar xf - -C "$tmp_src"
 			repack_src=no
 			TARBALL=${SOURCE:-$PACKAGE}-$VERSION.tar.lzma
 		elif [ -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
@@ -589,15 +589,15 @@ check_for_tarball()
 		fi
 
 		# Check if uncompressed tarball is in a root dir or not.
-		if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ] || [ -f $(echo $tmp_src/*) ]; then
+		if [ "$(ls -A $tmp_src | wc -l)" -gt 1 ] || [ -f "$(echo $tmp_src/*)" ]; then
 			if check_for_var_modification src _pkg; then
-				mv $tmp_src $tmp_src-1
-				mkdir $tmp_src
-				mv $tmp_src-1 $tmp_src/${SOURCE:-$PACKAGE}-$VERSION
+				mv "$tmp_src" "$tmp_src-1"
+				mkdir "$tmp_src"
+				mv "$tmp_src-1" "$tmp_src/${SOURCE:-$PACKAGE}-$VERSION"
 			else
-				mv $tmp_src/* $WOK/$PACKAGE
+				mv "$tmp_src"/* "$WOK/$PACKAGE"
 				repack_src=no
-				rm -r $tmp_src
+				rm -r "$tmp_src"
 				tazwok_warning "Putting all files in $WOK/$PACKAGE; not sure about how to handle this tarball (no root dir)... Please try to remove src/_pkg definition from the receipt if you encounter any problems."
 			fi
 		fi
@@ -607,7 +607,7 @@ check_for_tarball()
 			report step "Repacking sources in .tar.lzma format"
 			[ "$TARBALL" ] && rm -f $SOURCES_REPOSITORY/$TARBALL
 			TARBALL=${SOURCE:-$PACKAGE}-$VERSION.tar.lzma
-			cd $tmp_src
+			cd "$tmp_src"
 			tar -c * | lzma e $SOURCES_REPOSITORY/$TARBALL -si
 	fi
 
@@ -626,7 +626,7 @@ check_for_tarball()
 	fi
 
 	if [ "$nounpack" ]; then
-		[ -d "$tmp_src" ] && rm -r $tmp_src
+		[ -d "$tmp_src" ] && rm -r "$tmp_src"
 		report end-step	
 		return
 	fi
@@ -634,19 +634,19 @@ check_for_tarball()
 		# Permissions settings.
 		chown -R root.root "$tmp_src"
 		if [ -d "$src" ]; then
-			mkdir -p $src
-			for f in $tmp_src/*/*; do
-				cp -a $f $src || { report end-step; rm -r $tmp_src; return 1; }
+			mkdir -p "$src"
+			for f in "$tmp_src"/*/*; do
+				cp -a "$f" "$src" || { report end-step; rm -r "$tmp_src"; return 1; }
 			done
 		else
 			if ! check_for_var_modification src _pkg && ! [ "$target" ]; then
 				src="${src%/*}/$(ls $tmp_src)"
 			fi
-			mv $(echo $tmp_src/*) "$src" || { report end-step; rm -r $tmp_src; return 1; }
+			mv "$(echo $tmp_src/*)" "$src" || { report end-step; rm -r "$tmp_src"; return 1; }
 		fi
-		rm -r $tmp_src
+		rm -r "$tmp_src"
 	else
-		[ -d "$tmp_src" ] && rm -r $tmp_src
+		[ -d "$tmp_src" ] && rm -r "$tmp_src"
 		echo "There's already something at $src. Abort." >&2
 	fi
 	report end-step
@@ -861,6 +861,20 @@ download()
 					continue
 				fi
 			;;
+			cvs*)
+				file=${WGET_URL#cvs|}
+				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/cvs/receipt ] && tazpkg get-install cvs --forced
+				if [ -f $INSTALLED/cvs/receipt ]; then
+					mkdir $tmp_src
+					cd $tmp_src
+					mod=${src##*/}
+					[ "$CVS_MODULE" ] && mod=$CVS_MODULE
+					cvs -z3 -d:$file co $mod && rm -rf $mod/CVS && break
+				else
+					tazwok_warning "Needs cvs to download the source tarball from $file, please add it as a build-depend."
+					continue
+				fi
+			;;
 			https*)
 				[ "$COMMAND" = get-src ] && [ ! -f $INSTALLED/wget/receipt ] && tazpkg get-install wget --forced
 				if [ -d $INSTALLED/wget ]; then
@@ -988,12 +1002,19 @@ strip_package()
 	report end-step
 }
 
-# Remove .pyc, .pyo, perllocal.pod and .packlist files from packages.
+# Remove .pyc and .pyo files from packages.
 py_compiled_files_remove()
 {
-	report step "Removing all .pyc, .pyo, perllocal.pod, and .packlist files from package"
+	report step "Removing all .pyc and .pyo files from package"
 	find $fs -type f -name "*.pyc" -delete 2>/dev/null
 	find $fs -type f -name "*.pyo" -delete 2>/dev/null
+	report end-step
+}
+
+# Removing all perllocal.pod and .packlist files from package
+perl_compiled_files_remove()
+{
+	report step "Removing all perllocal.pod and .packlist files from package"
 	find $fs -type f -name "perllocal.pod" -delete 2>/dev/null
 	find $fs -type f -name ".packlist" -delete 2>/dev/null
 	report end-step
@@ -1123,7 +1144,7 @@ gen_package()
 			copy_generic_files
 		fi
 		look_for_cookopt !strip || strip_package
-		py_compiled_files_remove
+		perl_compiled_files_remove
 	else
 		echo "No package rules to gen $PACKAGE..." >&2
 		set_pkg_broken
@@ -1171,6 +1192,8 @@ gen_package()
 		LAST_FILE="$file"
 	done > files.list
 
+	py_compiled_files_remove
+
 	# Next, check if something has changed in lib files.
 	# Plan to recook each packages which depends on libs
 	# which doesn't exists anymore.
@@ -1203,7 +1226,7 @@ gen_package()
 		unset pkg_file pkg_file_dir pkg_to_check
 		report end-step
 	fi
-	
+
 	# Update lib_db
 	libs=$(for file in $(find * -type f); do
 	[ "$(dd if=$file bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ] || continue
@@ -1219,7 +1242,7 @@ gen_package()
 		sort -o $lib_db $lib_db
 	fi
 	unset libs
-
+	
 	if [ ! "$EXTRAVERSION" ]; then
 		case "$PACKAGE" in
 		linux*);;
