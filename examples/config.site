@@ -31,8 +31,8 @@ default_infodir=$default_datarootdir/info
 default_mandir=$default_datarootdir/man
 default_sysconfigdir=/etc
 default_localstatedir=/var
-default_build="$BUILD_HOST"
-default_host="$BUILD_HOST"
+default_build="$BUILD_SYSTEM"
+default_host="$HOST_SYSTEM"
 
 
 # Some variable are prefixed by "${prefix}" instead of "${datarootdir}".
