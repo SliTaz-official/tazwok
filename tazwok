@@ -650,7 +650,8 @@ check_for_compile_rules()
 			CXXFLAGS=$(echo "$CXXFLAGS" | tr -s ' ') \
 			MAKEFLAGS DESTDIR BUILD_HOST CONFIG_SITE default_prefix \
 			default_datarootdir default_datadir default_localedir \
-			default_infodir default_mandir default_build default_host
+			default_infodir default_mandir default_build default_host \
+			BUILD_SYSTEM HOST_SYSTEM
 		local LC_ALL=POSIX LANG=POSIX
 		compile_rules
 
