@@ -1474,26 +1474,31 @@ gen_wok_db()
 	report step "Generating wok-wanted.txt"
 	gen_wan_db
 	report step "Generating wok-depends.txt"
-	for PACKAGE in $(cut -f1 -d '|' $PACKAGES_REPOSITORY/packages.desc \
-		$INCOMING_REPOSITORY/packages.desc | sort -u); do
-		RECEIPT=$WOK/$PACKAGE/receipt
-		if [ -s $RECEIPT ]; then
-			source_receipt
-			echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ' >> $dep_db
-		fi
-	done
+	gen_dep_db
 	sort_db
 	report close-bloc
 }
 
 gen_wan_db()
 {
-	rm -f $wan_db
+	[ -f $wan_db ] && rm -f $wan_db
 	for RECEIPT in $(fgrep -l WANTED $WOK/*/receipt); do
 		WANTED=
 		source $RECEIPT
 		[ "$WANTED" ] || continue
 		echo -e $PACKAGE"\t"$WANTED >> $wan_db
+	done
+}
+
+gen_dep_db()
+{
+	[ -f $dep_db ] && rm -f $dep_db
+	for PACKAGE in $(ls $WOK); do
+		RECEIPT=$WOK/$PACKAGE/receipt
+		if [ -s $RECEIPT ]; then
+			source_receipt
+			echo -e $PACKAGE"\t "$DEPENDS" \t "$BUILD_DEPENDS' ' >> $dep_db
+		fi
 	done
 }
 
@@ -2913,7 +2918,7 @@ WGET_URL=""
 compile_rules()
 {
 	cd $src
-	./configure && make && make install
+	./configure $CONFIGURE_ARGS && make && make install
 }
 
 # Rules to gen a SliTaz package suitable for Tazpkg.
