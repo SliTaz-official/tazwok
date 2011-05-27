@@ -509,6 +509,7 @@ check_for_tarball()
 				*Z|*taz) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 				*gz) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
 				*rpm) cd $tmp_src && rpm2cpio $SOURCES_REPOSITORY/$TARBALL | cpio -idm --quiet;;
+				*.run) cd $tmp_src && sh $SOURCES_REPOSITORY/$TARBALL $RUN_OPTS;;
 
 				# It's a plain file or something receipt unpack itself.	
 				*)
