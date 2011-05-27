@@ -410,6 +410,11 @@ set_src_path()
 	fi
 	stuff=$WOK/$PACKAGE/stuff
 	[ "$WANTED" ] && wanted_stuff=$WOK/$WANTED/stuff
+	# Kernel version is set from linux-api-headers since it part of toolchain.
+	if [ -f "$LOCALSTATE/installed/linux-api-headers/receipt" ]; then
+		kvers=$(grep ^VERSION= $LOCALSTATE/installed/linux-api-headers/receipt | \
+			cut -d '"' -f 2)
+	fi
 }
 
 set_pkg_path()
