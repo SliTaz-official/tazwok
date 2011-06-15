@@ -462,17 +462,17 @@ check_for_tarball()
 	fi
 	tmp_src=$tmp/tarball-$$
 	if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
-		[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] ; then
+		[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" ] ; then
 		cd $SOURCES_REPOSITORY
 		if [ "$SOURCE" ]; then
-			alt_url="http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$SOURCE-$VERSION.tar.lzma"
+			alt_url="http://mirror.slitaz.org/sources/packages/${SOURCE:0:1}/$SOURCE-${KBASEVER:-$VERSION}.tar.lzma"
 		else
-			alt_url="http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-$VERSION.tar.lzma"
+			alt_url="http://mirror.slitaz.org/sources/packages/${PACKAGE:0:1}/$PACKAGE-${KBASEVER:-$VERSION}.tar.lzma"
 		fi
 		download $WGET_URL $alt_url http://mirror.slitaz.org/sources/packages/${TARBALL:0:1}/$TARBALL
 		unset alt_url
 		if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
-			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && \
+			[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" ] && \
 			[ ! -d $tmp_src ]; then
 			echo -e "\nDownload failed, exiting. Please check WGET_URL variable.\n" >&2
 			report end-step
@@ -480,7 +480,7 @@ check_for_tarball()
 		fi
 	fi
 	report end-step
-	if { [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$nounpack" ] ; } || \
+	if { [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" ] && [ "$nounpack" ] ; } || \
 	{ [ -f "$SOURCES_REPOSITORY/$TARBALL" ] && [ "$repack_src" != yes ] && [ "$nounpack" ] ; }; then
 		[ -d "$tmp_src" ] && rm -r "$tmp_src"
 		return 0
@@ -494,11 +494,11 @@ check_for_tarball()
 	# If $tmp_src exists, there's already a unpacked tarball in it.
 	if ! [ -d "$tmp_src" ]; then
 		mkdir "$tmp_src"
-		if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" ] && [ "$repack_src" = yes ]; then
-			lzma d $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma -so | \
+		if [ -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" ] && [ "$repack_src" = yes ]; then
+			lzma d $SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma -so | \
 				tar xf - -C "$tmp_src"
 			repack_src=no
-			TARBALL=${SOURCE:-$PACKAGE}-$VERSION.tar.lzma
+			TARBALL=${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma
 		elif [ -f "$SOURCES_REPOSITORY/$TARBALL" ]; then
 			case "$TARBALL" in
 				*zip|*xpi) cd $tmp_src && unzip -o $SOURCES_REPOSITORY/$TARBALL ;;
@@ -542,7 +542,7 @@ check_for_tarball()
 	if [ "$repack_src" = yes ]; then
 			report step "Repacking sources in .tar.lzma format"
 			[ "$TARBALL" ] && rm -f $SOURCES_REPOSITORY/$TARBALL
-			TARBALL=${SOURCE:-$PACKAGE}-$VERSION.tar.lzma
+			TARBALL=${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma
 			cd "$tmp_src"
 			tar -c * | lzma e $SOURCES_REPOSITORY/$TARBALL -si
 	fi
@@ -599,8 +599,8 @@ gen_sources_list()
 		[ "$WGET_URL" ] || continue
 		if grep -q "^$PACKAGE | $VERSION" $PACKAGES_REPOSITORY/packages.desc; then
 			main_version="$VERSION"
-			if [ -f $src_repository/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
-				echo -e "$PACKAGE:main\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $src_repository/sources.list
+			if [ -f $src_repository/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma ]; then
+				echo -e "$PACKAGE:main\t${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" >> $src_repository/sources.list
 			elif [ -f "$src_repository/$TARBALL" ]; then
 				echo -e "$PACKAGE:main\t$TARBALL" >> $src_repository/sources.list
 			fi
@@ -614,8 +614,8 @@ gen_sources_list()
 			fi
 		fi
 		if [ ! "$main_version" ] || [ $(grep -q "^$PACKAGE | $VERSION" $INCOMING_REPOSITORY/packages.desc 2>/dev/null) ]; then
-			if [ -f $src_repository/${SOURCE:-$PACKAGE}-$VERSION.tar.lzma ]; then
-				echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-$VERSION.tar.lzma" >> $src_repository/sources.list
+			if [ -f $src_repository/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma ]; then
+				echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" >> $src_repository/sources.list
 			elif [ -f "$src_repository/$TARBALL" ]; then
 				echo -e "$PACKAGE:incoming\t$TARBALL" >> $src_repository/sources.list
 			fi
