@@ -1096,6 +1096,17 @@ set_pkg_broken()
 	return 1
 }
 
+update_lib_db()
+{
+	# Update lib_db
+	libs=$(for file in $(find * -type f); do
+	[ "$(dd if=$file bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ] || continue
+		LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $PWD/$file
+	done | { cut -f 1 -d ' ' | tr -d '\t' | sort -u | \
+	sed -e 's/^linux-gate.so.*$/SLIB/' -e 's~^/lib/ld-.*$~SLIB~' \
+		-e '/^statically$/d' | tr '\n' ' '; })
+}
+
 # Create a package tree and build the gziped cpio archive
 # to make a SliTaz (.tazpkg) package.
 gen_package()
@@ -1228,14 +1239,8 @@ gen_package()
 		report end-step
 	fi
 
-	# Update lib_db
-	libs=$(for file in $(find * -type f); do
-	[ "$(dd if=$file bs=1 skip=1 count=3 2> /dev/null)" = "ELF" ] || continue
-		LD_TRACE_LOADED_OBJECTS=1 /lib/ld*.so $PWD/$file
-	done | { cut -f 1 -d ' ' | tr -d '\t' | sort -u | \
-	sed -e 's/^linux-gate.so.*$/SLIB/' -e 's~^/lib/ld-.*$~SLIB~' \
-		-e '/^statically$/d' | tr '\n' ' '; })
-
+	update_lib_db
+	
 	sed "/$PACKAGE\t/d" -i $lib_db
 	if [ "$libs" ]; then
 		libs=$(echo " $libs" | sed -r 's/( SLIB)+ / /g')
@@ -2208,7 +2213,7 @@ check_for_incoming()
 	fi
 
 	report step "Moving incoming packages to main repository"
-	[ "save_wok" ] && mkdir -p $PACKAGES_REPOSITORY/wok
+	[ "$save_wok" ] && mkdir -p $PACKAGES_REPOSITORY/wok
 	unset EXTRAVERSION
 	for PACKAGE in $incoming_pkgs; do
 			prev_VERSION=$(get_pkg_version $PACKAGES_REPOSITORY)
