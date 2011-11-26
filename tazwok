@@ -9,7 +9,7 @@
 # (C) 2007-2009 SliTaz - GNU General Public License.
 #
 
-VERSION=4.2.16
+VERSION=4.2.17
 . /usr/lib/slitaz/libtaz
 source_lib commons
 
