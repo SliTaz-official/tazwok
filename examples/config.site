@@ -48,7 +48,7 @@ fi
 { [ "$build" = NONE ] || [ ! "$build" ] ; } && build=$default_build
 { [ "$host" = NONE ] || [ ! "$host" ] ; } && host=$default_host
 
-# Print information about these variables.
+# Print information about those variables.
 echo "prefix = $prefix
 datarootdir = $datarootdir
 datadir = $datadir
@@ -59,5 +59,6 @@ build = $build
 host = $host
 "
 
-# config.site is used by tazwok to check that the config.site script has been used.
+# /tmp/config.site is used by tazwok to check that the config.site
+# script has been used.
 touch /tmp/config.site
