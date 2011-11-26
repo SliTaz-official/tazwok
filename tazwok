@@ -212,6 +212,7 @@ into tazwok.conf of this reference repository. How-to:" | fold -s >&2
 		check_dir $SOURCES_REPOSITORY
 		check_dir $INCOMING_REPOSITORY
 		check_dir $LOCAL_REPOSITORY/log
+		check_dir $LOCAL_REPOSITORY/tmp
 		for file in $dep_db $wan_db $cookorder $commit $cooklist \
 			$broken $blocked $SOURCES_REPOSITORY/sources.list $lib_db
 		do
@@ -520,7 +521,7 @@ check_for_tarball()
 	[ "$WGET_URL" ] || return 0
 	[ "$WANTED" ] && return 0
 	report step "Checking for source tarball: $PACKAGE"
-	local repack_src=$repack_src TARBALL=$TARBALL local nounpack=$nounpack
+	local repack_src=$repack_src TARBALL=$TARBALL nounpack=$nounpack
 	look_for_cookopt !unpack && nounpack=yes
 	if [ "$repack_src" = yes ] && look_for_cookopt !repack_src; then
 			repack_src=no
@@ -530,7 +531,7 @@ check_for_tarball()
 	else
 		set_src_path
 	fi
-	tmp_src=$tmp/tarball-$$
+	tmp_src=$LOCAL_REPOSITORY/tmp/tarball-$$
 	if [ ! -f "$SOURCES_REPOSITORY/$TARBALL" ] && \
 		[ ! -f "$SOURCES_REPOSITORY/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" ] ; then
 		cd $SOURCES_REPOSITORY
@@ -724,7 +725,7 @@ check_for_compile_rules()
 		[ "$CONFIG_SITE" ] || CONFIG_SITE=/etc/config.site
 		export CFLAGS=$(echo "$CFLAGS" | tr -s ' ') \
 			CXXFLAGS=$(echo "$CXXFLAGS" | tr -s ' ') \
-			MAKEFLAGS DESTDIR BUILD_HOST CONFIG_SITE default_prefix \
+			MAKEFLAGS DESTDIR CONFIG_SITE default_prefix \
 			default_datarootdir default_datadir default_localedir \
 			default_infodir default_mandir default_build default_host \
 			BUILD_SYSTEM HOST_SYSTEM

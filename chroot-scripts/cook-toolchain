@@ -6,6 +6,12 @@
 source /usr/lib/slitaz/libtaz
 source /etc/slitaz/tazwok.conf
 
+LOCAL_REPOSITORY=$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}
+if [ -f $LOCAL_REPOSITORY/tazwok.conf ]; then
+	source $LOCAL_REPOSITORY/tazwok.conf
+fi
+WOK=$LOCAL_REPOSITORY/wok
+
 # Report progress on webserver.
 log_step="$LOCAL_REPOSITORY/log/step"
 run_on_exit="$run_on_exit
@@ -29,7 +35,7 @@ report close-bloc
 report step "Configuring repositories"
 # Incoming packages as the only source for packages.
 rm -r /var/lib/tazpkg/undigest
-tazpkg setup-mirror $SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}/packages-incoming
+tazpkg setup-mirror $LOCAL_REPOSITORY/packages-incoming
 tazpkg recharge
 
 report step "Setting up environnement"
@@ -39,22 +45,18 @@ PS1='\u:\w\$ '
 LANG=POSIX
 LC_ALL=POSIX
 
-# Set BUILD_HOST to something like $ARCH-tmp-linux-gnu to enable
+# Set HOST_SYSTEM to something like $ARCH-tmp-linux-gnu to enable
 # the temporary toolchain.
-BUILD_HOST=$(echo $BUILD_HOST | sed 's/\(.*\)-\(.*\)-linux-gnu/\1-tmp-linux-gnu/')
+HOST_SYSTEM=$(echo $HOST_SYSTEM | sed 's/\(.*\)-\(.*\)-linux-gnu/\1-tmp-linux-gnu/')
 
 PATH=/tools/bin:/tools/usr/bin:/tools/sbin:/tools/usr/sbin:/bin:/usr/bin:/sbin:/usr/sbin
 CONFIG_SITE="/etc/config.site.tmptoolchain"
-echo 'prefix=/tools' > /etc/config.site.tmptoolchain
+echo "prefix=/tools" > /etc/config.site.tmptoolchain
 
 export LANG LC_ALL PATH PS1 MAKEFLAGS CONFIG_SITE
 unset CC CXX CPP CFLAGS CXXFLAGS LD_LIBRARY_PATH LD_PRELOAD DESTDIR
 
-LOCAL_REPOSITORY=$SLITAZ_DIR/$SLITAZ_VERSION
-[ "$undigest" ] && LOCAL_REPOSITORY=$SLITAZ_DIR/$undigest
-WOK=$LOCAL_REPOSITORY/wok
-
-# Create the dir for the temporary toolchain and link in root of host 
+# Create the dir for the temporary toolchain and link in root of build
 # system.
 rm -rf /tools
 mkdir /tools
@@ -76,6 +78,7 @@ prepare_package()
 	cd $WOK/$PACKAGE
 }
 
+
 # Binutils and gcc need to be compiled twice.
 for PACKAGE in binutils gcc; do
 	rm $LOCAL_REPOSITORY/log/tmp-toolchain-$PACKAGE-firstpass.html 2>/dev/null
@@ -85,7 +88,7 @@ for PACKAGE in binutils gcc; do
 	report open-bloc
 	prepare_package
 	report step "Running compilation rules"
-	precook_tmp_toolchain
+	cook_cross_toolchain
 	report end-step || exit 1
 	report close-bloc
 	report end-sublog
