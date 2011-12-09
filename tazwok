@@ -635,14 +635,13 @@ check_for_compile_rules()
 		ulimit -d unlimited
 		ulimit -m unlimited
 
-		# Free some RAM by cleaning cache if option is enabled.
-		freeram=$(free | fgrep '/+ buffers' | tr -s ' ' | cut -f 4 -d ' ')
+		freeram=$(free -m | fgrep 'Mem:' | tr -s ' ' | cut -f 4 -d ' ')
 
-		# Disable -pipe in CFLAGS/CXXFLAGS if less than 512Mb of free
+		# Disable -pipe in CFLAGS/CXXFLAGS if less than 512MB of free
 		# RAM are available.
-		if [ "$freeram" -lt 524288 ] && [ "$CFLAGS" != "${CFLAGS/-pipe}" -o \
+		if [ "$freeram" -lt 512 ] && [ "$CFLAGS" != "${CFLAGS/-pipe}" -o \
 			"$CXXFLAGS" != "${CXXFLAGS/-pipe}" ]; then
-				tazwok_warning "Disabling -pipe compile flag because only ${freeram}b of RAM is available."
+				tazwok_warning "Disabling -pipe compile flag because of low memory: $freeram MB available."
 				CFLAGS="${CFLAGS/-pipe}"
 				CXXFLAGS="${CXXFLAGS/-pipe}"
 		fi

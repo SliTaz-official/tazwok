@@ -88,7 +88,7 @@ for PACKAGE in binutils gcc; do
 	report open-bloc
 	prepare_package
 	report step "Running compilation rules"
-	cook_cross_toolchain
+	precook_tmp_toolchain
 	report end-step || exit 1
 	report close-bloc
 	report end-sublog
