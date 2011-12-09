@@ -231,7 +231,7 @@ remove_src()
 	# Don't remove sources if a package uses src variable in its
 	# genpkg_rules: it maybe needs something inside.
 	for i in $PACKAGE $(look_for_rwanted); do
-		sed -n '/^genpkg_rules\(\)/','/}/'p $WOK/$i/receipt | \
+		sed -n '/^genpkg_rules\(\)/','/^}/'p $WOK/$i/receipt | \
 			fgrep -q '$src' && tazwok_warning "Sources will not be removed \
 because $i uses \$src in its receipt." && return
 	done
