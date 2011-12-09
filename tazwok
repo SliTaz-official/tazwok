@@ -438,8 +438,7 @@ get_pkg_version()
 
 remove_previous_package()
 {
-	[ "$prev_VERSION" ] || return
-	if [ "$VERSION$EXTRAVERSION" != "$prev_VERSION" ]; then
+	if  [ "$prev_VERSION" ] && [ "$VERSION$EXTRAVERSION" != "$prev_VERSION" ]; then
 		rm -f $1/$PACKAGE-$prev_VERSION.tazpkg
 	fi
 	return 0
