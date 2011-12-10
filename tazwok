@@ -630,7 +630,11 @@ check_for_compile_rules()
 	if grep -q ^compile_rules $RECEIPT; then
 		echo "executing compile_rules" >> $LOG
 		report step "Executing compile_rules"
-		cd $WOK/$PACKAGE
+		if [ -d "$src" ]; then
+			cd "$src"
+		else
+			cd $WOK/$PACKAGE
+		fi
 		rm -f /tmp/config.site
 		ulimit -d unlimited
 		ulimit -m unlimited
