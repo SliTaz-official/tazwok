@@ -303,7 +303,7 @@ remove_src()
 	# Don't remove sources if a package uses src variable in its
 	# genpkg_rules: it maybe needs something inside.
 	for i in $PACKAGE $(look_for_rwanted); do
-		sed -n '/^genpkg_rules\(\)/','/}/'p $WOK/$i/receipt | \
+		sed -n '/^genpkg_rules\(\)/','/^}/'p $WOK/$i/receipt | \
 			fgrep -q '$src' && tazwok_warning "Sources will not be removed \
 because $i uses \$src in its receipt." && return
 	done
@@ -508,8 +508,7 @@ get_pkg_version()
 
 remove_previous_package()
 {
-	[ "$prev_VERSION" ] || return
-	if [ "$VERSION$EXTRAVERSION" != "$prev_VERSION" ]; then
+	if  [ "$prev_VERSION" ] && [ "$VERSION$EXTRAVERSION" != "$prev_VERSION" ]; then
 		rm -f $1/$PACKAGE-$prev_VERSION.tazpkg
 	fi
 	return 0
@@ -701,19 +700,22 @@ check_for_compile_rules()
 	if grep -q ^compile_rules $RECEIPT; then
 		echo "executing compile_rules" >> $LOG
 		report step "Executing compile_rules"
-		cd $WOK/$PACKAGE
+		if [ -d "$src" ]; then
+			cd "$src"
+		else
+			cd $WOK/$PACKAGE
+		fi
 		rm -f /tmp/config.site
 		ulimit -d unlimited
 		ulimit -m unlimited
 
-		# Free some RAM by cleaning cache if option is enabled.
-		freeram=$(free | fgrep '/+ buffers' | tr -s ' ' | cut -f 4 -d ' ')
+		freeram=$(free -m | fgrep 'Mem:' | tr -s ' ' | cut -f 4 -d ' ')
 
-		# Disable -pipe in CFLAGS/CXXFLAGS if less than 512Mb of free
+		# Disable -pipe in CFLAGS/CXXFLAGS if less than 512MB of free
 		# RAM are available.
-		if [ "$freeram" -lt 524288 ] && [ "$CFLAGS" != "${CFLAGS/-pipe}" -o \
+		if [ "$freeram" -lt 512 ] && [ "$CFLAGS" != "${CFLAGS/-pipe}" -o \
 			"$CXXFLAGS" != "${CXXFLAGS/-pipe}" ]; then
-				tazwok_warning "Disabling -pipe compile flag because only ${freeram}b of RAM is available."
+				tazwok_warning "Disabling -pipe compile flag because of low memory: $freeram MB available."
 				CFLAGS="${CFLAGS/-pipe}"
 				CXXFLAGS="${CXXFLAGS/-pipe}"
 		fi
