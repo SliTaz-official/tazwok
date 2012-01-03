@@ -377,7 +377,7 @@ check_for_build_depends()
 	# it with new build_depends to know what to install and what to
 	# what to remove.
 	plan_remove=" $MISSING_PACKAGE $remove_later "
-	[ ! "${plan_remove// }" ] && unset plan_remove
+	[ ! "`echo "$plan_remove" | tr -d ' '`" ] && unset plan_remove
 	unset MISSING_PACKAGE remove_later
 	rwanted=$(look_for_rwanted)
 
@@ -390,13 +390,15 @@ check_for_build_depends()
 		if [ ! -d "$INSTALLED/$pkg" ] ; then
 			MISSING_PACKAGE="$MISSING_PACKAGE $pkg"
 		fi
-		if [ "$plan_remove" != "${plan_remove/ $pkg }" ]; then
+		if echo "$plan_remove" \
+			| fgrep -q " $pkg "
+		then
 			plan_remove="${plan_remove/ $pkg / }"
 			remove_later="$remove_later $pkg"
 		fi
 		grep -q ^$pkg$ $broken && broken_pkg="$broken_pkg$pkg "
 	done
-	
+
 	# Don't cook if a depend is broken.
 	if [ "$broken_pkg" ]; then
 		MISSING_PACKAGE=$plan_remove
@@ -1077,18 +1079,33 @@ _EOT_
 	return 0
 }
 
+get_cook_files()
+{
+	if [ -d stuff ]; then
+		cook_files=`find receipt description.txt stuff 2>/dev/null`
+	elif [ -f description.txt ]; then
+		cook_files="receipt
+description.txt"
+	else
+		cook_files="receipt"
+	fi
+}
+
 gen_cookmd5()
 {
 	# md5sum of cooking stuff make tazwok able to check for changes
 	# without hg.
 	cd $WOK/$PACKAGE
-	md5sum receipt > md5
-	[ -f description.txt ] && md5sum description.txt >> md5
-	if [ -d stuff ]; then
-		find stuff | while read file; do
-			md5sum $file >> md5
-		done
+	local IFS="
+"
+
+	if [ ! "$cook_files" ]; then
+		get_cook_files
 	fi
+
+	md5sum $cook_files > md5
+
+	unset cook_files
 }
 
 set_pkg_broken()
@@ -1189,12 +1206,12 @@ gen_package()
 		cp description.txt taz/$PACKAGE-$VERSION
 		report end-step
 	fi
-	
+
 	# Generate md5 of cooking stuff to look for commit later.
 	gen_cookmd5
 	echo -e "\n# md5sum of cooking stuff :" >> taz/$PACKAGE-$VERSION/receipt
 	cat md5 | sed 's/^/# /' >> taz/$PACKAGE-$VERSION/receipt
-	
+
 	# Create the files.list by redirecting find output.
 	report step "Creating the list of files"
 	cd taz/$PACKAGE-$VERSION
@@ -2011,6 +2028,73 @@ check_for_missing()
 	done
 }
 
+# We use md5 of cooking stuff in the packaged receipt to check
+# commit. We look consecutively in 3 different locations :
+# - in the wok/PACKAGE/taz/* folder
+# - in the receipt in the package in incoming repository
+# - in the receipt in the package in packages repository
+# If md5sums match, there's no commit.
+check_for_commit_using_md5sum()
+{
+	if [ ! -f $WOK/$PACKAGE/md5 ]; then
+		sed -n '/# md5sum of cooking stuff :/,$p' receipt | \
+			sed -e 1d -e 's/^# //' > $WOK/$PACKAGE/md5
+		cd $WOK/$PACKAGE
+	fi
+
+	if [ "$1" ]; then
+		check_for_commit_using_time && return
+	fi
+
+	if [ -s md5 ]; then					
+		if md5sum -cs md5; then
+		
+		# If md5sum check if ok, check for new/missing files in
+		# cooking stuff.
+			for file in $([ -f receipt ] && echo receipt; \
+			[ -f description.txt ] && echo description.txt; \
+			[ -d stuff ] && find stuff); do
+				if ! fgrep -q "  $file" md5; then
+					set_commited
+				fi
+			done
+		else
+			set_commited
+		fi
+	else
+		set_commited
+	fi
+}
+
+set_commited()
+{
+	! grep -q ^$PACKAGE$ $PACKAGES_REPOSITORY/commit &&
+	echo $PACKAGE >> $PACKAGES_REPOSITORY/commit
+	gen_cookmd5
+	update_dep_db
+}
+
+check_for_commit_using_time()
+{
+	local count=0 file cook_files
+	
+	get_cook_files
+	
+	for file in $cook_files; do
+		if [ $file -nt md5 ]; then
+			return 1
+		else
+			count=$((count+1))
+		fi
+	done
+	
+	if [ "$cook_files" ] \
+		&& [ ! "$count md5" = "`wc -l md5`" ]
+	then
+		return 1
+	fi
+}
+
 check_for_commit()
 {
 	if ! check_for_pkg_in_wok; then
@@ -2021,52 +2105,15 @@ check_for_commit()
 		RECEIPT=$WOK/$PACKAGE/receipt
 		source_receipt
 
-		# We use md5 of cooking stuff in the packaged receipt to check
-		# commit. We look consecutively in 3 different locations :
-		# - in the wok/PACKAGE/taz/* folder
-		# - in the receipt in the package in incoming repository
-		# - in the receipt in the package in packages repository
-		# If md5sums match, there's no commit.
-		check_for_commit_using_md5sum()
-		{
-			if [ ! -f $WOK/$PACKAGE/md5 ]; then
-				sed -n '/# md5sum of cooking stuff :/,$p' receipt | \
-					sed -e 1d -e 's/^# //' > $WOK/$PACKAGE/md5
-				cd $WOK/$PACKAGE
-			fi
-		
-			if [ -s md5 ]; then					
-				if md5sum -cs md5; then
-		
-				# If md5sum check if ok, check for new/missing files in
-				# cooking stuff.
-				for file in $([ -f receipt ] && echo receipt; \
-						[ -f description.txt ] && echo description.txt; \
-						[ -d stuff ] && find stuff); do
-						if ! fgrep -q "  $file" md5; then
-							set_commited
-						fi
-					done
-				else
-					set_commited
-				fi
-			else
-				set_commited
-			fi
-		}
-		set_commited()
-		{
-			grep -q ^$PACKAGE$ $commit || echo $PACKAGE >> $commit
-			gen_cookmd5
-			update_dep_db
-		}
-		taz_dir=$(echo $WOK/$PACKAGE/taz/$PACKAGE-* | fgrep -v '*')
 		if [ -f $WOK/$PACKAGE/md5 ]; then
 			cd $WOK/$PACKAGE
-			check_for_commit_using_md5sum
-		elif [ "$taz_dir" ]; then
-			cd $taz_dir
-			check_for_commit_using_md5sum
+			check_for_commit_using_md5sum or time
+		elif [ -d "$WOK/$PACKAGE/taz" ] \
+			&& taz_dir=$(echo $WOK/$PACKAGE/taz/$PACKAGE-* | fgrep -v '*') \
+			&& [ -d "$taz_dir" ]
+		then
+			cd "$taz_dir"
+			check_for_commit_using_md5sum or time
 		else
 			pkg=$(echo $INCOMING_REPOSITORY/$PACKAGE-$VERSION*.tazpkg | fgrep -v '*')
 			[ "$pkg" ] || pkg=$(echo $PACKAGES_REPOSITORY/$PACKAGE-$VERSION*.tazpkg | fgrep -v '*')
@@ -2080,7 +2127,6 @@ check_for_commit()
 		fi
 	[ "$forced" ] || echo $PACKAGE >> $tmp/checked
 	done
-	return
 }
 
 gen_cook_list()
