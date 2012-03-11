@@ -727,6 +727,8 @@ check_for_compile_rules()
 		[ "$src" ] || set_src_path
 		[ "$DESTDIR" ] || DESTDIR="$WOK/$PACKAGE/install"
 		[ "$CONFIG_SITE" ] || CONFIG_SITE=/etc/config.site
+		# Cookutils compatibility
+		install="$DESTDIR"
 		export CFLAGS=$(echo "$CFLAGS" | tr -s ' ') \
 			CXXFLAGS=$(echo "$CXXFLAGS" | tr -s ' ') \
 			MAKEFLAGS DESTDIR CONFIG_SITE default_prefix \
