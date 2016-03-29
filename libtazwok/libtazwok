@@ -21,7 +21,7 @@
 ########################################################################
 # INITIALIZATION
 ########################
-# Load the Slitaz main configuration file : /etc/slitaz/slitaz.conf.
+# Load the SliTaz main configuration file : /etc/slitaz/slitaz.conf.
 # Don't load it if an application is called by one already, 
 # to avoid options overwrite.
 
