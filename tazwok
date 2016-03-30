@@ -504,7 +504,7 @@ check_for_tarball()
 				*zip|*xpi) cd $tmp_src && unzip -o $SOURCES_REPOSITORY/$TARBALL ;;
 				*bz2|*tbz|*gem) tar xjf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
 				*tar) tar xf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
-				*lzma|*lz) unlzma -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
+				*lzma|*lz) unlzma < $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 				*xz) unxz -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 				*Z|*taz) uncompress -c $SOURCES_REPOSITORY/$TARBALL | tar xf - -C $tmp_src;;
 				*gz) tar xzf $SOURCES_REPOSITORY/$TARBALL -C $tmp_src;;
@@ -1211,7 +1211,7 @@ gen_package()
 	
 	# Restore package tree in case we want to browse it.
 	report step "Restoring original package tree"
-	{ zcat fs.cpio.gz 2> /dev/null || unlzma -c fs.cpio.lzma; } | cpio --quiet -id
+	{ zcat fs.cpio.gz 2> /dev/null || unlzma < fs.cpio.lzma; } | cpio --quiet -id
 	rm fs.cpio.* && cd ..
 
 	# Recook of reverse-depends if package was broken.
@@ -3036,7 +3036,7 @@ EOF
 					wget "$TARBALL_WOK" &&
 					case $TARBALL_WOK in
 						*bz2) tar xjf *.bz2 -C wok; rm *.bz2;;
-						*lzma) unlzma -c *.lzma | tar xf - -C wok; rm *.lzma ;;
+						*lzma) unlzma < *.lzma | tar xf - -C wok; rm *.lzma ;;
 						*gz) tar xzf *.gz -C wok; rm*.gz ;;
 					esac &&
 					rm -r $(ls -d $clean_wok/*) &&
