@@ -279,7 +279,7 @@ check_for_wanted()
 		if [ ! -d "$WOK/$WANTED/taz" ]; then
 			echo -e "\n\nSource files of wanted package is missing in the work directory."
 			echo -n "Would you like to build the missing package (y/N) ? " ; read anser
-			if [ "$anser" == "y" ]; then
+			if [ "$anser" = "y" ]; then
 				tazwok cook $WANTED
 			else
 				report exit "\nWanted package source tree is missing in the work directory.\n"
@@ -2596,7 +2596,7 @@ Incoming packages    : `ls -1 $INCOMING_REPOSITORY/*.tazpkg 2>/dev/null | wc -l`
 			do
 				[ ! -f $pkg/receipt ] && continue
 				. $pkg/receipt
-				if [ "$CATEGORY" == "$ASKED_CATEGORY" ]; then
+				if [ "$CATEGORY" = "$ASKED_CATEGORY" ]; then
 					echo -n "$PACKAGE"
 					echo -e "\033[28G $VERSION"
 					packages=$(($packages+1))

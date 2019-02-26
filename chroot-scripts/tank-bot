@@ -11,8 +11,8 @@ tazwok update-wok
 LOCAL_REPOSITORY="$SLITAZ_DIR/${undigest:-$SLITAZ_VERSION}"
 cd $LOCAL_REPOSITORY/flavors
 if [ ! -d .hg ]; then
-	[ "$SLITAZ_VERSION" == "cooking" ] && hg clone http://hg.slitaz.org/flavors .
-	[ "$SLITAZ_VERSION" == "stable" ] && hg clone http://hg.slitaz.org/flavors-stable .
+	[ "$SLITAZ_VERSION" = "cooking" ] && hg clone http://hg.slitaz.org/flavors .
+	[ "$SLITAZ_VERSION" = "stable" ] && hg clone http://hg.slitaz.org/flavors-stable .
 else
 	hg pull -u
 fi
