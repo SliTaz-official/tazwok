@@ -232,7 +232,7 @@ remove_src()
 	# genpkg_rules: it maybe needs something inside.
 	for i in $PACKAGE $(look_for_rwanted); do
 		sed -n '/^genpkg_rules\(\)/','/^}/'p $WOK/$i/receipt | \
-			fgrep -q '$src' && tazwok_warning "Sources will not be removed \
+			fgrep -q "$src" && tazwok_warning "Sources will not be removed \
 because $i uses \$src in its receipt." && return
 	done
 	
@@ -613,7 +613,7 @@ gen_sources_list()
 				unset main_version
 			fi
 		fi
-		if [ ! "$main_version" ] || [ $(grep -q "^$PACKAGE | $VERSION" $INCOMING_REPOSITORY/packages.desc 2>/dev/null) ]; then
+		if [ ! "$main_version" ] || grep -q "^$PACKAGE | $VERSION" $INCOMING_REPOSITORY/packages.desc 2>/dev/null; then
 			if [ -f $src_repository/${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma ]; then
 				echo -e "$PACKAGE:incoming\t${SOURCE:-$PACKAGE}-${KBASEVER:-$VERSION}.tar.lzma" >> $src_repository/sources.list
 			elif [ -f "$src_repository/$TARBALL" ]; then
@@ -758,7 +758,7 @@ download()
 				fi
 			;;
 			svn*|subversion*)
-				if $(echo "$WGET_URL" | fgrep -q svn); then
+				if echo "$WGET_URL" | fgrep -q svn; then
 					file=${WGET_URL#svn|}
 				else
 					file=${WGET_URL#subversion|}
@@ -779,7 +779,7 @@ download()
 				fi
 			;;
 			hg*|mercurial*)
-				if $(echo "$WGET_URL" | fgrep -q hg); then
+				if echo "$WGET_URL" | fgrep -q hg; then
 					file=${WGET_URL#hg|}
 				else
 					file=${WGET_URL#mercurial|}
@@ -930,13 +930,13 @@ strip_package()
 	for dir in $fs/bin $fs/sbin $fs/usr/bin $fs/usr/sbin $fs/usr/games
 	do
 		if [ -d "$dir" ]; then
-			find $dir -type f -exec strip -s '{}' 2>/dev/null \;
+			find $dir -type f -exec strip -s '{}' \; 2>/dev/null
 		fi
 	done
 	
 	# Libraries.
-	find $fs -name "*.so*" -exec strip -s '{}' 2>/dev/null \;
-	find $fs -name "*.a" -exec strip --strip-debug '{}' 2>/dev/null \;
+	find $fs -name "*.so*" -exec strip -s '{}' \; 2>/dev/null
+	find $fs -name "*.a" -exec strip --strip-debug '{}' \; 2>/dev/null
 	report end-step
 }
 
@@ -1113,7 +1113,7 @@ gen_package()
 	# Generate md5 of cooking stuff to look for commit later.
 	gen_cookmd5
 	echo -e "\n# md5sum of cooking stuff :" >> taz/$PACKAGE-$VERSION/receipt
-	cat md5 | sed 's/^/# /' >> taz/$PACKAGE-$VERSION/receipt
+	sed 's/^/# /' >> taz/$PACKAGE-$VERSION/receipt < md5
 	
 	# Create the files.list by redirecting find output.
 	report step "Creating the list of files"
@@ -1306,7 +1306,7 @@ update_packages_db()
 
 	# Look for removed/update packages.
 	touch stamp -r packages.list
-	for PACKAGE in $(grep ^[0-9,a-z,A-Z] packages.txt); do
+	for PACKAGE in $(grep '^[0-9,a-z,A-Z]' packages.txt); do
 		pkg="$pkg_repository/$(grep -m1 ^$PACKAGE- packages.list).tazpkg"
 		if ! [ -f "$pkg" ]; then
 			erase_package_info
@@ -1432,7 +1432,7 @@ BEGIN { name="" } { if (name == "") name=$0; else printf("%s: %s\n",name,$0); }'
 	cd .. && rm -r "$pkg_files_dir"
 
 	cd $pkg_repository
-	echo $(basename ${pkg%.tazpkg}) >> packages.list
+	basename ${pkg%.tazpkg} >> packages.list
 	[ ! "$package_md5" ] && package_md5=$(md5sum $(basename $pkg))
 	echo "$package_md5" >> packages.md5
 	unset package_md5
@@ -1540,7 +1540,7 @@ update_dep_db()
 sort_db()
 {
 	report step "Generating cookorder.txt"
-	cat $dep_db | sed 's/ \t / /' | while read PACKAGE BUILD_DEPENDS; do
+	sed 's/ \t / /' < $dep_db | while read PACKAGE BUILD_DEPENDS; do
 		grep -q ^$PACKAGE$'\t' $wan_db && continue
 		
 		# Replace each BUILD_DEPENDS with a WANTED package by it's
@@ -1826,7 +1826,7 @@ scan()
 	if [ "$cooklist" ]; then
 		mv $tmp/dep $tmp/cooklist
 	else
-		cat $tmp/dep | sort -u
+		sort -u < $tmp/dep
 	fi
 	rm -f $tmp/dep $tmp/list
 	sort -o $dep_db $dep_db
@@ -2281,7 +2281,7 @@ configure_tazchroot()
 SLITAZ_DIR=$SLITAZ_DIR
 SLITAZ_VERSION=$SLITAZ_VERSION
 $( [ "$undigest" ] && echo "undigest=$undigest" )
-LOCAL_REPOSITORY=$SLITAZ_DIR/$(if [ "$undigest" ]; then echo '$undigest'; else echo '$SLITAZ_VERSION'; fi)
+LOCAL_REPOSITORY=$SLITAZ_DIR/$(if [ "$undigest" ]; then echo "$undigest"; else echo "$SLITAZ_VERSION"; fi)
 chroot_dir=\$LOCAL_REPOSITORY/chroot
 
 # Default scripts path (these scripts are added to the
@@ -2355,7 +2355,7 @@ whoprovide()
 	for i in $(fgrep -l PROVIDE $WOK/*/receipt); do
 		. $i
 		case " $PROVIDE " in
-		*\ $1\ *|*\ $1:*) echo $(basename $(dirname $i));;
+		*\ $1\ *|*\ $1:*) basename $(dirname $i);;
 		esac
 	done
 }
@@ -2691,7 +2691,7 @@ Maintainer : $MAINTAINER"
 			echo -n "$PACKAGE "
 			echo -en "\033[24G $VERSION"
 			echo -e "\033[42G $CATEGORY"
-			packages=$(($PACKAGEs+1))
+			packages=$(($packages+1))
 		done
 		horizontal_line
 		echo "$packages packages found for : $2"
@@ -3081,7 +3081,7 @@ EOF
 			fi
 		done
 		horizontal_line
-		echo "Maintainers: `cat /tmp/slitaz-maintainers | wc -l`"
+		echo "Maintainers: `wc -l < /tmp/slitaz-maintainers`"
 		echo ""
 		# Remove tmp files
 		rm -f /tmp/slitaz-maintainers
@@ -3089,7 +3089,7 @@ EOF
 	maintained-by)
 		# Search for packages maintained by a contributor.
 		get_tazwok_config
-		if [ ! -n "$2" ]; then
+		if [ -z "$2" ]; then
 			echo "Specify a name or email of a maintainer." >&2
 			exit 1
 		fi
@@ -3100,7 +3100,7 @@ EOF
 			. $pkg/receipt
 			if echo "$MAINTAINER" | fgrep -q "$2"; then
 				echo "$PACKAGE"
-				packages=$(($PACKAGEs+1))
+				packages=$(($packages+1))
 			fi
 		done
 		horizontal_line
@@ -3187,8 +3187,8 @@ EOF
 		if [ "$missing" ]; then
 			pkg=$(ls -1 $WOK)
 		else
-			pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
-				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			pkg="$({ grep '^[a-zA-Z0-9]' $PACKAGES_REPOSITORY/packages.txt
+				grep '^[a-zA-Z0-9]' $INCOMING_REPOSITORY/packages.txt
 			} | sort -u)"
 		fi
 		cooklist=$PACKAGES_REPOSITORY/cooklist
@@ -3207,8 +3207,8 @@ EOF
 		if [ "$missing" ]; then
 			pkg=$(ls -1 $WOK)
 		else
-			pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
-				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			pkg="$({ grep '^[a-zA-Z0-9]' $PACKAGES_REPOSITORY/packages.txt
+				grep '^[a-zA-Z0-9]' $INCOMING_REPOSITORY/packages.txt
 			} | sort -u)"
 		fi
 		cooklist=$PACKAGES_REPOSITORY/cooklist
@@ -3224,8 +3224,8 @@ EOF
 		if [ "$missing" ]; then
 			pkg=$(ls -1 $WOK)
 		else
-			pkg="$({ grep ^[a-zA-Z0-9] $PACKAGES_REPOSITORY/packages.txt
-				grep ^[a-zA-Z0-9] $INCOMING_REPOSITORY/packages.txt
+			pkg="$({ grep '^[a-zA-Z0-9]' $PACKAGES_REPOSITORY/packages.txt
+				grep '^[a-zA-Z0-9]' $INCOMING_REPOSITORY/packages.txt
 			} | sort -u)"
 		fi
 		cooklist=$PACKAGES_REPOSITORY/cooklist

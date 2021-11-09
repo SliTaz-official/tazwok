@@ -262,7 +262,7 @@ report()
 			report_create_html
 		;;
 		end-sublog)
-			[ "$log_opt" ] || continue
+			[ "$log_opt" ] || return
 			export log_list="${log_list#* }"
 			echo '</div>' >> "$log_opt"	
 			# Grep the summary of sublog (main action + status) and put
